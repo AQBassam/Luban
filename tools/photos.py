@@ -29,7 +29,8 @@ MAX = 40
 FREE = re.compile(r"^(CC0|Public domain|PD|CC BY(-SA)? [0-9.]+)", re.I)
 # not a landscape for a TV background
 SKIP = re.compile(r"insect|bird|butterfly|beetle|moth|lizard|gecko|spider|flower|portrait|interior|ceiling|"
-                  r"detail|close-?up|macro|food|dish|coin|stamp|map|logo|exhibit|\bcar\b|aircraft", re.I)
+                  r"detail|close-?up|macro|food|dish|coin|stamp|map|logo|exhibit|\bcar\b|aircraft|shell|specimen|conus|trochus|"
+                  r"cypraea|clanculus|gastropod|fossil|mineral|crab|fish|snake|plant|leaf|seed", re.I)
 PLACES = [  # file-title words -> where it is, in Arabic and English
     ("mutrah|muttrah", "مطرح", "Muttrah"), ("muscat|qurum|al alam", "مسقط", "Muscat"),
     ("nizwa", "نزوى", "Nizwa"), ("bahla", "بهلاء", "Bahla"), ("jabrin|jibreen", "حصن جبرين", "Jabrin Castle"),
@@ -123,6 +124,15 @@ def unsplash_candidates(key):
     return out
 
 
+def studio_backdrop(im):
+    """True for an object shot on black: the whole border is near-black."""
+    g = im.convert("L").resize((160, 90))
+    w, h = g.size
+    border = [g.getpixel((x, y)) for x in range(w) for y in (0, 1, h - 2, h - 1)] + \
+             [g.getpixel((x, y)) for y in range(h) for x in (0, 1, w - 2, w - 1)]
+    return sum(border) / len(border) < 28
+
+
 def main():
     OUT.mkdir(exist_ok=True)
     key = os.environ.get("UNSPLASH_ACCESS_KEY")
@@ -137,6 +147,9 @@ def main():
         try:
             if not dst.exists():
                 im = ImageOps.exif_transpose(Image.open(io.BytesIO(get(c["url"])))).convert("RGB")
+                if studio_backdrop(im):
+                    problems.append(f"{c['id']}: plain dark backdrop (a specimen, not a landscape)")
+                    continue
                 tw = min(im.width, int(im.height * 16 / 9)); th = int(tw * 9 / 16)
                 left, top = (im.width - tw) // 2, (im.height - th) // 2
                 im = im.crop((left, top, left + tw, top + th)).resize((1920, 1080), Image.LANCZOS)
