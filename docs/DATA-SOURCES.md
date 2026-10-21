@@ -25,5 +25,10 @@ Prayer times, the Hijri date and the clock need no source: they are computed on 
   PM10 > 250: thresholds picked to mark a dust event, not a health assessment.
 - **Removed:** TheSportsDB (its free key finds only one team and one home match per team), Unsplash (its download link
   needs a key; Commons replaced it).
+- **Not covered: the Saudi Pro League** (and other Gulf and Asian club competitions). Checked 21 October 2026:
+  football-data.org has no Saudi or Asian club competition in any plan; API-Football's free plan stops at the 2024
+  season ("Free plans do not have access to this season, try from 2022 to 2024"); TheSportsDB's free key works for no
+  league. ESPN's site API carries it but is unofficial, with no published terms, so it is left out on purpose. To be
+  added when a free source with clear terms appears.
 - **Data server status:** `GET /ready` gives each source's state (fresh, stale, failing, idle, off) and the age of its
   data, with no error text; `GET /health` only says the process answers.
