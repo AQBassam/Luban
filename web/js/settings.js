@@ -21,7 +21,7 @@
     hijriOffset: 0,             // -2..2 days, for countries that follow a local moon sighting
     panel: 'verse',
     homeCard: false,            // the launcher's card
-    teams: [],                  // [{id, en, ar}] TheSportsDB team ids, priority order
+    teams: [],                  // [{id, en, ar}] football-data.org team ids, priority order
     markets: ['gold', 'brent', 'btc', 'spx'],
     shows: { genres: [], langs: [], minRating: 7 },
     omanDays: true,             // National Day countdown, Khareef season

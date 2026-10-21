@@ -425,7 +425,7 @@
     }
   }
 
-  // ---------- matches (TheSportsDB, public key; through the proxy in the app, or the server)
+  // ---------- matches (football-data.org, through the data server: the free token stays on the server)
   const norm = s => String(s || '').toLowerCase().replace(/\b(al|fc|sc|club|saudi club)\b/g, '').replace(/[^a-z0-9]/g, '');
   const AR_NAMES = Object.keys(DATA.teamsAr).reduce((o, k) => { if (k[0] !== '_') o[norm(k)] = DATA.teamsAr[k]; return o; }, {});
   const teamAr = (id, en) => { const t = S.teams.find(x => x.id === String(id)); return (t && t.ar) || AR_NAMES[norm(en)] || en || ''; };
@@ -438,18 +438,6 @@
     if (!S.teams.length) { state.matches = {}; renderMatch(); return; }
     let data = null;
     if (S.api) { try { data = await getJSON(`${S.api}/v1/matches?teams=${S.teams.map(t => t.id).join(',')}`, 12000); } catch (e) { data = null; } }
-    if (!data && IN_APP) {
-      data = {};
-      await Promise.all(S.teams.map(async t => {
-        try {
-          const [n, l] = await Promise.all([
-            getJSON(net(`https://www.thesportsdb.com/api/v1/json/123/eventsnext.php?id=${t.id}`)),
-            getJSON(net(`https://www.thesportsdb.com/api/v1/json/123/eventslast.php?id=${t.id}`)),
-          ]);
-          data[t.id] = { next: (n && n.events) || [], last: (l && l.results) || [] };
-        } catch (e) { /* skip this team */ }
-      }));
-    }
     if (data && Object.keys(data).length) { state.matches = data; store.set('matches', data); }
     renderMatch();
     if (S.panel === 'matches') renderCard();
@@ -567,7 +555,7 @@
       const list = matchList().slice(0, 5).map(({ ev, at, done, live }) => [
         `${teamName(ev.idHomeTeam, ev.strHomeTeam)} ${done || live ? dg(ev.intHomeScore + ' - ' + ev.intAwayScore) : '×'} ${teamName(ev.idAwayTeam, ev.strAwayTeam)}`,
         live ? T.live : done ? T.ft : whenText(at)]);
-      body.append(list.length ? rowsList(list, -1) : h('div', 'empty', T.noMatches));
+      body.append(list.length ? rowsList(list, -1) : h('div', 'empty', T.noMatches), h('div', 'src', T.matchesSrc));
     } else if (S.panel === 'shows') {
       title.textContent = T.shows;
       const per = 5, pages = Math.max(1, Math.ceil(state.shows.length / per)), p = state.page % pages;

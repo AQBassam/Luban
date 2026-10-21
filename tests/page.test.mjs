@@ -138,6 +138,19 @@ const text = (page, sel) => page.$eval(sel, e => e.textContent);
   check('screen: team names are text, never HTML', (await page.$$('#card img, #match img')).length === 0 && !(await page.evaluate(() => window.pwned)));
   await page.close();
 }
+{
+  // a football-data.org result as the server passes it on: short names, Arabic from teams-ar.json, the source named
+  const page = await open({ panel: 'matches', teams: [{ id: '86', en: 'Real Madrid', ar: 'ريال مدريد' }] });
+  await page.evaluate(() => {
+    const t = new Date(Date.now() - 3 * 3600e3).toISOString().replace(/\.\d+Z$/, 'Z');
+    window.LubanScreen._state.matches = { 86: { last: [{ idEvent: '2', idHomeTeam: '81', strHomeTeam: 'Barça', idAwayTeam: '86', strAwayTeam: 'Real Madrid',
+      intHomeScore: 1, intAwayScore: 2, strTimestamp: t, strStatus: 'FT', strLeague: 'Primera Division' }], next: [] } };
+  });
+  await page.clock.runFor(21000);
+  const card = await text(page, '#card');
+  check('matches: a football-data result reads in Arabic, with its source', card.includes('برشلونة') && card.includes('ريال مدريد') && card.includes('1 - 2') && card.includes('football-data.org'), card);
+  await page.close();
+}
 for (const vp of [{ width: 1920, height: 1080 }, { width: 1280, height: 720 }]) {
   const page = await open({ panel: 'verse' }, null, vp);
   const overflow = await page.evaluate(() => {

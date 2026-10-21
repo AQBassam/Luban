@@ -155,7 +155,7 @@ after 48 hours. Repository secrets: `LUBAN_KEYSTORE_B64`, `LUBAN_KEYSTORE_PASSWO
 Fonts: [El Messiri](https://github.com/Gue3bara/El-Messiri) and [Amiri](https://www.amirifont.org/) (SIL OFL).
 Photos: Wikimedia Commons photographers (Quality images of Oman), each with its licence in [docs/PHOTO-CREDITS.md](docs/PHOTO-CREDITS.md). Quran text: King Fahd Complex Uthmani
 Hafs edition and the Forty Hadith of an-Nawawi, via [fawazahmed0](https://github.com/fawazahmed0)'s public-domain
-datasets. Weather: [Open-Meteo](https://open-meteo.com). Matches: [TheSportsDB](https://www.thesportsdb.com).
+datasets. Weather: [Open-Meteo](https://open-meteo.com). Matches: [football-data.org](https://www.football-data.org) (free plan: 12 competitions, scores delayed).
 Shows: [TVMaze](https://www.tvmaze.com). Package ratings: [UAD-ng](https://github.com/Universal-Debloater-Alliance/universal-android-debloater-next-generation).
 
 MIT licence. Made in Oman · صُنع في عُمان

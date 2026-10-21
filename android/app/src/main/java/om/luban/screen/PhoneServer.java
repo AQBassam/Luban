@@ -129,7 +129,7 @@ final class PhoneServer {
         }
     }
 
-    /** Team search: the data server when one is set, else TheSportsDB directly. Football only, Arabic names added. */
+    /** Team search through the data server (football-data.org needs a token, which stays there). Arabic names added. */
     private String teams(String q) {
         JSONArray out = new JSONArray();
         if (q == null || !q.matches("[\\p{L}\\p{N} .'-]{2,40}")) return out.toString();
@@ -138,15 +138,6 @@ final class PhoneServer {
             if (api.matches("https://[A-Za-z0-9.-]+(:\\d{2,5})?(/[A-Za-z0-9._~/-]*)?")) {
                 JSONArray a = new JSONArray(new String(Net.get(api.replaceAll("/+$", "") + "/v1/teams?q=" + enc(q), 200_000), StandardCharsets.UTF_8));
                 for (int i = 0; i < a.length(); i++) out.put(withArabic(a.getJSONObject(i)));
-                return out.toString();
-            }
-            JSONObject j = new JSONObject(new String(Net.get("https://www.thesportsdb.com/api/v1/json/123/searchteams.php?t=" + enc(q), 2_000_000), StandardCharsets.UTF_8));
-            JSONArray list = j.optJSONArray("teams");
-            for (int i = 0; list != null && i < list.length() && out.length() < 10; i++) {
-                JSONObject t = list.getJSONObject(i);
-                if (!"Soccer".equals(t.optString("strSport"))) continue;
-                out.put(withArabic(new JSONObject().put("id", t.optString("idTeam")).put("en", t.optString("strTeam"))
-                    .put("league", t.optString("strLeague"))));
             }
         } catch (Exception ignored) { }
         return out.toString();
@@ -162,7 +153,7 @@ final class PhoneServer {
             }
             arNames = m;
         }
-        if (t.optString("ar").isEmpty()) t.put("ar", arNames.getOrDefault(norm(t.optString("en")), ""));
+        if (t.optString("ar").isEmpty()) t.put("ar", arNames.getOrDefault(norm(t.optString("en")), arNames.getOrDefault(norm(t.optString("full")), "")));
         return t;
     }
 

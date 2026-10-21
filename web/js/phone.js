@@ -18,9 +18,9 @@
     hijri: 'Hijri date adjustment', screen: 'Screen', panel: 'Card beside the clock', pVerse: 'Verse or hadith of the day', pPrayers: "Today's prayers and iqama",
     pForecast: 'Weather, next days', pMatches: 'Your teams', pShows: 'New episodes', pNone: 'No card', omanDays: 'Oman National Day and Khareef season',
     night: 'Dim at night', bg: 'Background', bgChart: 'The sea chart', bgPhotos: 'Photos of Oman', homeCard: 'Prayer card on the home screen', markets: 'Markets', teams: 'Your teams', search: 'Search',
-    teamsHint: 'Up to 10 teams. Edit the Arabic name as you like it shown.', shows: 'TV shows', genres: 'Genres (empty = all)', minRating: 'Minimum rating',
+    teamsHint: 'Up to 10 teams from the major European and Brazilian leagues, the Champions League, the World Cup and the Euros (football-data.org). Edit the Arabic name as you like it shown.', shows: 'TV shows', genres: 'Genres (empty = all)', minRating: 'Minimum rating',
     advanced: 'Advanced', api: 'Data server (optional)', channel: 'Update channel', stable: 'Stable', canary: 'Canary (gets updates first)', save: 'Save',
-    saved: 'Saved. The screen updates now.', failed: 'Not saved: ', custom: 'Other place…', default: 'Country default', teamSearch: 'Search in English: Oman, Al Seeb…',
+    saved: 'Saved. The screen updates now.', failed: 'Not saved: ', custom: 'Other place…', default: 'Country default', teamSearch: 'Search in English: Real Madrid, Liverpool, Flamengo…',
     gold: 'Gold (OMR/g)', brent: 'Brent oil', btc: 'Bitcoin', spx: 'S&P 500', noHits: 'No team found',
   };
   const AR = { custom: 'مكان آخر…', default: 'حسب البلد', saved: 'حُفظت. الشاشة تتحدث الآن.', failed: 'لم تُحفظ: ', gold: 'الذهب (ر.ع/غ)', brent: 'نفط برنت', btc: 'بيتكوين', spx: 'S&P 500', noHits: 'لا نتائج' };

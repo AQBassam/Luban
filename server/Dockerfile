@@ -1,5 +1,5 @@
 # Luban data server. Coolify: New resource → this repository → Build pack "Dockerfile", base directory /server,
-# port 8080, health check path /health. Set SPORTSDB_KEY if you have a paid key.
+# port 8080, health check path /health. Set FOOTBALL_DATA_KEY (free token from football-data.org) for the matches.
 FROM python:3.12-slim
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 PORT=8080
 RUN useradd --system --uid 10001 luban

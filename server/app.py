@@ -1,14 +1,19 @@
 """Luban data server: one cached answer for every TV instead of every TV asking every source.
 
     GET /v1/markets?ids=gold,brent,btc,spx    prices and day change (Yahoo Finance chart API, CoinGecko)
-    GET /v1/matches?teams=1,2,3               next and last events per team (TheSportsDB)
+    GET /v1/matches?teams=86,81               recent results and next fixtures per team (football-data.org)
     GET /v1/shows?genres=Drama&langs=&min=7   new episodes this week (TVMaze)
-    GET /v1/teams?q=al seeb                   team search (TheSportsDB)
+    GET /v1/teams?q=real madrid               team search in the 12 free competitions (football-data.org)
     GET /health
 
 Only these upstream hosts are ever contacted; requests are validated before any of them is. Standard library only.
-Configuration (environment): PORT (8080), SPORTSDB_KEY (123 = the public test key; a paid key lifts the limits),
-CORS_ORIGIN (*), MARKETS_TTL (900), MATCHES_TTL (600), SHOWS_TTL (21600).
+Configuration (environment): PORT (8080), FOOTBALL_DATA_KEY (free token from football-data.org/client/register; without
+it there are no matches), CORS_ORIGIN (*), MARKETS_TTL (900), MATCHES_TTL (600), SHOWS_TTL (21600).
+
+Matches: football-data.org's free plan (10 calls a minute, scores delayed) covers the competitions people here follow:
+Premier League, La Liga, Serie A, Bundesliga, Ligue 1, Eredivisie, Primeira Liga, Championship, Brasileirão, Champions
+League, World Cup, European Championship. One call a few minutes fetches every match of the coming days for all of
+them; each TV's teams are picked out of that, so the number of TVs never changes the number of calls.
 """
 import json
 import os
@@ -22,12 +27,15 @@ from datetime import date, timedelta
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 PORT = int(os.environ.get("PORT", "8080"))
-SPORTSDB_KEY = re.sub(r"[^A-Za-z0-9]", "", os.environ.get("SPORTSDB_KEY", "123")) or "123"
+FD_KEY = re.sub(r"[^A-Za-z0-9]", "", os.environ.get("FOOTBALL_DATA_KEY", ""))
+FD = "https://api.football-data.org/v4"
+FD_COMPETITIONS = ("PL", "PD", "SA", "BL1", "FL1", "DED", "PPL", "ELC", "BSA", "CL", "WC", "EC")
+FD_GAP = 6.5   # seconds between calls: the free plan allows 10 a minute
 CORS = os.environ.get("CORS_ORIGIN", "*")
 TTL = {"markets": int(os.environ.get("MARKETS_TTL", 900)), "matches": int(os.environ.get("MATCHES_TTL", 600)),
        "shows": int(os.environ.get("SHOWS_TTL", 21600)), "teams": 86400}
 UA = "Luban/1 (+https://github.com/AQBassam/Luban)"
-ALLOWED_HOSTS = {"query1.finance.yahoo.com", "api.coingecko.com", "www.thesportsdb.com", "api.tvmaze.com"}
+ALLOWED_HOSTS = {"query1.finance.yahoo.com", "api.coingecko.com", "api.football-data.org", "api.tvmaze.com"}
 MARKETS = {"gold": ("yahoo", "GC=F"), "brent": ("yahoo", "BZ=F"), "spx": ("yahoo", "^GSPC"), "btc": ("cg", "bitcoin")}
 SKIP_TYPES = {"News", "Talk Show", "Sports", "Game Show"}
 POOL = ThreadPoolExecutor(max_workers=8)
@@ -37,36 +45,43 @@ class Cache:
     """In-memory TTL cache; a failed refresh serves the last good value for up to a day (stale-if-error)."""
 
     def __init__(self):
-        self.data, self.lock = {}, threading.Lock()
+        self.data, self.lock, self.flights = {}, threading.Lock(), {}
 
     def get(self, key, ttl, fn):
-        now = time.time()
         with self.lock:
             hit = self.data.get(key)
-        if hit and now - hit[0] < ttl:
-            return hit[1]
-        try:
-            val = fn()
-        except Exception:
-            if hit and now - hit[0] < 86400:
+            if hit and time.time() - hit[0] < ttl:
                 return hit[1]
-            raise
-        with self.lock:
-            self.data[key] = (now, val)
-            if len(self.data) > 5000:   # bound memory: drop the oldest half
-                for k in sorted(self.data, key=lambda k: self.data[k][0])[:2500]:
-                    del self.data[k]
-        return val
+            flight = self.flights.setdefault(key, threading.Lock())
+        # one refresh per key at a time: a hundred TVs asking at once cause one upstream call, not a hundred
+        with flight:
+            with self.lock:
+                hit = self.data.get(key)
+            now = time.time()
+            if hit and now - hit[0] < ttl:
+                return hit[1]
+            try:
+                val = fn()
+            except Exception:
+                if hit and now - hit[0] < 86400:
+                    return hit[1]
+                raise
+            with self.lock:
+                self.data[key] = (now, val)
+                if len(self.data) > 5000:   # bound memory: drop the oldest half
+                    for k in sorted(self.data, key=lambda k: self.data[k][0])[:2500]:
+                        del self.data[k]
+            return val
 
 
 CACHE = Cache()
 
 
-def fetch_json(url, timeout=12):
+def fetch_json(url, timeout=12, headers=None):
     host = urllib.parse.urlsplit(url).hostname
     if host not in ALLOWED_HOSTS:
         raise ValueError(f"host not allowed: {host}")
-    req = urllib.request.Request(url, headers={"User-Agent": UA, "Accept": "application/json"})
+    req = urllib.request.Request(url, headers={"User-Agent": UA, "Accept": "application/json", **(headers or {})})
     with urllib.request.urlopen(req, timeout=timeout) as r:
         body = r.read(5_000_000)
     return json.loads(body)
@@ -91,22 +106,85 @@ def markets(ids):
     return out
 
 
-def team_events(tid):
-    base = f"https://www.thesportsdb.com/api/v1/json/{SPORTSDB_KEY}"
-    nxt = fetch_json(f"{base}/eventsnext.php?id={tid}")
-    last = fetch_json(f"{base}/eventslast.php?id={tid}")
-    keep = ("idEvent", "strEvent", "idHomeTeam", "idAwayTeam", "strHomeTeam", "strAwayTeam", "intHomeScore",
-            "intAwayScore", "strTimestamp", "dateEvent", "strTime", "strStatus", "strLeague")
-    slim = lambda evs: [{k: e.get(k) for k in keep} for e in (evs or [])][:5]
-    return {"next": slim(nxt.get("events")), "last": slim(last.get("results"))}
+_fd_lock, _fd_last = threading.Lock(), [0.0]
+
+
+def fd(path):
+    """One football-data.org call, spaced to stay inside the free plan's 10 a minute."""
+    if not FD_KEY:
+        raise RuntimeError("FOOTBALL_DATA_KEY is not set")
+    with _fd_lock:
+        wait = _fd_last[0] + FD_GAP - time.time()
+        if wait > 0:
+            time.sleep(wait)
+        _fd_last[0] = time.time()
+        return fetch_json(FD + path, 20, {"X-Auth-Token": FD_KEY})
+
+
+def fd_event(m):
+    """A football-data match in the shape the screen reads (the field names it has always used)."""
+    st = m.get("status")
+    ft = (m.get("score") or {}).get("fullTime") or {}
+    played = st in ("FINISHED", "IN_PLAY", "PAUSED")
+    return {"idEvent": str(m.get("id")), "idHomeTeam": str((m.get("homeTeam") or {}).get("id")),
+            "idAwayTeam": str((m.get("awayTeam") or {}).get("id")),
+            "strHomeTeam": (m.get("homeTeam") or {}).get("shortName") or (m.get("homeTeam") or {}).get("name"),
+            "strAwayTeam": (m.get("awayTeam") or {}).get("shortName") or (m.get("awayTeam") or {}).get("name"),
+            "intHomeScore": ft.get("home") if played else None, "intAwayScore": ft.get("away") if played else None,
+            "strTimestamp": m.get("utcDate"), "strStatus": "FT" if st == "FINISHED" else "LIVE" if played else "NS",
+            "strLeague": (m.get("competition") or {}).get("name")}
+
+
+def fd_window():
+    """Every match from three days ago to a week ahead in the free competitions (the API's 10-day maximum)."""
+    today = date.today()
+    j = fd(f"/matches?dateFrom={(today - timedelta(days=3)).isoformat()}&dateTo={(today + timedelta(days=6)).isoformat()}")
+    return [fd_event(m) for m in j.get("matches") or [] if m.get("status") not in ("POSTPONED", "CANCELLED", "SUSPENDED", "AWARDED")]
 
 
 def matches(ids):
+    if not ids:
+        return {}
+    try:
+        window = CACHE.get("fd:window", TTL["matches"], fd_window)
+    except Exception:
+        return {}
     out = {}
-    for tid, res in zip(ids, POOL.map(lambda t: _safe(lambda: CACHE.get("t:" + t, TTL["matches"], lambda: team_events(t))), ids)):
-        if res:
-            out[tid] = res
+    for tid in ids:
+        mine = [e for e in window if tid in (e["idHomeTeam"], e["idAwayTeam"])]
+        if mine:
+            out[tid] = {"last": sorted([e for e in mine if e["strStatus"] != "NS"], key=lambda e: e["strTimestamp"], reverse=True)[:5],
+                        "next": sorted([e for e in mine if e["strStatus"] == "NS"], key=lambda e: e["strTimestamp"])[:5]}
     return out
+
+
+def fd_teams():
+    """Every team of the free competitions, once a day (12 calls, a minute and a half at the free pace)."""
+    teams = {}
+    for code in FD_COMPETITIONS:
+        try:
+            j = fd(f"/competitions/{code}/teams")
+        except Exception:
+            continue   # a tournament between editions has no teams yet
+        comp = (j.get("competition") or {}).get("name") or code
+        for t in j.get("teams") or []:
+            tid = str(t.get("id"))
+            if tid not in teams:
+                teams[tid] = {"id": tid, "en": t.get("name") or "", "short": t.get("shortName") or "", "tla": t.get("tla") or "",
+                              "league": comp}
+    if not teams:
+        raise RuntimeError("no teams")
+    return list(teams.values())
+
+
+def team_search(q):
+    words = [w for w in re.split(r"\s+", q.lower()) if w]
+    hits = []
+    for t in CACHE.get("fd:teams", TTL["teams"], fd_teams):
+        hay = f"{t['en']} {t['short']} {t['tla']}".lower()
+        if all(w in hay for w in words):
+            hits.append({"id": t["id"], "en": t["short"] or t["en"], "ar": "", "league": t["league"], "full": t["en"]})
+    return hits[:10]
 
 
 def shows(genres, langs, minimum):
@@ -126,12 +204,6 @@ def shows(genres, langs, minimum):
         seen.add(s.get("id"))
         out.append({"name": s.get("name"), "season": e.get("season"), "number": e.get("number"), "date": e.get("airdate"), "rating": rating})
     return sorted(out, key=lambda x: -x["rating"])[:30]
-
-
-def team_search(q):
-    j = fetch_json(f"https://www.thesportsdb.com/api/v1/json/{SPORTSDB_KEY}/searchteams.php?t={urllib.parse.quote(q)}")
-    return [{"id": t["idTeam"], "en": t["strTeam"], "ar": "", "league": t.get("strLeague") or ""}
-            for t in (j.get("teams") or []) if t.get("strSport") == "Soccer"][:10]
 
 
 def _safe(fn):
@@ -192,7 +264,7 @@ class Handler(BaseHTTPRequestHandler):
                 q = (qs.get("q", [""])[0]).strip()
                 if not re.fullmatch(r"[\w .'-]{2,40}", q):
                     return self.send(400, {"error": "q: 2-40 letters"})
-                return self.send(200, CACHE.get("q:" + q.lower(), TTL["teams"], lambda: team_search(q)), 3600)
+                return self.send(200, _safe(lambda: team_search(q)) or [], 3600)
             return self.send(404, {"error": "not found"})
         except Exception as e:  # noqa: BLE001
             return self.send(502, {"error": type(e).__name__})
@@ -200,7 +272,9 @@ class Handler(BaseHTTPRequestHandler):
 
 def main():
     srv = ThreadingHTTPServer(("0.0.0.0", PORT), Handler)
-    print(f"Luban data server on :{PORT}", flush=True)
+    print(f"Luban data server on :{PORT}" + ("" if FD_KEY else " (no FOOTBALL_DATA_KEY: no matches)"), flush=True)
+    if FD_KEY:   # the team list takes a minute and a half to gather at the free pace: start before anyone searches
+        threading.Thread(target=lambda: _safe(lambda: CACHE.get("fd:teams", TTL["teams"], fd_teams)), daemon=True).start()
     srv.serve_forever()
 
 

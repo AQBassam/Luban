@@ -15,9 +15,8 @@ final class Net {
     private Net() {}
 
     /** Sources the page reads that send no CORS headers, so it cannot call them itself. */
-    private static final Set<String> PROXY_HOSTS = new HashSet<>(Arrays.asList("query1.finance.yahoo.com", "www.thesportsdb.com"));
-    private static final Pattern PROXY_PATH = Pattern.compile(
-        "/v8/finance/chart/[A-Za-z0-9^=.%-]{1,20}|/api/v1/json/[A-Za-z0-9]{1,40}/(eventsnext|eventslast|searchteams|lookupevent)\\.php");
+    private static final Set<String> PROXY_HOSTS = new HashSet<>(Arrays.asList("query1.finance.yahoo.com"));
+    private static final Pattern PROXY_PATH = Pattern.compile("/v8/finance/chart/[A-Za-z0-9^=.%-]{1,20}");
 
     static boolean proxyAllowed(String url) {
         try {
