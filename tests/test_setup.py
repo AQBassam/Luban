@@ -16,15 +16,19 @@ luban.time.sleep = lambda s: None
 class FakeTv:
     """Records every command. `home_works` decides whether pressing Home shows Luban's home."""
 
-    def __init__(self, home_works=True, works_after_disable=True, install_out="Success"):
+    def __init__(self, home_works=True, works_after_disable=True, install_out="Success", wraith=False, wraith_wifi=False):
         self.log, self.host = [], "10.0.0.9"
+        self.wraith, self.wraith_wifi = wraith, wraith_wifi   # setupwraith takes Home once the stock home is off
         self.home_works, self.works_after_disable, self.install_out = home_works, works_after_disable, install_out
         self.disabled, self.role = set(), "com.google.android.apps.tv.launcherx"
 
     def shell(self, cmd, timeout=60, tries=3):
         self.log.append(cmd)
         if cmd.startswith("pm list packages"):
-            return "package:com.google.android.apps.tv.launcherx\npackage:com.tcl.bi\npackage:com.google.android.feedback\n"
+            return ("package:com.google.android.apps.tv.launcherx\npackage:com.tcl.bi\npackage:com.google.android.feedback\n"
+                    "package:com.google.android.tungsten.setupwraith\n")
+        if cmd.startswith("dumpsys wifi"):
+            return "cname=com.google.android.tungsten.setupwraith" if self.wraith_wifi else "cname=android.uid.system"
         if cmd.startswith("pm disable-user"):
             self.disabled.add(cmd.split()[-1]); return f"Package {cmd.split()[-1]} new state: disabled-user"
         if cmd.startswith("pm enable"):
@@ -33,6 +37,8 @@ class FakeTv:
             self.role = cmd.split()[-1]; return ""
         if cmd.startswith("dumpsys activity"):
             stock_off = "com.google.android.apps.tv.launcherx" in self.disabled
+            if stock_off and self.wraith and luban.SETUP_APP not in self.disabled:
+                return "mResumedActivity: com.google.android.tungsten.setupwraith/.RecoveryActivity"
             ours = self.role == "om.luban.home" and self.home_works and (self.works_after_disable or not stock_off)
             return "mResumedActivity: om.luban.home/.HomeActivity" if ours else "mResumedActivity: com.google.android.apps.tv.launcherx/.Home"
         if cmd.startswith("cmd package resolve-activity"):
@@ -67,6 +73,25 @@ class HomeSwitch(unittest.TestCase):
         self.assertLess(opened, first(tv.log, "pm disable-user"), "verified before anything is disabled")
         self.assertIn("com.google.android.apps.tv.launcherx", tv.disabled)
         self.assertIn("touch /data/local/tmp/luban_home_ok", tv.log)
+
+    def test_setup_app_left_alone_when_not_needed(self):
+        tv = FakeTv()
+        luban.switch_home(tv)
+        self.assertNotIn(luban.SETUP_APP, tv.disabled, "setupwraith may own the Wi-Fi network and the Cast keys")
+
+    def test_setup_app_turned_off_only_when_it_takes_home(self):
+        tv = FakeTv(wraith=True)
+        luban.switch_home(tv)
+        self.assertIn(luban.SETUP_APP, tv.disabled)
+        self.assertLess(first(tv.log, "dumpsys wifi"), next(i for i, c in enumerate(tv.log) if c.endswith(luban.SETUP_APP) and c.startswith("pm disable-user")))
+
+    def test_setup_app_owning_wifi_is_never_turned_off(self):
+        tv = FakeTv(wraith=True, wraith_wifi=True)
+        with self.assertRaises(luban.Stop) as e:
+            luban.switch_home(tv)
+        self.assertNotIn(luban.SETUP_APP, tv.disabled, "the TV would lose its Wi-Fi for good")
+        self.assertNotIn("com.google.android.apps.tv.launcherx", tv.disabled, "stock home back")
+        self.assertIn("Wi-Fi", str(e.exception))
 
     def test_firmware_that_pins_home_is_left_untouched(self):
         tv = FakeTv(home_works=False)

@@ -15,5 +15,11 @@ com.tcl.airplay2                            # AirPlay (TCL)
 com.tcl.miracast                            # screen mirroring (TCL)
 com.tcl.tvinput                             # HDMI inputs (TCL)
 com.tcl.tv                                  # TV app (TCL)
+com.mediatek.wwtv.tvcenter                  # Live TV and inputs (MediaTek sets: Skyworth, Panasonic, Philips, Sony…)
+com.mediatek.tvinput                        # HDMI, AV, tuner (MediaTek)
+com.mediatek.tv.service                     # TV service (MediaTek)
+com.mediatek.autopair                       # remote pairing at boot (MediaTek)
+com.smartdevice.global.service              # remote keys (Skyworth)
+com.smartdevice.livetv                      # Live TV and the inputs menu (Skyworth-built sets)
 om.luban.screen
 om.luban.home

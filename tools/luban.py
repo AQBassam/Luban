@@ -264,6 +264,12 @@ def stock_home(tv):
     raise Stop("could not tell which home screen this TV uses; keeping it as it is (run setup with --no-home)")
 
 
+def wifi_owned_by_setup(tv):
+    """True when a saved Wi-Fi network was created by the setup wizard (dumpsys wifi: creatorName / cname)."""
+    out = tv.shell("dumpsys wifi | grep -oE '(cname|creatorName|mCreatorName)=[^ ,]*'")
+    return SETUP_APP in out
+
+
 def wait_for(tv, what, seconds=24):
     for _ in range(seconds // 3):
         tv.shell("input keyevent KEYCODE_HOME")
@@ -300,11 +306,27 @@ def switch_home(tv):
     if not wait_for(tv, "om.luban.home"):
         back_to_stock("Luban's home did not open when Home was pressed (this firmware may pin its own home).")
 
-    # 2. proven to work: now the stock home may step aside (some Google TV firmware keeps reclaiming Home otherwise)
-    tv.shell(f"pm disable-user --user 0 {SETUP_APP}")
+    # 2. proven to work: now the stock home may step aside. The setup wizard (setupwraith) is left alone unless it
+    #    is what takes Home instead: on many Google TV sets it owns the Wi-Fi network saved during first setup (Android
+    #    deletes an app's saved networks when the app is disabled, so the TV goes offline for good) and it holds the
+    #    Cast credentials (phones then call the TV "untrusted"). Field notes: github.com/Gathin23/cleanyourtv,
+    #    docs/TROUBLESHOOTING.md.
     tv.shell(f"pm disable-user --user 0 {stock_pkg}")
     if not wait_for(tv, "om.luban.home"):
-        back_to_stock("Home stopped opening Luban after the stock home was turned off.")
+        if SETUP_APP in tv.packages() and SETUP_APP in tv.resumed():
+            if wifi_owned_by_setup(tv):
+                back_to_stock("The TV's setup app takes Home, and it also owns the saved Wi-Fi network: turning it off "
+                              "would take the TV offline for good. On the TV: Settings → Network → forget the network and "
+                              "join it again (it then belongs to the system), or use Ethernet; then run `home` again.")
+            say("   ! The setup app (setupwraith) keeps taking Home; turning it off. On some Google TV sets casting from a"
+                " phone then says \"untrusted device\"; `reset` turns it back on.")
+            tv.shell(f"pm disable-user --user 0 {SETUP_APP}")
+            st["setup_off"] = True
+            save_state(tv, st)
+            if not wait_for(tv, "om.luban.home"):
+                back_to_stock("Home stopped opening Luban after the stock home was turned off.")
+        else:
+            back_to_stock("Home stopped opening Luban after the stock home was turned off.")
     if "om.luban.home" not in tv.home_resolves_to()[0]:
         back_to_stock("Android does not list Luban as the home app.")
     tv.shell("touch /data/local/tmp/luban_home_ok")
