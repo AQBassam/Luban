@@ -39,7 +39,7 @@ import java.util.List;
  * Each part lives in its own class; this one only lays them out and keeps them current.
  */
 public class HomeActivity extends Activity {
-    private static HomeActivity live;
+    private static java.lang.ref.WeakReference<HomeActivity> live = new java.lang.ref.WeakReference<>(null);
     private final Handler main = new Handler(Looper.getMainLooper());
     private Wallpaper wallpaper;
     private PrayerCard card;
@@ -69,7 +69,7 @@ public class HomeActivity extends Activity {
         pf.addAction(Intent.ACTION_PACKAGE_CHANGED);
         pf.addDataScheme("package");
         listen(packages, pf);
-        live = this;
+        live = new java.lang.ref.WeakReference<>(this);
     }
 
     @Override
@@ -99,7 +99,7 @@ public class HomeActivity extends Activity {
     @Override
     protected void onDestroy() {
         unregisterReceiver(packages);
-        if (live == this) live = null;
+        if (live.get() == this) live.clear();
         super.onDestroy();
     }
 
@@ -122,7 +122,7 @@ public class HomeActivity extends Activity {
 
     /** Called by AdbReceiver after the favourites changed from ADB. */
     static void favouritesChanged() {
-        HomeActivity a = live;
+        HomeActivity a = live.get();
         if (a != null) a.main.post(a::buildRows);
     }
 

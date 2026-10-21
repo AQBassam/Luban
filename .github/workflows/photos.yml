@@ -22,6 +22,8 @@ jobs:
           python-version: '3.12'
       - run: pip install pillow==11.2.1
       - run: .github/annotate.sh Photos python3 tools/photos.py
+        env:
+          UNSPLASH_ACCESS_KEY: ${{ secrets.UNSPLASH_ACCESS_KEY }}   # optional
       - run: python3 web/build.py
       - name: Commit
         env:

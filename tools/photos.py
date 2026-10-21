@@ -26,6 +26,28 @@ def get(url):
         return r.read()
 
 
+def image_url(pid):
+    """The CDN address of a photo: the official API when UNSPLASH_ACCESS_KEY is set, else the photo page's og:image."""
+    import os
+    import re
+    key = os.environ.get("UNSPLASH_ACCESS_KEY")
+    if key:
+        meta = json.loads(get(f"https://api.unsplash.com/photos/{pid}?client_id={key}"))
+        get(meta["links"]["download_location"] + f"&client_id={key}")   # counts the download, as the API guidelines ask
+        base = meta["urls"]["raw"]
+    else:
+        html = get(f"https://unsplash.com/photos/{pid}").decode("utf-8", "replace")
+        m = re.search(r'<meta[^>]+property="og:image"[^>]+content="(https://images\.unsplash\.com/[^"?]+)', html) \
+            or re.search(r'content="(https://images\.unsplash\.com/photo-[^"?]+)', html)
+        if not m:
+            raise ValueError("no image address on the photo page")
+        base = m.group(1)
+    if not base.startswith("https://images.unsplash.com/"):
+        raise ValueError(f"unexpected image host: {base[:60]}")
+    sep = "&" if "?" in base else "?"
+    return base + sep + "w=2400&fm=jpg&q=85&fit=max"
+
+
 def main():
     OUT.mkdir(exist_ok=True)
     kept, problems = [], []
@@ -33,7 +55,7 @@ def main():
         dst = OUT / f"{p['id']}.jpg"
         try:
             if not dst.exists():
-                raw = get(f"https://unsplash.com/photos/{p['id']}/download?force=true&w=2400")
+                raw = get(image_url(p["id"]))
                 im = ImageOps.exif_transpose(Image.open(io.BytesIO(raw))).convert("RGB")
                 if im.width < im.height * 1.2:
                     problems.append(f"{p['id']}: not landscape ({im.width}x{im.height})")
