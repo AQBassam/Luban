@@ -131,7 +131,9 @@ button{font:inherit;border:1px solid var(--line);background:var(--bg);color:var(
   // Twilight angles in degrees below the horizon, or a fixed interval in minutes after Maghrib.
   // Sources for each authority are listed in docs/PRAYER-METHODS.md.
   const METHODS = {
-    oman:     { fajr: 18,   isha: 17,  label: { ar: 'سلطنة عُمان (18°/17°)', en: 'Oman (18°/17°)' } },
+    // Oman: 18°/17° plus the ministry's 5-minute precaution after Fajr (see docs/PRAYER-METHODS.md)
+    oman:     { fajr: 18,   isha: 17,  adjust: { dhuhr: 5, asr: 5, maghrib: 5, isha: 5 },
+                label: { ar: 'سلطنة عُمان (وزارة الأوقاف)', en: 'Oman (Ministry of Awqaf)' } },
     gulf:     { fajr: 19.5, ishaMin: 90, label: { ar: 'منطقة الخليج', en: 'Gulf Region' } },
     mwl:      { fajr: 18,   isha: 17,  label: { ar: 'رابطة العالم الإسلامي', en: 'Muslim World League' } },
     makkah:   { fajr: 18.5, ishaMin: 90, ishaMinRamadan: 120, label: { ar: 'أم القرى (مكة)', en: 'Umm al-Qura, Makkah' } },
@@ -237,11 +239,11 @@ button{font:inherit;border:1px solid var(--line);background:var(--bg);color:var(
       t.isha = sunset + night * m.isha / 60;
     }
 
-    const off = opt.offsets || {};
+    const off = opt.offsets || {};   // the owner's own minutes, on top of the method's
     const out = {};
     for (const k of KEYS) {
       const local = t[k] + tz - lon / 15;   // hours, local clock
-      out[k] = wrap(local * 60 + (+off[k] || 0), 1440);
+      out[k] = wrap(local * 60 + ((m.adjust && m.adjust[k]) || 0) + (+off[k] || 0), 1440);
     }
     return out;
   }

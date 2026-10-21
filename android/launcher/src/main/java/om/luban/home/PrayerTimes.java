@@ -14,6 +14,8 @@ public final class PrayerTimes {
 
     /** fajr angle, isha angle (NaN when isha is minutes), isha minutes, Ramadan isha minutes, maghrib angle (NaN = sunset) */
     private static final Map<String, double[]> METHODS = new HashMap<>();
+    /** minutes the authority itself adds to each of KEYS */
+    private static final Map<String, double[]> ADJUST = new HashMap<>();
     static {
         double N = Double.NaN;
         METHODS.put("oman", new double[] {18, 17, 0, 0, N});
@@ -30,6 +32,8 @@ public final class PrayerTimes {
         METHODS.put("turkey", new double[] {18, 17, 0, 0, N});
         METHODS.put("france", new double[] {12, 12, 0, 0, N});
         METHODS.put("tehran", new double[] {17.7, 14, 0, 0, 4.5});
+        // Oman: the Ministry of Awqaf's 5-minute precaution on every prayer after Fajr (same as the JS `adjust`)
+        ADJUST.put("oman", new double[] {0, 0, 5, 5, 5, 5});
     }
 
     private PrayerTimes() {}
@@ -61,7 +65,9 @@ public final class PrayerTimes {
     /** Minutes after local midnight for each of KEYS (fractional; the caller rounds). */
     public static double[] compute(int y, int m, int d, double lat, double lon, String tz, String method,
                                    boolean hanafi, double[] offsets, boolean ramadan) {
-        double[] me = METHODS.containsKey(method) ? METHODS.get(method) : METHODS.get("oman");
+        if (!METHODS.containsKey(method)) method = "oman";
+        double[] me = METHODS.get(method);
+        double[] adj = ADJUST.get(method);
         double tzh = zoneOffsetHours(tz, y, m, d);
         Calendar c = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
         c.clear();
@@ -106,7 +112,7 @@ public final class PrayerTimes {
         double[] out = new double[6];
         for (int i = 0; i < 6; i++) {
             double local = t[i] + tzh - lon / 15;
-            out[i] = wrap(local * 60 + (offsets != null ? offsets[i] : 0), 1440);
+            out[i] = wrap(local * 60 + (adj != null ? adj[i] : 0) + (offsets != null ? offsets[i] : 0), 1440);
         }
         return out;
     }

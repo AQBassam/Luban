@@ -31,12 +31,21 @@ const enc = s => Buffer.from(JSON.stringify(s)).toString('base64').replace(/\+/g
 
 // ---------- prayer engine against published times
 {
-  const muscat = P.compute({ y: 2026, m: 10, d: 19 }, { lat: 23.588, lon: 58.3829, tz: 'Asia/Muscat' }, { method: 'oman' });
-  const got = P.KEYS.map(k => P.hhmm(muscat[k])).join(' ');
-  // khaleejcalculators.com/prayer-times/muscat, 19 Oct 2026 (MWL 18/17 as used for Oman): 04:50 06:05 11:52 15:09 17:37 18:48
-  const want = ['04:50', '06:05', '11:52', '15:09', '17:37', '18:48'];
-  const close = P.KEYS.every((k, i) => Math.abs(muscat[k] - (+want[i].slice(0, 2) * 60 + +want[i].slice(3))) <= 1.5);
-  check('prayer: Muscat matches the published table within a minute', close, got);
+  // The Ministry of Awqaf's own calendar app (تقويم عُمان), shared as text on 21 Oct 2026: Fajr Dhuhr Asr Maghrib Isha
+  const ministry = {
+    muscat:  ['04:51', '11:57', '15:15', '17:42', '18:52'], salalah: ['05:05', '12:13', '15:34', '18:04', '19:11'],
+    khasab:  ['05:00', '12:05', '15:21', '17:47', '19:00'], sur:     ['04:46', '11:52', '15:10', '17:38', '18:48'],
+    ibri:    ['04:58', '12:04', '15:22', '17:49', '19:00'], sohar:   ['04:58', '12:03', '15:20', '17:47', '18:58'],
+  };
+  const cities = require('../content/cities.json').cities, five = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'];
+  let worst = 0, exact = 0;
+  for (const id in ministry) {
+    const c = cities.find(x => x.id === id);
+    const r = P.compute({ y: 2026, m: 10, d: 21 }, { lat: c.lat, lon: c.lon, tz: 'Asia/Muscat' }, { method: 'oman' });
+    five.forEach((k, i) => { const d = Math.abs(Math.round(r[k]) - (+ministry[id][i].slice(0, 2) * 60 + +ministry[id][i].slice(3)));
+      worst = Math.max(worst, d); if (!d) exact++; });
+  }
+  check('prayer: Oman method within a minute of the ministry calendar in 6 wilayats', worst <= 1, `worst ${worst} min, ${exact}/30 exact`);
   const oslo = P.compute({ y: 2026, m: 6, d: 21 }, { lat: 59.91, lon: 10.75, tz: 'Europe/Oslo' }, { method: 'mwl' });
   check('prayer: high latitude in midsummer still gives ordered times', oslo.fajr < oslo.sunrise && oslo.maghrib < oslo.isha + (oslo.isha < 600 ? 1440 : 0));
   const ram = P.compute({ y: 2027, m: 2, d: 15 }, { lat: 21.42, lon: 39.83, tz: 'Asia/Riyadh' }, { method: 'makkah', ramadan: true });

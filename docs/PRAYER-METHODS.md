@@ -10,7 +10,7 @@ accuracy, which is what published calendars round to anyway.
 
 | id | Fajr | Isha | Used by default for |
 |---|---|---|---|
-| `oman` | 18° | 17° | Oman |
+| `oman` | 18° | 17° (+5 min on Dhuhr, Asr, Maghrib, Isha) | Oman |
 | `makkah` | 18.5° | 90 min after Maghrib (120 in Ramadan) | Saudi Arabia |
 | `gulf` | 19.5° | 90 min | Bahrain |
 | `qatar` | 18° | 90 min | Qatar |
@@ -25,10 +25,12 @@ accuracy, which is what published calendars round to anyway.
 | `france` | 12° | 12° | France |
 | `tehran` | 17.7° | 14° (Maghrib at 4.5°) | — |
 
-**Oman (`oman`):** 18°/17° reproduces the published Muscat table to the minute on 19 October 2026 (Fajr 04:50,
-Sunrise 06:05, Dhuhr 11:52, Asr 15:09, Maghrib 17:37, Isha 18:48; `tests/page.test.mjs` keeps checking it).
-The Ministry of Awqaf and Religious Affairs publishes its own calendar with small local adjustments; the phone
-settings page has a ± minutes field per prayer for matching it exactly.
+**Oman (`oman`):** 18°/17°, plus the 5-minute precaution (احتياط) that the Ministry of Awqaf and Religious Affairs
+adds to Dhuhr, Asr, Maghrib and Isha (Fajr and Sunrise are not shifted). Checked against the ministry's own calendar
+app (تقويم عُمان) for Muscat, Salalah, Khasab, Sur, Ibri and Sohar on 21 October 2026: every time within one minute,
+most to the minute; the remaining minute comes from the reference point the ministry uses for each wilayat, which it
+does not publish. `tests/page.test.mjs` keeps checking all 30 times. The phone settings page still has a ± minutes
+field per prayer for anyone who follows a local mosque.
 
 **High latitudes** (above ~48° in summer the sun may not reach the Fajr/Isha angle): the "angle ÷ 60 of the night"
 rule, as most calculators use.
@@ -45,5 +47,5 @@ that follow a local sighting, Oman among them.
 
 - [Aladhan: calculation methods](https://aladhan.com/calculation-methods)
 - [ITL / Arabeyes method notes](https://github.com/arabeyes-org/ITL/blob/master/prayertime/doc/method-info.md)
-- [Muscat prayer times, khaleejcalculators.com](https://khaleejcalculators.com/prayer-times/muscat) (the Oman check above)
+- [Ministry of Awqaf and Religious Affairs](https://www.mara.gov.om) and its calendar app تقويم عُمان (the Oman check above)
 - [PrayTimes.org: calculation](https://praytimes.org/docs/calculation)
