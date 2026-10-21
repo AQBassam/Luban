@@ -18,7 +18,10 @@ locale). A push to the repository therefore cannot reach any TV unless CI signed
 test passed.
 
 **Staged rollout:** a new bundle goes to `screen-canary` first: TVs whose owner picked the canary channel, plus one
-TV in ten (by a stable per-install number). `promote.yml` moves it to `screen-stable` after 48 hours.
+TV in ten (by a stable per-install number). `promote.yml` moves it to `screen-stable` once it is 48 hours old and has
+not been replaced; it checks daily, so in practice after 48 to 72 hours. Age is the only test: Luban collects nothing
+from TVs, so problems are found by owners on the canary channel, and a bad bundle is stopped by publishing a fixed one
+(a newer version replaces it everywhere) or by not promoting it.
 
 ## 2. The page has no special rights
 

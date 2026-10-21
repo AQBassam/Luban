@@ -107,13 +107,15 @@ body.ltr .mk{align-items:flex-start;margin-left:0;margin-right:2.8rem}
 .mk .v{font-weight:600;color:var(--ink);margin:.2rem 0}
 .mk .d{font-size:1.6rem}
 .mk .d.up{color:var(--foam)}.mk .d.down{color:#FF9A85}
+.mk.stale .v{color:var(--ink-3)}
 #match{display:flex;align-items:center}
 #match span{margin:0 .7rem}
 #match .vs{color:var(--resin)}
 #match .live{color:#FF9A85;font-weight:600}
-#credit{position:fixed;bottom:2rem;left:7.2rem;font-size:1.4rem;color:var(--ink-3);display:none}
+#credit{position:fixed;bottom:2rem;left:7.2rem;font-size:1.4rem;color:var(--ink-3)}
 body.ltr #credit{left:auto;right:7.2rem}
-body.photos #credit{display:block}
+#credit .cr{margin-left:2.4rem}
+body.ltr #credit .cr{margin-left:0;margin-right:2.4rem}
 
 /* the dial */
 #dialbox{flex:none;width:80rem;display:flex;align-items:center;justify-content:center}
@@ -434,7 +436,7 @@ body.night .smoke{opacity:.4;animation:none}
       nationalDayIn: n => `العيد الوطني العُماني بعد ${n}`, nationalDay: 'كل عام وعُمان بخير — العيد الوطني',
       khareef: 'موسم خريف ظفار', ramadanDay: n => `رمضان — اليوم ${n}`, ramadanIn: n => `رمضان بعد ${n}`,
       eidFitr: 'عيد الفطر مبارك', eidAdha: 'عيد الأضحى مبارك', arafah: 'يوم عرفة', friday: 'جمعة مباركة',
-      gold: 'الذهب ر.ع/غ', brent: 'برنت $', btc: 'بيتكوين $', spx: 'S&P 500', live: 'مباشر', ft: 'انتهت',
+      gold: 'ذهب (سعر عالمي) ر.ع/غ', asOf: 'حتى', srcWeather: 'الطقس', srcMarkets: 'الأسعار', srcShows: 'المسلسلات', srcMatches: 'المباريات', brent: 'برنت $', btc: 'بيتكوين $', spx: 'S&P 500', live: 'مباشر', ft: 'انتهت',
       today: 'اليوم', tomorrow: 'غداً', photo: 'تصوير',
       weather: {0:'صحو',1:'صحو غالباً',2:'غائم جزئياً',3:'غائم',45:'ضباب',48:'ضباب',51:'رذاذ',53:'رذاذ',55:'رذاذ',
         61:'مطر خفيف',63:'مطر',65:'مطر غزير',66:'مطر متجمد',67:'مطر متجمد',71:'ثلج',73:'ثلج',75:'ثلج كثيف',
@@ -451,7 +453,7 @@ body.night .smoke{opacity:.4;animation:none}
       nationalDayIn: n => `Oman National Day in ${n}`, nationalDay: 'Happy National Day, Oman',
       khareef: 'Dhofar Khareef season', ramadanDay: n => `Ramadan — day ${n}`, ramadanIn: n => `Ramadan in ${n}`,
       eidFitr: 'Eid al-Fitr Mubarak', eidAdha: 'Eid al-Adha Mubarak', arafah: 'Day of Arafah', friday: "Jumu'ah Mubarak",
-      gold: 'Gold OMR/g', brent: 'Brent $', btc: 'Bitcoin $', spx: 'S&P 500', live: 'LIVE', ft: 'FT',
+      gold: 'Gold (global) OMR/g', asOf: 'as of', srcWeather: 'Weather', srcMarkets: 'Prices', srcShows: 'Shows', srcMatches: 'Matches', brent: 'Brent $', btc: 'Bitcoin $', spx: 'S&P 500', live: 'LIVE', ft: 'FT',
       today: 'Today', tomorrow: 'Tomorrow', photo: 'Photo',
       weather: {0:'Clear',1:'Mostly clear',2:'Partly cloudy',3:'Cloudy',45:'Fog',48:'Fog',51:'Drizzle',53:'Drizzle',55:'Drizzle',
         61:'Light rain',63:'Rain',65:'Heavy rain',66:'Freezing rain',67:'Freezing rain',71:'Snow',73:'Snow',75:'Heavy snow',
@@ -843,6 +845,7 @@ body.night .smoke{opacity:.4;animation:none}
     const box = clear($('wx')), w = state.weather;
     if (!w) return;
     box.append(icon(w.code, w.day, w.dust), h('span', 't', dg(w.t) + '°'), h('span', '', w.dust ? T.dust : (T.weather[w.code] || '')));
+    renderCredit();
   }
 
   // ---------- markets: Yahoo through the app's proxy or the server; CoinGecko directly
@@ -869,7 +872,7 @@ body.night .smoke{opacity:.4;animation:none}
         }
       } catch (e) { /* keep the last value */ }
     }));
-    for (const k of Object.keys(got)) if (got[k] && isFinite(got[k].price)) state.markets[k] = got[k];
+    for (const k of Object.keys(got)) if (got[k] && isFinite(got[k].price)) state.markets[k] = { price: got[k].price, change: got[k].change, at: Date.now() };
     store.set('markets', state.markets);
     renderMarkets();
   }
@@ -885,8 +888,15 @@ body.night .smoke{opacity:.4;animation:none}
         const up = q.change >= 0;
         el.append(h('span', 'd ' + (up ? 'up' : 'down'), (up ? '▲ ' : '▼ ') + dg(Math.abs(q.change).toFixed(2)) + '%'));
       }
+      // older than two hours (the source or the network is down): say when it is from, rather than pass it off as now
+      if (!q.at || Date.now() - q.at > 2 * 3600e3) {
+        el.classList.add('stale');
+        if (q.at) { const l = local(new Date(q.at)); el.append(h('span', 'd', `${T.asOf} ${fmtTime(l.h * 60 + l.mi)}`)); }
+      }
       box.append(el);
     }
+    renderCredit();
+    fitCard();   // the footer grew or shrank: the card's room changed
   }
 
   // ---------- matches (football-data.org, through the data server: the free token stays on the server)
@@ -940,6 +950,8 @@ body.night .smoke{opacity:.4;animation:none}
     else box.append(h('span', 'vs', '×'));
     box.append(h('span', '', teamName(ev.idAwayTeam, ev.strAwayTeam)));
     box.append(h('span', live ? 'live' : '', live ? T.live : done ? T.ft : whenText(at)));
+    renderCredit();
+    fitCard();
   }
 
   // ---------- new episodes (TVMaze, CORS-friendly)
@@ -1028,6 +1040,19 @@ body.night .smoke{opacity:.4;animation:none}
     }
   }
 
+  /** Every source on screen, named (their terms ask for it): only the ones whose data is showing now. */
+  function renderCredit() {
+    const box = clear($('credit')), parts = [];
+    if (state.weather) parts.push([T.srcWeather, 'Open-Meteo']);
+    const shown = S.markets.filter(id => state.markets[id]);
+    if (shown.length) parts.push([T.srcMarkets, [shown.some(id => MARKETS[id].yahoo) ? 'Yahoo Finance' : '', shown.indexOf('btc') >= 0 ? 'CoinGecko' : ''].filter(Boolean).join(', ')]);
+    if (S.panel === 'shows' && state.shows.length) parts.push([T.srcShows, 'TVmaze']);
+    if (S.teams.length && $('match').firstChild) parts.push([T.srcMatches, 'football-data.org']);
+    if (state.photoCredit && S.bg === 'photos') parts.push([T.photo, state.photoCredit]);
+    // each name in its own <bdi>, so Latin names keep their place inside Arabic text
+    parts.forEach(([label, name], i) => { const sp = h('span', 'cr', label + ': '); sp.append(h('bdi', '', name)); box.append(sp); });
+  }
+
   // ---------- photos: four a day out of the set, a new one every 20 minutes
   let photoSlot = -1, layer = 0;
   function photoUrl(f) { return IN_APP ? '/photos/' + f : (window.LUBAN_PHOTO_BASE || 'photos/') + f; }
@@ -1042,7 +1067,8 @@ body.night .smoke{opacity:.4;animation:none}
     img.onload = () => {
       const a = $(layer ? 'ph-a' : 'ph-b'), b = $(layer ? 'ph-b' : 'ph-a');
       a.style.backgroundImage = `url("${img.src}")`; a.classList.add('on'); b.classList.remove('on'); layer ^= 1;
-      $('credit').textContent = `${S.lang === 'ar' ? ph.place_ar : ph.place_en} · ${T.photo}: ${ph.by}${ph.licence ? ' · ' + ph.licence : ''}`;
+      state.photoCredit = `${S.lang === 'ar' ? ph.place_ar : ph.place_en}, ${ph.by}${ph.licence ? ', ' + ph.licence : ''}`;
+      renderCredit();
     };
     img.src = photoUrl(ph.f);
   }
@@ -1086,7 +1112,7 @@ body.night .smoke{opacity:.4;animation:none}
     window.addEventListener('hashchange', () => location.reload());
   }
 
-  window.LubanScreen = { start, fitCard, tableHijri, _state: state };
+  window.LubanScreen = { start, fitCard, tableHijri, _state: state, _render: { markets: renderMarkets, weather: renderWeather } };
   start();
 })();
 

@@ -15,7 +15,7 @@ it; this list records which problems found in that review Luban was designed to 
 | 8 | Actions pinned by moving tags, a third-party release action with write access, the keystore left on disk | Actions pinned by SHA (enforced by a test), releases with `gh`, keystore deleted after the build step | `ci.yml`, `tests/check.py` |
 | 9 | Public CORS proxies and one shared free API key on every TV | No public proxies: an allowlisted proxy inside the app, and an optional cached data server for all TVs | `Net.java`, `server/` |
 | 10 | No Gradle wrapper | Wrapper with a pinned distribution checksum | `android/gradle/wrapper/` |
-| 11 | No licence | MIT for the code; fonts OFL; photos credited under the Unsplash License | `LICENSE` |
+| 11 | No licence | MIT for the code; fonts OFL; photos from Wikimedia Commons under free licences, each credited | `LICENSE` |
 | — | A boot action that never arrives (not direct-boot aware), unbounded downloads, one global download lock, debloat that limited Play Store in the background | None of these: no locked-boot action, every download capped, a lock per photo, no Play Store restriction (it would delay app security updates) | `BootReceiver.java`, `Net.java`, `Photos.java`, `tools/luban.py` |
 
 ## Ideas from the review, built in

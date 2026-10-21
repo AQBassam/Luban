@@ -379,6 +379,7 @@
     const box = clear($('wx')), w = state.weather;
     if (!w) return;
     box.append(icon(w.code, w.day, w.dust), h('span', 't', dg(w.t) + '°'), h('span', '', w.dust ? T.dust : (T.weather[w.code] || '')));
+    renderCredit();
   }
 
   // ---------- markets: Yahoo through the app's proxy or the server; CoinGecko directly
@@ -405,7 +406,7 @@
         }
       } catch (e) { /* keep the last value */ }
     }));
-    for (const k of Object.keys(got)) if (got[k] && isFinite(got[k].price)) state.markets[k] = got[k];
+    for (const k of Object.keys(got)) if (got[k] && isFinite(got[k].price)) state.markets[k] = { price: got[k].price, change: got[k].change, at: Date.now() };
     store.set('markets', state.markets);
     renderMarkets();
   }
@@ -421,8 +422,15 @@
         const up = q.change >= 0;
         el.append(h('span', 'd ' + (up ? 'up' : 'down'), (up ? '▲ ' : '▼ ') + dg(Math.abs(q.change).toFixed(2)) + '%'));
       }
+      // older than two hours (the source or the network is down): say when it is from, rather than pass it off as now
+      if (!q.at || Date.now() - q.at > 2 * 3600e3) {
+        el.classList.add('stale');
+        if (q.at) { const l = local(new Date(q.at)); el.append(h('span', 'd', `${T.asOf} ${fmtTime(l.h * 60 + l.mi)}`)); }
+      }
       box.append(el);
     }
+    renderCredit();
+    fitCard();   // the footer grew or shrank: the card's room changed
   }
 
   // ---------- matches (football-data.org, through the data server: the free token stays on the server)
@@ -476,6 +484,8 @@
     else box.append(h('span', 'vs', '×'));
     box.append(h('span', '', teamName(ev.idAwayTeam, ev.strAwayTeam)));
     box.append(h('span', live ? 'live' : '', live ? T.live : done ? T.ft : whenText(at)));
+    renderCredit();
+    fitCard();
   }
 
   // ---------- new episodes (TVMaze, CORS-friendly)
@@ -564,6 +574,19 @@
     }
   }
 
+  /** Every source on screen, named (their terms ask for it): only the ones whose data is showing now. */
+  function renderCredit() {
+    const box = clear($('credit')), parts = [];
+    if (state.weather) parts.push([T.srcWeather, 'Open-Meteo']);
+    const shown = S.markets.filter(id => state.markets[id]);
+    if (shown.length) parts.push([T.srcMarkets, [shown.some(id => MARKETS[id].yahoo) ? 'Yahoo Finance' : '', shown.indexOf('btc') >= 0 ? 'CoinGecko' : ''].filter(Boolean).join(', ')]);
+    if (S.panel === 'shows' && state.shows.length) parts.push([T.srcShows, 'TVmaze']);
+    if (S.teams.length && $('match').firstChild) parts.push([T.srcMatches, 'football-data.org']);
+    if (state.photoCredit && S.bg === 'photos') parts.push([T.photo, state.photoCredit]);
+    // each name in its own <bdi>, so Latin names keep their place inside Arabic text
+    parts.forEach(([label, name], i) => { const sp = h('span', 'cr', label + ': '); sp.append(h('bdi', '', name)); box.append(sp); });
+  }
+
   // ---------- photos: four a day out of the set, a new one every 20 minutes
   let photoSlot = -1, layer = 0;
   function photoUrl(f) { return IN_APP ? '/photos/' + f : (window.LUBAN_PHOTO_BASE || 'photos/') + f; }
@@ -578,7 +601,8 @@
     img.onload = () => {
       const a = $(layer ? 'ph-a' : 'ph-b'), b = $(layer ? 'ph-b' : 'ph-a');
       a.style.backgroundImage = `url("${img.src}")`; a.classList.add('on'); b.classList.remove('on'); layer ^= 1;
-      $('credit').textContent = `${S.lang === 'ar' ? ph.place_ar : ph.place_en} · ${T.photo}: ${ph.by}${ph.licence ? ' · ' + ph.licence : ''}`;
+      state.photoCredit = `${S.lang === 'ar' ? ph.place_ar : ph.place_en}, ${ph.by}${ph.licence ? ', ' + ph.licence : ''}`;
+      renderCredit();
     };
     img.src = photoUrl(ph.f);
   }
@@ -622,6 +646,6 @@
     window.addEventListener('hashchange', () => location.reload());
   }
 
-  window.LubanScreen = { start, fitCard, tableHijri, _state: state };
+  window.LubanScreen = { start, fitCard, tableHijri, _state: state, _render: { markets: renderMarkets, weather: renderWeather } };
   start();
 })();

@@ -114,6 +114,18 @@ class ServerTest(unittest.TestCase):
         [t.start() for t in ts]; [t.join() for t in ts]
         self.assertEqual(n["calls"], 1)
 
+    def test_ready_names_states_not_errors(self):
+        self.get("/v1/markets?ids=gold")
+        code, body, _ = self.get("/ready")
+        self.assertEqual(code, 200)
+        self.assertEqual(body["sources"]["markets"]["state"], "fresh")
+        self.assertIn(body["sources"]["shows"]["state"], ("idle", "fresh"))
+        app.STATUS["shows"] = {"fail": __import__("time").time()}
+        code, body, _ = self.get("/ready")
+        self.assertEqual((code, body["sources"]["shows"]["state"]), (503, "failing"), "failing with no data at all")
+        self.assertNotIn("error", json.dumps(body), "no upstream error text is published")
+        app.STATUS.pop("shows")
+
     def test_validation(self):
         CALLS.clear()
         self.assertEqual(self.get("/v1/matches?teams=1;rm,abc")[1], {})

@@ -4,13 +4,11 @@ docs/PHOTO-CREDITS.md. Run by .github/workflows/photos.yml (it needs the network
 
 Source: Wikimedia Commons, the Featured, Quality and Valued images of Oman (peer-reviewed), only free licences (CC0, public
 domain, CC BY, CC BY-SA), each credited on screen and in the credits file with author, licence and link.
-With UNSPLASH_ACCESS_KEY set, the hand-picked list in content/photo-picks.json is fetched from Unsplash's API instead.
 Nothing is guessed: a photo without a clear free licence or author is skipped.
 """
 import html
 import io
 import json
-import os
 import re
 import sys
 import urllib.parse
@@ -110,20 +108,6 @@ def commons_candidates():
     return picked
 
 
-def unsplash_candidates(key):
-    out = []
-    for p in json.loads((ROOT / "content/photo-picks.json").read_text(encoding="utf-8")):
-        try:
-            meta = json.loads(get(f"https://api.unsplash.com/photos/{p['id']}?client_id={key}"))
-            get(meta["links"]["download_location"] + f"&client_id={key}")   # the API guidelines ask for this ping
-            out.append({"id": p["id"], "url": meta["urls"]["raw"] + "&w=2400&fm=jpg&q=85&fit=max", "by": p["by"],
-                        "licence": "Unsplash License", "link": f"https://unsplash.com/photos/{p['id']}",
-                        "place_ar": p["place_ar"], "place_en": p["place_en"]})
-        except Exception as e:  # noqa: BLE001
-            print(f"!! {p['id']}: {e}")
-    return out
-
-
 def studio_backdrop(im):
     """True for an object shot on black: the whole border is near-black."""
     g = im.convert("L").resize((160, 90))
@@ -135,8 +119,7 @@ def studio_backdrop(im):
 
 def main():
     OUT.mkdir(exist_ok=True)
-    key = os.environ.get("UNSPLASH_ACCESS_KEY")
-    candidates = unsplash_candidates(key) if key else commons_candidates()
+    candidates = commons_candidates()
     print(f"{len(candidates)} usable candidates")
     kept, problems = [], []
     for c in candidates:

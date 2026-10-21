@@ -4,7 +4,8 @@
     GET /v1/matches?teams=86,81               recent results and next fixtures per team (football-data.org)
     GET /v1/shows?genres=Drama&langs=&min=7   new episodes this week (TVMaze)
     GET /v1/teams?q=real madrid               team search in the 12 free competitions (football-data.org)
-    GET /health
+    GET /health                               the process answers (liveness, for Coolify)
+    GET /ready                                each source: fresh, stale, failing or idle, and the age of its data
 
 Only these upstream hosts are ever contacted; requests are validated before any of them is. Standard library only.
 Configuration (environment): PORT (8080), FOOTBALL_DATA_KEY (free token from football-data.org/client/register; without
@@ -41,6 +42,37 @@ SKIP_TYPES = {"News", "Talk Show", "Sports", "Game Show"}
 POOL = ThreadPoolExecutor(max_workers=8)
 
 
+SOURCES = {"m:": "markets", "fd:window": "matches", "fd:teams": "teams", "shows:": "shows"}
+STATUS = {}   # source -> {"ok": time of the last good fetch, "fail": time of the last failed one}
+
+
+def note(key, ok):
+    for prefix, name in SOURCES.items():
+        if key.startswith(prefix):
+            STATUS.setdefault(name, {})["ok" if ok else "fail"] = time.time()
+
+
+def ready():
+    """A short public status: no error messages, no upstream details."""
+    ttl = {"markets": TTL["markets"], "matches": TTL["matches"], "teams": TTL["teams"], "shows": TTL["shows"]}
+    now, out = time.time(), {}
+    for name in ttl:
+        st = STATUS.get(name, {})
+        ok, fail = st.get("ok"), st.get("fail")
+        age = round(now - ok) if ok else None
+        if name in ("matches", "teams") and not FD_KEY:
+            state = "off"
+        elif ok is None and fail is None:
+            state = "idle"          # nobody has asked yet
+        elif fail and (ok is None or fail > ok):
+            state = "failing"       # serving the last good data, if any (stale-if-error, up to a day)
+        else:
+            state = "fresh" if age <= 2 * ttl[name] else "stale"
+        out[name] = {"state": state, "age": age}
+    bad = [n for n, v in out.items() if v["state"] == "failing" and (v["age"] is None or v["age"] > 86400)]
+    return {"ok": not bad, "sources": out}
+
+
 class Cache:
     """In-memory TTL cache; a failed refresh serves the last good value for up to a day (stale-if-error)."""
 
@@ -62,7 +94,9 @@ class Cache:
                 return hit[1]
             try:
                 val = fn()
+                note(key, True)
             except Exception:
+                note(key, False)
                 if hit and now - hit[0] < 86400:
                     return hit[1]
                 raise
@@ -247,6 +281,9 @@ class Handler(BaseHTTPRequestHandler):
         try:
             if url.path == "/health":
                 return self.send(200, {"ok": True})
+            if url.path == "/ready":
+                r = ready()
+                return self.send(200 if r["ok"] else 503, r, 30)
             if url.path == "/v1/markets":
                 ids = [m for m in csv(qs, "ids", r"[a-z]{2,8}", 8) if m in MARKETS]
                 return self.send(200, markets(ids), 300)

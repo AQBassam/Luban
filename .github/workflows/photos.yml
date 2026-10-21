@@ -1,12 +1,12 @@
 name: Photos
 
-# Downloads the photos listed in content/photo-picks.json (Unsplash is not reachable from every dev machine) and
-# commits them with their credits, then starts CI so the apps carry them.
+# Downloads photos of Oman from Wikimedia Commons (Featured, Quality and Valued images, free licences only) and
+# commits them with their credits, then starts CI so the apps carry them. Run by hand, or when tools/photos.py changes.
 on:
   workflow_dispatch:
   push:
     branches: [main]
-    paths: ['content/photo-picks.json', 'tools/photos.py']
+    paths: ['tools/photos.py']
 
 permissions:
   contents: write
@@ -22,8 +22,6 @@ jobs:
           python-version: '3.12'
       - run: pip install pillow==11.2.1
       - run: .github/annotate.sh Photos python3 tools/photos.py
-        env:
-          UNSPLASH_ACCESS_KEY: ${{ secrets.UNSPLASH_ACCESS_KEY }}   # optional
       - run: python3 web/build.py
       - name: Commit
         env:
@@ -33,6 +31,6 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add photos content/photos.json docs/PHOTO-CREDITS.md dist
           if git diff --cached --quiet; then echo "no change"; exit 0; fi
-          git commit -m "Photos from content/photo-picks.json"
+          git commit -m "Photos from Wikimedia Commons"
           git push
           gh workflow run ci.yml --ref main

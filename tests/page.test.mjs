@@ -139,6 +139,21 @@ const text = (page, sel) => page.$eval(sel, e => e.textContent);
   await page.close();
 }
 {
+  // sources are named on screen, and a price that stopped updating says when it is from
+  const page = await open({ markets: ['gold', 'btc'] });
+  await page.evaluate(() => {
+    const st = window.LubanScreen._state;
+    st.weather = { t: 31, code: 0, day: true, dust: false };
+    st.markets = { gold: { price: 4000, change: 0.5, at: Date.now() - 5 * 3600e3 }, btc: { price: 100000, change: -1, at: Date.now() } };
+    window.LubanScreen._render.weather(); window.LubanScreen._render.markets();
+  });
+  const credit = await text(page, '#credit'), mk = await text(page, '#markets');
+  check('credits: weather and prices name their sources', credit.includes('Open-Meteo') && credit.includes('Yahoo Finance') && credit.includes('CoinGecko'), credit);
+  check('markets: gold is labelled a global price; a 5-hour-old price says "as of"', mk.includes('سعر عالمي') && mk.includes('حتى') &&
+    (await page.$$('#markets .mk.stale')).length === 1, mk);
+  await page.close();
+}
+{
   // a football-data.org result as the server passes it on: short names, Arabic from teams-ar.json, the source named
   const page = await open({ panel: 'matches', teams: [{ id: '86', en: 'Real Madrid', ar: 'ريال مدريد' }] });
   await page.evaluate(() => {
@@ -152,8 +167,12 @@ const text = (page, sel) => page.$eval(sel, e => e.textContent);
   await page.close();
 }
 for (const vp of [{ width: 1920, height: 1080 }, { width: 1280, height: 720 }]) {
-  const page = await open({ panel: 'verse' }, null, vp);
+  const page = await open({ panel: 'verse', markets: ['gold', 'brent', 'btc', 'spx'] }, null, vp);
   const overflow = await page.evaluate(() => {
+    // worst case: the markets row under the card, one of them stale (an extra line)
+    const now = Date.now(), st = window.LubanScreen._state;
+    st.markets = { gold: { price: 4000, change: 1, at: now - 5 * 3600e3 }, brent: { price: 66, change: 1, at: now }, btc: { price: 1e5, change: 1, at: now }, spx: { price: 6000, change: 1, at: now } };
+    window.LubanScreen._render.markets();
     const D = window.LUBAN_DATA, card = document.getElementById('card'), body = document.getElementById('card-body'), bad = [];
     const items = D.verses.map(v => ({ cls: 'quote', t: v.text })).concat(D.hadith.map(h => ({ cls: 'quote hadith', t: h.text })));
     for (const it of items) {

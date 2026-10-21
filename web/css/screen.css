@@ -99,13 +99,15 @@ body.ltr .mk{align-items:flex-start;margin-left:0;margin-right:2.8rem}
 .mk .v{font-weight:600;color:var(--ink);margin:.2rem 0}
 .mk .d{font-size:1.6rem}
 .mk .d.up{color:var(--foam)}.mk .d.down{color:#FF9A85}
+.mk.stale .v{color:var(--ink-3)}
 #match{display:flex;align-items:center}
 #match span{margin:0 .7rem}
 #match .vs{color:var(--resin)}
 #match .live{color:#FF9A85;font-weight:600}
-#credit{position:fixed;bottom:2rem;left:7.2rem;font-size:1.4rem;color:var(--ink-3);display:none}
+#credit{position:fixed;bottom:2rem;left:7.2rem;font-size:1.4rem;color:var(--ink-3)}
 body.ltr #credit{left:auto;right:7.2rem}
-body.photos #credit{display:block}
+#credit .cr{margin-left:2.4rem}
+body.ltr #credit .cr{margin-left:0;margin-right:2.4rem}
 
 /* the dial */
 #dialbox{flex:none;width:80rem;display:flex;align-items:center;justify-content:center}

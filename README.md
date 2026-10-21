@@ -60,7 +60,7 @@ python3 tools/luban.py setup
 ## لماذا هو آمن؟
 
 - **تحديثات الشاشة موقّعة:** لا يقبل التلفزيون أي تحديث إلا إذا كان موقّعاً بمفتاح لُبان، وأحدث مما يعمل
-  عليه. تصل التحديثات أولاً إلى عُشر الأجهزة، ثم إلى البقية بعد يومين.
+  عليه. تصل التحديثات أولاً إلى عُشر الأجهزة، ثم إلى البقية بعد يومين على الأقل إن لم يحلّ محلها تحديث أحدث (يُفحص ذلك مرة يومياً). المدة وحدها لا تثبت سلامة التحديث، فلُبان لا يجمع أي بيانات من التلفزيونات.
 - **صفحة الشاشة بلا صلاحيات:** لا تصل إلى ملفات التلفزيون، ولا إلى أي جهاز في الشبكة المنزلية.
 - **الإعدادات من الجوال تحتاج الرمز:** لا يستطيع أي جهاز آخر على الواي فاي تغيير شيء ما لم يرَ الشاشة.
 - **التطبيقات موقّعة ومثبّتة البصمة:** ترفض أداة التركيب أي APK بتوقيع مختلف، ولا تحذف تطبيقاً لتتجاوز هذا الرفض.
@@ -148,14 +148,15 @@ tests/          run.sh runs everything: static rules, server, setup tool, signat
 
 A push to `main` runs the tests, builds and lints both APKs, and (with the signing secrets set) publishes
 `v1.N`, `apk-latest`, and a signed screen bundle to `screen-canary`; `promote.yml` moves it to `screen-stable`
-after 48 hours. Repository secrets: `LUBAN_KEYSTORE_B64`, `LUBAN_KEYSTORE_PASSWORD`, `LUBAN_UPDATE_KEY`.
+once it is 48 hours old and has not been replaced (checked daily, so 48–72 h). Age is the only test: no data is
+collected from TVs, so a bad bundle is caught by testing it on real TVs on the canary channel, not by telemetry. Repository secrets: `LUBAN_KEYSTORE_B64`, `LUBAN_KEYSTORE_PASSWORD`, `LUBAN_UPDATE_KEY`.
 
 ## Credits
 
 Fonts: [El Messiri](https://github.com/Gue3bara/El-Messiri) and [Amiri](https://www.amirifont.org/) (SIL OFL).
 Photos: Wikimedia Commons photographers (Quality images of Oman), each with its licence in [docs/PHOTO-CREDITS.md](docs/PHOTO-CREDITS.md). Quran text: King Fahd Complex Uthmani
 Hafs edition and the Forty Hadith of an-Nawawi, via [fawazahmed0](https://github.com/fawazahmed0)'s public-domain
-datasets. Weather: [Open-Meteo](https://open-meteo.com). Matches: [football-data.org](https://www.football-data.org) (free plan: 12 competitions, scores delayed).
+datasets. Weather: [Open-Meteo](https://open-meteo.com). Matches: [football-data.org](https://www.football-data.org) (free plan: 12 competitions, scores delayed). Prices: Yahoo Finance and CoinGecko; shows: TVmaze. Every source, its terms and limits: [docs/DATA-SOURCES.md](docs/DATA-SOURCES.md).
 Shows: [TVMaze](https://www.tvmaze.com). Package ratings: [UAD-ng](https://github.com/Universal-Debloater-Alliance/universal-android-debloater-next-generation).
 
 MIT licence. Made in Oman · صُنع في عُمان

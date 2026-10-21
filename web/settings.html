@@ -42,6 +42,7 @@ button{font:inherit;border:1px solid var(--line);background:var(--bg);color:var(
 #msg{position:fixed;inset-inline:16px;bottom:80px;text-align:center;font-weight:700;padding:10px;border-radius:12px;display:none}
 #msg.ok{display:block;background:var(--ok);color:#fff}#msg.err{display:block;background:var(--err);color:#fff}
 .hint{font-size:13px;color:var(--ink-2);margin:6px 0 0}
+.src{margin:0;padding-inline-start:18px;font-size:14px;color:var(--ink-2)}.src li{margin:6px 0}.src a{color:var(--luban)}
 </style>
 </head>
 <body>
@@ -109,6 +110,18 @@ button{font:inherit;border:1px solid var(--line);background:var(--bg);color:var(
   <label data-t="genres">الأنواع (فارغ = الكل)</label><div class="grid" id="genres"></div>
   <label for="minRating" data-t="minRating">أدنى تقييم</label>
   <select id="minRating"><option>0</option><option>6</option><option>6.5</option><option>7</option><option>7.5</option><option>8</option></select>
+</section>
+
+<section>
+  <h2 data-t="sources">مصادر البيانات</h2>
+  <ul class="src">
+    <li><a href="https://open-meteo.com" target="_blank" rel="noopener">Open-Meteo</a>: الطقس والغبار · weather and dust (CC BY 4.0)</li>
+    <li><a href="https://finance.yahoo.com" target="_blank" rel="noopener">Yahoo Finance</a>، <a href="https://www.coingecko.com" target="_blank" rel="noopener">CoinGecko</a>: الأسعار · prices. الذهب سعر عالمي استرشادي من عقد COMEX الآجل محوّلاً إلى ر.ع/غ، وليس سعر محلات الذهب · gold is a global reference (COMEX futures) converted to OMR/g, not a shop price</li>
+    <li><a href="https://www.football-data.org" target="_blank" rel="noopener">football-data.org</a>: المباريات، والنتائج متأخرة قليلاً · matches, scores slightly delayed</li>
+    <li><a href="https://www.tvmaze.com" target="_blank" rel="noopener">TVmaze</a>: المسلسلات · TV shows (CC BY-SA)</li>
+    <li><a href="https://commons.wikimedia.org" target="_blank" rel="noopener">Wikimedia Commons</a>: صور عُمان، لكل صورة مصوّرها ورخصتها · photos of Oman, each credited</li>
+    <li>القرآن: مجمع الملك فهد (الرسم العثماني) · الحديث: الأربعون النووية · مواقيت الصلاة تُحسب على التلفزيون نفسه</li>
+  </ul>
 </section>
 
 <section>

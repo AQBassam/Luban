@@ -8,7 +8,7 @@ every 10 minutes instead of a thousand.
 
 1. **New resource → Public/Private repository** → `AQBassam/Luban`, branch `main`.
 2. **Build pack:** Dockerfile · **Base directory:** `/server` · **Port:** `8080`.
-3. **Health check path:** `/health`.
+3. **Health check path:** `/health` (the process answers). `/ready` shows each source's state and data age.
 4. Environment: `FOOTBALL_DATA_KEY`: a free token from <https://www.football-data.org/client/register> (without it the
    matches card stays empty; the token never leaves the server). Optional: `CORS_ORIGIN`.
 5. Give it a domain with HTTPS (Coolify does Let's Encrypt), e.g. `https://luban.example.com`.
