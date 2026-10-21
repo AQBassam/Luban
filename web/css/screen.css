@@ -39,8 +39,10 @@ body.ltr{direction:ltr}
   animation:drift 90s ease-in-out infinite alternate}
 #bg .ph.on{opacity:1}
 #bg .veil{background:
-  linear-gradient(to top, rgba(6,9,11,.88) 0%, rgba(6,9,11,.35) 34%, rgba(6,9,11,.10) 55%, rgba(6,9,11,.55) 100%),
-  radial-gradient(ellipse at 70% 45%, rgba(6,9,11,0) 0%, rgba(6,9,11,.35) 100%)}
+  linear-gradient(to top, rgba(6,9,11,.90) 0%, rgba(6,9,11,.58) 30%, rgba(6,9,11,.42) 58%, rgba(6,9,11,.62) 100%),
+  radial-gradient(ellipse at 50% 45%, rgba(6,9,11,.10) 0%, rgba(6,9,11,.40) 100%)}
+#place,#dates,#ampm,#credit,#match{text-shadow:0 .2rem 1.2rem rgba(0,0,0,.65),0 0 .4rem rgba(0,0,0,.5)}
+.crenel{filter:drop-shadow(0 .2rem .6rem rgba(0,0,0,.6))}
 @keyframes drift{from{transform:scale(1.04) translate(0,0)}to{transform:scale(1.10) translate(-1.2%,-.8%)}}
 body.night #bg .ph{filter:brightness(.55) saturate(.8)}
 body.night #stage{opacity:.72}

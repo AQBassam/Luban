@@ -1,4 +1,6 @@
 <p align="center"><img src="docs/brand/hero.png" alt="لُبان · Luban" width="100%"></p>
+<p align="center"><img src="docs/brand/screen-ar.jpg" alt="شاشة لُبان في نزوى" width="100%"></p>
+<p align="center"><img src="docs/brand/screen-en.jpg" alt="Luban screen in London" width="100%"></p>
 
 <div dir="rtl">
 
