@@ -31,7 +31,8 @@ android {
         targetCompatibility JavaVersion.VERSION_17
     }
 
-    lint { abortOnError true; checkReleaseBuilds true; disable 'ExpiredTargetSdkVersion', 'OldTargetApi', 'GradleDependency' }
+    // MissingLeanbackLauncher: a home screen is reached with the Home key, not listed among the apps it shows
+    lint { abortOnError true; checkReleaseBuilds true; disable 'ExpiredTargetSdkVersion', 'OldTargetApi', 'GradleDependency', 'MissingLeanbackLauncher' }
 }
 rootProject.ext.releaseSigning(android)
 

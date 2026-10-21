@@ -72,6 +72,14 @@ jobs:
           rm -f "$RUNNER_TEMP/release.p12"   # the key never outlives the build step
           exit $rc
 
+      - name: Lint warnings as annotations
+        if: always()
+        run: |
+          for r in android/*/build/intermediates/lint_intermediate_text_report/release/*/lint-results-release.txt; do
+            [ -f "$r" ] || continue
+            grep -E ': (Warning|Error):' "$r" | sed "s#$PWD/##" | head -20 | while IFS= read -r l; do echo "::warning title=lint::$l"; done
+          done
+
       - name: Collect, checksum, and check the signer
         run: |
           mkdir out
