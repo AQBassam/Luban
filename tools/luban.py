@@ -429,6 +429,37 @@ def adb_off(tv):
     say("   ✓ ADB is off. To use this tool again: Developer options → USB debugging on.")
 
 
+def check(tv):
+    """Read-only: what this TV is and what setup would meet, before anything is installed or changed."""
+    g = lambda prop: tv.shell(f"getprop {prop}").strip()
+    sdk = int(g("ro.build.version.sdk") or 0)
+    say(f"model: {g('ro.product.manufacturer')} {g('ro.product.model')} ({g('ro.product.device')}), "
+        f"Android {g('ro.build.version.release')} (API {sdk}), build {g('ro.build.id')}")
+    say(f"   {'✓' if sdk >= 26 else '✗'} Luban needs Android 8 (API 26) or newer")
+    tv_kind = "Google TV" if "com.google.android.apps.tv.launcherx" in tv.packages() else "Android TV"
+    mem = re.search(r"MemTotal:\s+(\d+)", tv.shell("cat /proc/meminfo"))
+    ram = f"{int(mem.group(1)) // 1024} MB" if mem else "?"
+    say(f"system: {tv_kind}; chip {g('ro.board.platform') or g('ro.hardware')}; RAM {ram}")
+    # the WebView in use, whichever package provides it (Google's, AOSP's, or the maker's)
+    wv = re.search(r"Current WebView package \(name, version\): \([^,]+, ([^)]+)\)", tv.shell("dumpsys webviewupdate")) or \
+        re.search(r"versionName=(\S+)", tv.shell("dumpsys package com.google.android.webview") or "")
+    major = int(wv.group(1).split(".")[0]) if wv else 0
+    say(f"web engine (Android System WebView): {wv.group(1) if wv else 'not found'}  "
+        f"{'✓' if major >= 61 else '! older than Chrome 61: update it from the Play Store first'}")
+    say(f"home now: {tv.home_resolves_to()[0].strip()}")
+    homes = [l.strip() for l in tv.shell("cmd package query-activities --brief -a android.intent.action.MAIN "
+                                         "-c android.intent.category.HOME").splitlines() if "/" in l]
+    say("home apps installed: " + ", ".join(homes))
+    if SETUP_APP in tv.packages():
+        owns = wifi_owned_by_setup(tv)
+        say(f"setup wizard (setupwraith): present; {'OWNS the saved Wi-Fi network: setup will not turn it off' if owns else 'does not own the Wi-Fi network'}")
+    say(f"screensaver now: {tv.shell('settings get secure screensaver_components').strip()}")
+    for pkg in ("om.luban.screen", "om.luban.home"):
+        v = re.search(r"versionName=(\S+)", tv.shell(f"dumpsys package {pkg}"))
+        say(f"{pkg}: {v.group(1) if v else 'not installed'}")
+    say("nothing was changed.")
+
+
 def find():
     """TVs on this computer's networks with ADB open (port 5555)."""
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -473,7 +504,7 @@ def main(argv=None):
     p.add_argument("which", choices=["screen", "home", "all"])
     p.add_argument("--tag", default="apk-latest")
     p.add_argument("--force-reinstall", action="store_true")
-    for name in ("home", "debloat", "status", "update", "reset", "adb-off"):
+    for name in ("home", "debloat", "status", "update", "reset", "adb-off", "check"):
         sub.add_parser(name)
     p = sub.add_parser("settings")
     p.add_argument("--city"); p.add_argument("--lang", choices=["ar", "en"]); p.add_argument("--digits", choices=["latn", "arab"])
@@ -531,6 +562,8 @@ def main(argv=None):
             say("screensaver: " + tv.shell("settings get secure screensaver_components").strip())
             say("home: " + tv.home_resolves_to()[0])
             say("disabled by Luban: " + ", ".join(load_state(tv).get("disabled", [])))
+        elif a.cmd == "check":
+            check(tv)
         elif a.cmd == "reset":
             reset(tv)
         elif a.cmd == "adb-off":
