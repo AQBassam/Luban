@@ -20,7 +20,8 @@ const enc = s => Buffer.from(JSON.stringify(s)).toString('base64').replace(/\+/g
   check('settings: unknown method → country default', s.method === '');
   check('settings: offsets clamped to ±30, unknown keys dropped', s.offsets.fajr === 30 && !('bad' in s.offsets));
   check('settings: team ids must be numbers', s.teams.length === 1 && s.teams[0].id === '12');
-  check('settings: data server must be https', s.api === '');
+  check('settings: a plain-http data server is refused (the default stays)', s.api === 'https://luban.bassamailab.xyz');
+  check('settings: the data server can be turned off', sanitize({ api: '' }, P.METHODS).api === '');
   check('settings: unknown keys dropped', !('extra' in s));
   const c = sanitize({ city: 'custom', place: { en: 'Reykjavik', lat: 64.1, lon: -21.9, tz: 'Not/AZone' } }, P.METHODS);
   check('settings: custom place with a bad time zone falls back', c.city === 'muscat' && c.place === null);

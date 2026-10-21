@@ -26,7 +26,7 @@
     shows: { genres: [], langs: [], minRating: 7 },
     omanDays: true,             // National Day countdown, Khareef season
     night: true,                // dim after Isha until before Fajr
-    api: '',                    // optional aggregator server (server/), e.g. https://luban.example.com
+    api: 'https://luban.bassamailab.xyz',   // the shared data server (server/); '' = every TV asks the sources itself
     channel: 'stable',          // stable | canary: which signed screen updates this TV takes
   };
 
@@ -73,7 +73,8 @@
     }
     s.omanDays = input.omanDays !== false;
     s.night = input.night !== false;
-    if (typeof input.api === 'string' && /^https:\/\/[A-Za-z0-9.-]+(:\d{2,5})?(\/[A-Za-z0-9._~\/-]*)?$/.test(input.api)) s.api = input.api.replace(/\/+$/, '');
+    if (input.api === '') s.api = '';   // the owner turned the shared server off
+    else if (typeof input.api === 'string' && /^https:\/\/[A-Za-z0-9.-]+(:\d{2,5})?(\/[A-Za-z0-9._~\/-]*)?$/.test(input.api)) s.api = input.api.replace(/\/+$/, '');
     s.channel = pick(input.channel, ['stable', 'canary'], s.channel);
     return s;
   }

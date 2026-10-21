@@ -11,7 +11,9 @@ every 10 minutes instead of a thousand.
 3. **Health check path:** `/health`.
 4. Optional environment: `SPORTSDB_KEY` (a TheSportsDB Patreon key lifts the free key's limits), `CORS_ORIGIN`.
 5. Give it a domain with HTTPS (Coolify does Let's Encrypt), e.g. `https://luban.example.com`.
-6. On each TV: phone settings → Advanced → Data server → that address.
+6. The apps use `https://luban.bassamailab.xyz` by default (`web/js/settings.js`); a fork changes that line. Owners can clear it in phone settings → Advanced.
+
+**Live instance:** `https://luban.bassamailab.xyz` (Coolify on a VPS behind the host's nginx: the container is published on `127.0.0.1:8090` only, nginx terminates TLS with certbot and rate-limits to 10 requests a second per address).
 
 ## Run locally
 

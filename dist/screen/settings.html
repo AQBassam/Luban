@@ -111,7 +111,7 @@ button{font:inherit;border:1px solid var(--line);background:var(--bg);color:var(
 
 <section>
   <h2 data-t="advanced">متقدم</h2>
-  <label for="api" data-t="api">خادم البيانات (اختياري)</label><input id="api" type="url" dir="ltr" placeholder="https://luban.example.com">
+  <label for="api" data-t="api">خادم البيانات (اختياري)</label><input id="api" type="url" dir="ltr" placeholder="(فارغ = بلا خادم) · empty = none">
   <label for="channel" data-t="channel">قناة التحديث</label>
   <select id="channel"><option value="stable" data-t="stable">مستقرة</option><option value="canary" data-t="canary">تجريبية (تصل أولاً)</option></select>
 </section>
@@ -284,7 +284,7 @@ button{font:inherit;border:1px solid var(--line);background:var(--bg);color:var(
     shows: { genres: [], langs: [], minRating: 7 },
     omanDays: true,             // National Day countdown, Khareef season
     night: true,                // dim after Isha until before Fajr
-    api: '',                    // optional aggregator server (server/), e.g. https://luban.example.com
+    api: 'https://luban.bassamailab.xyz',   // the shared data server (server/); '' = every TV asks the sources itself
     channel: 'stable',          // stable | canary: which signed screen updates this TV takes
   };
 
@@ -331,7 +331,8 @@ button{font:inherit;border:1px solid var(--line);background:var(--bg);color:var(
     }
     s.omanDays = input.omanDays !== false;
     s.night = input.night !== false;
-    if (typeof input.api === 'string' && /^https:\/\/[A-Za-z0-9.-]+(:\d{2,5})?(\/[A-Za-z0-9._~\/-]*)?$/.test(input.api)) s.api = input.api.replace(/\/+$/, '');
+    if (input.api === '') s.api = '';   // the owner turned the shared server off
+    else if (typeof input.api === 'string' && /^https:\/\/[A-Za-z0-9.-]+(:\d{2,5})?(\/[A-Za-z0-9._~\/-]*)?$/.test(input.api)) s.api = input.api.replace(/\/+$/, '');
     s.channel = pick(input.channel, ['stable', 'canary'], s.channel);
     return s;
   }
