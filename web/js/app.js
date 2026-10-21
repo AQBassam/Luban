@@ -368,6 +368,15 @@
     rows.forEach((r, i) => { const li = h('li', i === nowIndex ? 'now' : ''); li.append(h('span', 'a', r[0]), h('span', 'b', r[1])); ul.append(li); });
     return ul;
   }
+  /** Long texts step the font down until the card holds them (never below 70%). */
+  function fitCard() {
+    const card = $('card'), q = card.querySelector('.quote');
+    if (!q) return;
+    q.style.fontSize = '';
+    const base = parseFloat(getComputedStyle(q).fontSize);
+    for (let f = 1; f >= 0.7 && card.scrollHeight > card.clientHeight + 1; f -= 0.05) q.style.fontSize = (base * f) + 'px';
+  }
+
   function renderCard(animate) {
     const card = $('card'), body = $('card-body'), title = $('card-title');
     if (S.panel === 'none') { card.hidden = true; return; }
@@ -376,6 +385,7 @@
     if (S.panel === 'verse') {
       const q = quoteOfDay(); title.textContent = q.title;
       body.append(h('div', q.cls, S.digits === 'arab' ? q.quote.replace(/\d+/g, dg) : q.quote), h('div', 'src', q.src));
+      fitCard();
     } else if (S.panel === 'prayers') {
       ensureTimes(); title.textContent = T.prayersToday;
       const nx = nextPrayer(), friday = local().wd === 'Fri';
@@ -469,6 +479,6 @@
     window.addEventListener('hashchange', () => location.reload());
   }
 
-  window.LubanScreen = { start, _state: state };
+  window.LubanScreen = { start, fitCard, _state: state };
   start();
 })();

@@ -18,7 +18,8 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - run: docker build -t luban-server server
       - run: |
-          docker run -d --name s -p 18080:8080 luban-server || { echo "::error title=docker run::$(docker ps -a; docker logs s 2>&1 | tail -5)"; exit 1; }
+          docker images
+          out=$(docker run -d --name s -p 18080:8080 luban-server 2>&1) || { echo "::error title=docker run::$(echo "$out" | tr '\n' ' ')"; exit 1; }
           for i in $(seq 1 20); do curl -fsS localhost:18080/health && break; sleep 1; done
           curl -fsS localhost:18080/health | grep -q '"ok":true'
           test "$(curl -s -o /dev/null -w '%{http_code}' 'localhost:18080/v1/teams?q=%3Cx%3E')" = 400

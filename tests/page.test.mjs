@@ -115,11 +115,12 @@ for (const vp of [{ width: 1920, height: 1080 }, { width: 1280, height: 720 }]) 
       const q = document.createElement('div'); q.className = it.cls; q.textContent = it.t;
       const s = document.createElement('div'); s.className = 'src'; s.textContent = 'x';
       body.append(q, s);
+      window.LubanScreen.fitCard();
       if (card.scrollHeight > card.clientHeight + 1) bad.push(it.t.slice(0, 40));
     }
     return { n: items.length, bad };
   });
-  check(`screen: every verse and hadith fits the card at ${vp.width}x${vp.height} (${overflow.n})`, overflow.bad.length === 0, overflow.bad.slice(0, 3));
+  check(`screen: every verse and hadith fits the card (font steps down at most 30%) at ${vp.width}x${vp.height} (${overflow.n})`, overflow.bad.length === 0, overflow.bad.slice(0, 3));
   await page.close();
 }
 
