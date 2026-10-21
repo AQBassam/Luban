@@ -242,12 +242,26 @@ def screensaver_on(tv):
     say("   ✓ Luban is the screensaver")
 
 
+NOT_A_HOME = re.compile(r"ResolverActivity|FallbackHome|om\.luban\.home|com\.android\.settings")
+
+
 def stock_home(tv):
+    """The TV's own home, whatever the maker: what Android opens for Home right now (Google TV, Android TV, Xiaomi
+    PatchWall, Philips, Sony, a box's custom launcher…). Falls back to the known Google homes, then to the list of
+    every installed home."""
+    now = tv.home_resolves_to()[0].strip()
+    if "/" in now and not NOT_A_HOME.search(now):
+        return now
     have = tv.packages()
     for pkg, comp in STOCK_HOMES.items():
         if pkg in have:
             return comp
-    raise Stop("no known stock home on this TV; keeping it as it is (skip `home`)")
+    homes = [l.strip() for l in tv.shell("cmd package query-activities --brief -a android.intent.action.MAIN "
+                                          "-c android.intent.category.HOME").splitlines() if "/" in l]
+    homes = [h for h in homes if not NOT_A_HOME.search(h)]
+    if homes:
+        return homes[0]
+    raise Stop("could not tell which home screen this TV uses; keeping it as it is (run setup with --no-home)")
 
 
 def wait_for(tv, what, seconds=24):
@@ -482,6 +496,8 @@ def main(argv=None):
         elif a.cmd == "settings":
             settings(tv, a)
         elif a.cmd == "favourites":
+            if a.apps and not re.fullmatch(r"[A-Za-z0-9_.]+(,[A-Za-z0-9_.]+)*", a.apps):
+                raise Stop("favourites: package names separated by commas, e.g. com.google.android.youtube.tv,com.netflix.ninja")
             extra = f"--es apps {a.apps}" if a.apps else ""
             say(tv.broadcast("om.luban.home/.AdbReceiver", "om.luban.home.SET" if a.apps else "om.luban.home.GET", extra))
         elif a.cmd == "update":

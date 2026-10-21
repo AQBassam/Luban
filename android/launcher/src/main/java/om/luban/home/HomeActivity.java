@@ -47,6 +47,10 @@ public class HomeActivity extends Activity {
     private LinearLayout favRow, allRow;
     private List<Apps.App> apps = new ArrayList<>();
     private boolean ar = true, arabicDigits = false, clock24 = false;
+    private int hijriOffset = 0;
+    /** the app rows are rebuilt only when something changed: rebuilding loads every app's banner (slow on small TVs) */
+    private boolean rowsDirty = true;
+    private int packagesSeq = -1;
 
     private final Runnable every30s = new Runnable() {
         @Override public void run() { card.tick(); main.postDelayed(this, 30_000); }
@@ -55,7 +59,7 @@ public class HomeActivity extends Activity {
         @Override public void onReceive(Context c, Intent i) { updateClock(); }
     };
     private final BroadcastReceiver packages = new BroadcastReceiver() {
-        @Override public void onReceive(Context c, Intent i) { buildRows(); }
+        @Override public void onReceive(Context c, Intent i) { rowsDirty = true; buildRows(); }
     };
 
     @Override
@@ -83,7 +87,9 @@ public class HomeActivity extends Activity {
         readLanguage();
         updateClock();
         updateNetwork();
-        buildRows();
+        android.content.pm.ChangedPackages changed = getPackageManager().getChangedPackages(Math.max(0, packagesSeq));
+        if (changed != null) { packagesSeq = changed.getSequenceNumber(); rowsDirty |= !changed.getPackageNames().isEmpty(); }
+        if (rowsDirty) buildRows();
         wallpaper.resume();
         main.postDelayed(every30s, 30_000);
     }
@@ -123,7 +129,7 @@ public class HomeActivity extends Activity {
     /** Called by AdbReceiver after the favourites changed from ADB. */
     static void favouritesChanged() {
         HomeActivity a = live.get();
-        if (a != null) a.main.post(a::buildRows);
+        if (a != null) a.main.post(() -> { a.rowsDirty = true; a.buildRows(); });
     }
 
     // ---------------------------------------------------------------- layout
@@ -163,13 +169,12 @@ public class HomeActivity extends Activity {
         clockLine.addView(clock);
         clockLine.addView(ampm);
         time.addView(clockLine);
-        View band = new View(this);
-        GradientDrawable g = new GradientDrawable(GradientDrawable.Orientation.RIGHT_LEFT, new int[] {Ui.RED, Ui.INK, Ui.GREEN});
-        g.setCornerRadius(Ui.dp(this, 2));
-        band.setBackground(g);
-        LinearLayout.LayoutParams bl = new LinearLayout.LayoutParams(Ui.dp(this, 54), Ui.dp(this, 4));
+        View flag = new View(this);
+        flag.setBackground(new OmanFlag());
+        flag.setContentDescription("علم سلطنة عُمان");
+        LinearLayout.LayoutParams bl = new LinearLayout.LayoutParams(Ui.dp(this, 36), Ui.dp(this, 18));
         bl.setMargins(0, Ui.dp(this, 8), 0, Ui.dp(this, 10));
-        time.addView(band, bl);
+        time.addView(flag, bl);
         dates = Ui.text(this, "", 17, Ui.regular(), Ui.INK2);
         time.addView(dates);
         top.addView(time, new LinearLayout.LayoutParams(0, -2, 1f));
@@ -233,6 +238,7 @@ public class HomeActivity extends Activity {
     // ---------------------------------------------------------------- app rows
 
     private void buildRows() {
+        rowsDirty = false;
         apps = Apps.load(this);
         View focused = getCurrentFocus();
         String focusedPkg = focused != null && focused.getTag() instanceof String ? (String) focused.getTag() : null;
@@ -303,7 +309,7 @@ public class HomeActivity extends Activity {
         actions.add(() -> open(new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:" + a.pkg)), null));
         new AlertDialog.Builder(this, android.R.style.Theme_Material_Dialog_Alert)
             .setTitle(a.label)
-            .setItems(items.toArray(new String[0]), (d, which) -> { actions.get(which).run(); buildRows(); })
+            .setItems(items.toArray(new String[0]), (d, which) -> { actions.get(which).run(); rowsDirty = true; buildRows(); })
             .show();
     }
 
@@ -317,6 +323,7 @@ public class HomeActivity extends Activity {
                 ar = !"en".equals(o.optString("lang"));
                 arabicDigits = "arab".equals(o.optString("digits"));
                 clock24 = o.optBoolean("clock24", false);
+                hijriOffset = Math.max(-2, Math.min(2, o.optInt("hijriOffset", 0)));
             }
         } catch (Exception ignored) { }
     }
@@ -335,7 +342,7 @@ public class HomeActivity extends Activity {
         IslamicCalendar ic = new IslamicCalendar(hij);
         ic.setCalculationType(IslamicCalendar.CalculationType.ISLAMIC_UMALQURA);
         hf.setCalendar(ic);
-        dates.setText(g + "  •  " + hf.format(new Date()) + (ar ? " هـ" : " AH"));
+        dates.setText(g + "  •  " + hf.format(new Date(System.currentTimeMillis() + hijriOffset * 86_400_000L)) + (ar ? " هـ" : " AH"));
     }
 
     private void updateNetwork() {

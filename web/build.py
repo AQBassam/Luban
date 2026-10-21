@@ -34,6 +34,7 @@ def data_json():
         "hadith": [{k: v[k] for k in ("text", "source")} for v in load("hadith.json")],
         "photos": load("photos.json"),
         "teamsAr": {k: v for k, v in load("teams-ar.json").items() if not k.startswith("_")},
+        "umalqura": load("umalqura.json"),
     }
     # </script> can never appear inside the inlined JSON
     return json.dumps(data, ensure_ascii=False, separators=(",", ":")).replace("</", "<\\/")

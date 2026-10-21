@@ -96,11 +96,15 @@ final class PrayerCard {
         }
         double mins = now.get(Calendar.HOUR_OF_DAY) * 60 + now.get(Calendar.MINUTE) + now.get(Calendar.SECOND) / 60.0;
         boolean friday = now.get(Calendar.DAY_OF_WEEK) == Calendar.FRIDAY;
+        // far north in summer Maghrib or Isha can fall after midnight: keep them after Dhuhr when comparing
+        double[] order = today.clone();
+        for (int i = 4; i < 6; i++) if (order[i] < order[2]) order[i] += 1440;
         int idx = -1;
-        for (int i = 0; i < 6; i++) if (i != 1 && today[i] > mins) { idx = i; break; }
-        double at = idx >= 0 ? today[idx] : tomorrow[0];
-        double leftMin = idx >= 0 ? at - mins : tomorrow[0] + 1440 - mins;
-        if (idx < 0) idx = 0;
+        for (int i = 0; i < 6; i++) if (i != 1 && order[i] > mins) { idx = i; break; }
+        boolean afterIsha = idx < 0;
+        double at = afterIsha ? tomorrow[0] : order[idx];
+        double leftMin = afterIsha ? tomorrow[0] + 1440 - mins : at - mins;
+        if (afterIsha) idx = 0;
         String name = idx == 2 && friday ? (ar ? "الجمعة" : "Jumu'ah") : (ar ? AR : EN)[idx];
         String city = ar ? cfg.optString("cityAr") : cfg.optString("cityEn");
 
@@ -112,7 +116,8 @@ final class PrayerCard {
         for (int i = 0; i < 5; i++) {
             int k = five[i];
             String n = k == 2 && friday ? (ar ? "الجمعة" : "Jumu'ah") : (ar ? AR : EN)[k];
-            small[i].setText(Ui.digits(n + "\n" + fmt(today[k], ar), arab));
+            double shown = afterIsha && k == 0 ? tomorrow[0] : today[k];   // after Isha: tomorrow's Fajr
+            small[i].setText(Ui.digits(n + "\n" + fmt(shown, ar), arab));
             small[i].setTextColor(k == idx ? Ui.LUBAN : Ui.INK2);
         }
     }

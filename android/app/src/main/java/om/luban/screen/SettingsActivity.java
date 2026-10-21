@@ -76,11 +76,12 @@ public class SettingsActivity extends Activity {
         text.setOrientation(LinearLayout.VERTICAL);
         root.addView(text, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
 
-        View band = new View(this);
-        GradientDrawable g = new GradientDrawable(GradientDrawable.Orientation.RIGHT_LEFT, new int[] {0xFFD52B1E, 0xFFF7F4EE, 0xFF1A8F4B});
-        g.setCornerRadius(dp(3));
-        band.setBackground(g);
-        text.addView(band, new LinearLayout.LayoutParams(dp(72), dp(6)));
+        View flag = new View(this);
+        flag.setBackground(new OmanFlag());
+        flag.setContentDescription("علم سلطنة عُمان");
+        LinearLayout.LayoutParams fl = new LinearLayout.LayoutParams(dp(48), dp(24));
+        fl.gravity = Gravity.START;
+        text.addView(flag, fl);
 
         text.addView(label("لُبان", 44, bold, INK, 12));
         text.addView(label("امسح الرمز بكاميرا جوالك لضبط المدينة والمواقيت والفرق وكل شيء.\nScan with your phone to set everything up.", 20, regular, INK2, 8));

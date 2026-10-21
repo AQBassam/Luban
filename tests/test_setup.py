@@ -83,6 +83,26 @@ class HomeSwitch(unittest.TestCase):
         self.assertEqual(tv.role, "com.google.android.apps.tv.launcherx")
 
 
+class AnyMaker(unittest.TestCase):
+    def setUp(self):
+        luban.HOME_DIR = Path(tempfile.mkdtemp())
+
+    def test_home_of_another_maker_is_found_and_restored(self):
+        tv = FakeTv()
+        tv.role = "com.mitv.tvhome"            # Xiaomi PatchWall
+        tv.packages = lambda flag="": {"com.mitv.tvhome"}
+        self.assertEqual(luban.stock_home(tv), "com.mitv.tvhome/.X")
+        tv.home_works = False
+        with self.assertRaises(luban.Stop):
+            luban.switch_home(tv)
+        self.assertEqual(tv.role, "com.mitv.tvhome", "the maker's own home is given back")
+
+    def test_luban_already_home_falls_back_to_known_homes(self):
+        tv = FakeTv()
+        tv.role = "om.luban.home"
+        self.assertEqual(luban.stock_home(tv), luban.STOCK_HOMES["com.google.android.apps.tv.launcherx"])
+
+
 class Install(unittest.TestCase):
     def test_signature_clash_never_uninstalls(self):
         luban.HOME_DIR = Path(tempfile.mkdtemp())

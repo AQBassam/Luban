@@ -8,13 +8,15 @@
 <style>
 @font-face{font-family:Tajawal;font-weight:400;src:url(fonts/tajawal-arabic-400-normal.woff2) format("woff2")}
 @font-face{font-family:Tajawal;font-weight:700;src:url(fonts/tajawal-arabic-700-normal.woff2) format("woff2")}
-:root{--bg:#F6F2EA;--card:#FFFFFF;--ink:#1D2326;--ink-2:#5B6469;--line:#E4DDD0;--luban:#B9822F;--luban-bg:#F3E4C8;--red:#D52B1E;--green:#1A8F4B;--ok:#1A8F4B;--err:#C0392B}
+:root{--bg:#F6F2EA;--card:#FFFFFF;--ink:#1D2326;--ink-2:#5B6469;--line:#E4DDD0;--luban:#B9822F;--luban-bg:#F3E4C8;--red:#C8102E;--green:#009A44;--ok:#1A8F4B;--err:#C0392B}
 @media (prefers-color-scheme:dark){:root{--bg:#101518;--card:#182024;--ink:#F2EEE6;--ink-2:#A7B0B4;--line:#2A3438;--luban:#E3B062;--luban-bg:#33291A}}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 Tajawal,system-ui,sans-serif;padding:0 16px 120px}
 header{position:sticky;top:0;background:var(--bg);padding:16px 0 10px;z-index:2}
 h1{margin:0;font-size:22px;display:flex;align-items:center;gap:10px}
-.band{width:34px;height:6px;border-radius:3px;background:linear-gradient(90deg,var(--red) 0 33%,#fff 33% 66%,var(--green) 66%);box-shadow:0 0 0 1px var(--line)}
+.flag{display:inline-block;width:36px;height:18px;border-radius:2px;flex:none;direction:ltr;
+  background:linear-gradient(90deg,#C8102E 0 25%,transparent 25%),linear-gradient(180deg,#fff 0 33.34%,#C8102E 33.34% 66.67%,#009A44 66.67%);
+  box-shadow:0 0 0 1px rgba(0,0,0,.25)}
 .sub{color:var(--ink-2);font-size:14px;margin-top:2px}
 section{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px 16px;margin:12px 0}
 section h2{margin:0 0 10px;font-size:17px;color:var(--luban)}
@@ -43,7 +45,7 @@ button{font:inherit;border:1px solid var(--line);background:var(--bg);color:var(
 </style>
 </head>
 <body>
-<header><h1><span class="band"></span><span data-t="title">إعدادات لُبان</span></h1><div class="sub" id="sub"></div></header>
+<header><h1><span class="flag" role="img" aria-label="علم سلطنة عُمان"></span><span data-t="title">إعدادات لُبان</span></h1><div class="sub" id="sub"></div></header>
 
 <section>
   <h2 data-t="place">المكان والوقت</h2>
@@ -154,7 +156,7 @@ button{font:inherit;border:1px solid var(--line);background:var(--bg);color:var(
   /** Offset of an IANA zone from UTC, in hours, at a given instant. */
   function zoneOffsetHours(tz, instant) {
     const p = new Intl.DateTimeFormat('en-US', {
-      timeZone: tz, hourCycle: 'h23', year: 'numeric', month: 'numeric', day: 'numeric',
+      timeZone: tz, hour12: false, year: 'numeric', month: 'numeric', day: 'numeric',
       hour: 'numeric', minute: 'numeric', second: 'numeric',
     }).formatToParts(instant).reduce((o, x) => (o[x.type] = +x.value, o), {});
     const asUtc = Date.UTC(p.year, p.month - 1, p.day, p.hour % 24, p.minute, p.second);

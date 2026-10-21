@@ -7,7 +7,7 @@ from PIL import Image, ImageDraw, ImageFilter, ImageFont
 
 ROOT = Path(__file__).resolve().parents[1]
 AMBER, AMBER_SOFT, INK, BG, BG2 = (227, 176, 98), (242, 214, 162), (247, 244, 238), (11, 16, 19), (36, 28, 18)
-RED, GREEN, WHITE = (213, 43, 30), (26, 143, 75), (247, 244, 238)
+RED, GREEN, WHITE = (200, 16, 46), (0, 154, 68), (255, 255, 255)   # Oman's flag (FOTW: Pantone 186 / 347)
 BOLD = str(ROOT / "assets/native/Tajawal-ExtraBold.ttf")
 MED = str(ROOT / "assets/native/Tajawal-Medium.ttf")
 
@@ -51,10 +51,13 @@ def icon(size):
     return out.resize((size, size), Image.LANCZOS)
 
 
-def flag_band(d, x, y, w, h):
-    third = w / 3
-    for i, c in enumerate((RED, WHITE, GREEN)):
-        d.rectangle((x + i * third, y, x + (i + 1) * third, y + h), fill=c)
+def flag(d, x, y, w):
+    """The flag of Oman, 1:2: a red hoist band (a quarter of the length), then white, red, green stripes. No emblem
+    at this size. Flags are never mirrored."""
+    h, hoist = w / 2, w / 4
+    for i, c in enumerate((WHITE, RED, GREEN)):
+        d.rectangle((x + hoist, y + i * h / 3, x + w, y + (i + 1) * h / 3), fill=c)
+    d.rectangle((x, y, x + hoist, y + h), fill=RED)
 
 
 def banner(w, h, sub=None):
@@ -68,7 +71,7 @@ def banner(w, h, sub=None):
     d.text((W * .38, H * .40), "لُبان", font=f, fill=INK, anchor="mm", direction="rtl", language="ar")
     f2 = ImageFont.truetype(MED, int(H * .12))
     d.text((W * .38, H * .70), sub or "LUBAN", font=f2, fill=AMBER_SOFT, anchor="mm")
-    flag_band(d, W * .38 - W * .06, H * .84, W * .12, H * .025)
+    flag(d, W * .38 - W * .035, H * .80, W * .07)
     return im.resize((w, h), Image.LANCZOS)
 
 

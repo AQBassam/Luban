@@ -25,6 +25,13 @@
 **مدن عُمان الإحدى عشرة كلها** (37 ولاية) في رأس القائمة، ثم مدن من الخليج والعالم، لكل منها منطقتها
 الزمنية وطريقة الحساب المعتمدة فيها. ويمكن إضافة أي مكان آخر بإحداثياته.
 
+## على أي تلفزيون يعمل؟
+
+على أي تلفزيون أو جهاز يعمل بنظام **Android TV أو Google TV (إصدار 8 فأحدث)**، أياً كانت الشركة المصنّعة: سوني وTCL
+وفيليبس وشاومي، وأجهزة Hisense العاملة بنظام Google TV، وNvidia Shield وChromecast. **لا يعمل** على سامسونج (Tizen)
+ولا إل جي (webOS) ولا Hisense VIDAA ولا Roku. وAmazon Fire TV لا يسمح بتغيير شاشة التوقف ولا الواجهة.
+التفاصيل في [docs/COMPATIBILITY.md](docs/COMPATIBILITY.md).
+
 ## التركيب
 
 ### ① على التلفزيون
@@ -87,6 +94,11 @@ Luban (لُبان) is frankincense, which Oman has traded with the world for tho
 own time zone and its local calculation method, or any place by coordinates. **14 calculation methods**, Hanafi
 Asr, per-prayer minute adjustments, per-prayer iqama, Hijri date adjustment ([docs/PRAYER-METHODS.md](docs/PRAYER-METHODS.md)).
 **Arabic and English**, Western (0–9) or Arabic-Indic (٠–٩) digits.
+
+## Which TVs
+
+Any TV or box with **Android TV / Google TV 8.0+**, whatever the maker. Not Samsung (Tizen), LG (webOS), Hisense VIDAA
+or Roku; Fire TV does not allow a third-party screensaver or home. See [docs/COMPATIBILITY.md](docs/COMPATIBILITY.md).
 
 ## Install
 

@@ -34,6 +34,10 @@ def grep(pattern, globs):
 check("web: no innerHTML / outerHTML / insertAdjacentHTML / document.write",
       not grep(r"innerHTML|outerHTML|insertAdjacentHTML|document\.write", ["web/js/*.js"]))
 check("web: no eval or new Function", not grep(r"\beval\(|new Function\(", ["web/js/*.js"]))
+# the screen runs in TV WebViews that may be years old (Android 8 era, Chrome ~61): no newer syntax or APIs there
+screen_js = ["web/js/app.js", "web/js/prayer.js", "web/js/settings.js", "web/js/i18n.js"]
+check("web: screen code avoids features older TV WebViews lack (?. ?? fromEntries flat replaceAll hourCycle …)",
+      not grep(r"\?\.[A-Za-z_(\[]|\?\?|Object\.fromEntries|\.flat\(|\.flatMap\(|\.replaceAll\(|structuredClone|\.at\(-?\d|hourCycle|Promise\.allSettled|\{\s*\.\.\.", screen_js))
 
 # --- the apps: no file:// pages, no universal access, no JS bridge, https only
 java = ["android/*/src/main/java/**/*.java"]

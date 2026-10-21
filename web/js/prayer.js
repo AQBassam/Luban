@@ -34,7 +34,7 @@
   /** Offset of an IANA zone from UTC, in hours, at a given instant. */
   function zoneOffsetHours(tz, instant) {
     const p = new Intl.DateTimeFormat('en-US', {
-      timeZone: tz, hourCycle: 'h23', year: 'numeric', month: 'numeric', day: 'numeric',
+      timeZone: tz, hour12: false, year: 'numeric', month: 'numeric', day: 'numeric',
       hour: 'numeric', minute: 'numeric', second: 'numeric',
     }).formatToParts(instant).reduce((o, x) => (o[x.type] = +x.value, o), {});
     const asUtc = Date.UTC(p.year, p.month - 1, p.day, p.hour % 24, p.minute, p.second);

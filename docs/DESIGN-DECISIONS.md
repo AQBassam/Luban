@@ -35,3 +35,17 @@ it; this list records which problems found in that review Luban was designed to 
   `tests/verifier.sh` runs the verifier under an Arabic locale.
 - Long verses did not fit the card at every resolution: the card now steps its font down (at most 30%) and the
   browser test checks every verse and hadith at 1080p and 720p.
+
+## Second review
+
+- **Flag:** the three-colour strip read as another country's flag. Every place now draws Oman's actual flag in
+  miniature: the red hoist band, then white, red and green stripes (FOTW colours), never mirrored.
+- **Any maker's home screen:** the setup tool knew only Google's homes and would stop on Xiaomi, Philips or a box's
+  own launcher; it now asks Android which home is in use and restores exactly that one.
+- **Older TV web engines:** `hourCycle`, `Object.fromEntries`, `.flat()` and an unguarded `AbortController` are gone
+  from the screen, a static rule keeps them out, and an Umm al-Qura table (1440–1480 AH, checked against ICU every
+  day 2019–2048) replaces a calendar the engine may silently lack.
+- **After Isha** the Fajr tile now shows tomorrow's Fajr, the one it counts down to; **far north in summer** an Isha
+  after midnight is no longer skipped (screen and home card, with tests).
+- **Home screen speed:** app rows are rebuilt only when apps change, not on every return to Home; the Hijri date
+  there now follows the ± day setting.

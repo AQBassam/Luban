@@ -15,9 +15,9 @@
 :root{
   --luban:#E3B062;      /* frankincense resin */
   --luban-soft:#F2D6A2;
-  --om-red:#D52B1E;     /* the three colours of the Omani flag, used as a thin band only */
-  --om-green:#1A8F4B;
-  --om-white:#F7F4EE;
+  --om-red:#C8102E;     /* Oman's flag (FOTW: Pantone 186 / 347): red hoist band, then white, red, green stripes */
+  --om-green:#009A44;
+  --om-white:#FFFFFF;
   --ink:#F7F4EE;
   --ink-2:rgba(247,244,238,.78);
   --ink-3:rgba(247,244,238,.55);
@@ -61,7 +61,7 @@ body.night #stage{opacity:.72}
 .chip{font-size:2rem;font-weight:500;padding:.7rem 1.8rem;border-radius:99rem;background:var(--glass);
   border:1px solid var(--line);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);white-space:nowrap}
 .chip.luban{border-color:rgba(227,176,98,.55);color:var(--luban-soft)}
-.chip.nat{background:linear-gradient(90deg,rgba(213,43,30,.35),rgba(26,143,75,.35));border-color:rgba(247,244,238,.35)}
+.chip.nat{display:inline-flex;align-items:center;gap:1rem;border-color:rgba(247,244,238,.35)}
 #markets{display:flex;gap:2.6rem;font-size:2rem;color:var(--ink-2)}
 .mk{display:flex;flex-direction:column;align-items:flex-end;gap:.3rem;min-width:9rem}
 body.ltr .mk{align-items:flex-start}
@@ -84,8 +84,13 @@ body.ltr .mk{align-items:flex-start}
 #card{width:62rem;max-height:56rem;padding:3rem 3.4rem;border-radius:2.4rem;background:var(--glass);
   border:1px solid var(--line);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);overflow:hidden}
 .card-hd{display:flex;align-items:center;gap:1.4rem;font-size:2.2rem;font-weight:700;color:var(--luban-soft);margin-bottom:2rem}
-.band{width:5.4rem;height:.6rem;border-radius:.3rem;
-  background:linear-gradient(90deg,var(--om-red) 0 33%,var(--om-white) 33% 66%,var(--om-green) 66%)}
+/* the flag of Oman in miniature, 1:2: a red band at the hoist (a quarter of the length), then white, red and green
+   stripes of equal height. Flags are never mirrored, so this stays the same in right-to-left layouts. */
+.flag{display:inline-block;flex:none;width:4.4rem;height:2.2rem;border-radius:.25rem;direction:ltr;
+  background:linear-gradient(90deg,var(--om-red) 0 25%,transparent 25%),
+             linear-gradient(180deg,var(--om-white) 0 33.34%,var(--om-red) 33.34% 66.67%,var(--om-green) 66.67%);
+  box-shadow:0 0 0 1px rgba(0,0,0,.35)}
+.chip .flag{width:3.2rem;height:1.6rem}
 #card-body{font-size:2.4rem;line-height:1.55}
 #card-body.fade{animation:fade .9s ease}
 @keyframes fade{from{opacity:0;transform:translateY(.8rem)}to{opacity:1;transform:none}}

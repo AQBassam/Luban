@@ -9,7 +9,7 @@ import android.widget.TextView;
 /** Colours, fonts and the focus look shared by every part of the home screen. */
 final class Ui {
     static final int LUBAN = 0xFFE3B062, LUBAN_SOFT = 0xFFF2D6A2, INK = 0xFFF7F4EE, INK2 = 0xC7F7F4EE, INK3 = 0x8CF7F4EE;
-    static final int GLASS = 0x8C0E1418, LINE = 0x24F7F4EE, RED = 0xFFD52B1E, GREEN = 0xFF1A8F4B;
+    static final int GLASS = 0x8C0E1418, LINE = 0x24F7F4EE;
     private static Typeface regular, medium, bold, heavy;
 
     private Ui() {}

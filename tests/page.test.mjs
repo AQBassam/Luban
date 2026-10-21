@@ -78,6 +78,21 @@ const text = (page, sel) => page.$eval(sel, e => e.textContent);
   await page.close();
 }
 {
+  // 21:00 in Muscat, after Isha: the Fajr tile counts to tomorrow's Fajr and shows tomorrow's time
+  const page = await open({ city: 'muscat', clock24: true }, '2026-10-21T17:00:00Z');
+  const tom = P.compute({ y: 2026, m: 10, d: 22 }, { lat: 23.59, lon: 58.38, tz: 'Asia/Muscat' }, { method: 'oman' });
+  const tile = await page.$eval('#prayers .pr.fajr', e => ({ t: e.querySelector('.t').textContent, next: e.classList.contains('next') }));
+  check("prayer bar: after Isha, Fajr shows tomorrow's time", tile.next && tile.t === P.hhmm(tom.fajr), tile);
+  await page.close();
+}
+{
+  // Oslo, 21 June, 23:30: Isha (MWL) falls after midnight and is still ahead
+  const page = await open({ city: 'custom', place: { en: 'Oslo', lat: 59.91, lon: 10.75, tz: 'Europe/Oslo' }, method: 'mwl', lang: 'en' }, '2026-06-21T21:30:00Z');
+  const next = await page.$eval('#prayers .pr.next .n', e => e.textContent);
+  check('prayer bar: an Isha after midnight is still the next prayer', next === 'Isha', next);
+  await page.close();
+}
+{
   const page = await open({ city: 'muscat' }, '2026-11-20T08:00:00Z');
   check('screen: National Day greeting on 20 November', (await text(page, '#chips')).includes('كل عام وعُمان بخير'));
   await page.close();
@@ -121,6 +136,23 @@ for (const vp of [{ width: 1920, height: 1080 }, { width: 1280, height: 720 }]) 
     return { n: items.length, bad };
   });
   check(`screen: every verse and hadith fits the card (font steps down at most 30%) at ${vp.width}x${vp.height} (${overflow.n})`, overflow.bad.length === 0, overflow.bad.slice(0, 3));
+  await page.close();
+}
+
+{
+  // the fallback for WebViews without Umm al-Qura must give the same date as ICU, every day for 30 years
+  const page = await open({});
+  const bad = await page.evaluate(() => {
+    const f = new Intl.DateTimeFormat('en-US-u-ca-islamic-umalqura-nu-latn', { timeZone: 'UTC', day: 'numeric', month: 'numeric', year: 'numeric' });
+    const out = [];
+    for (let day = Date.UTC(2019, 0, 1) / 864e5; day < Date.UTC(2049, 0, 1) / 864e5; day++) {
+      const p = f.formatToParts(new Date(day * 864e5)).reduce((o, x) => (o[x.type] = x.value, o), {});
+      const t = window.LubanScreen.tableHijri(day);
+      if (!t || t.y !== parseInt(p.year, 10) || t.m !== +p.month || t.d !== +p.day) out.push(day);
+    }
+    return out.length;
+  });
+  check('hijri: the fallback table matches Umm al-Qura every day 2019–2048', bad === 0, bad);
   await page.close();
 }
 

@@ -28,9 +28,10 @@
 
   function net(url) { return IN_APP ? '/net?u=' + encodeURIComponent(url) : url; }
   async function getJSON(url, ms) {
-    const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), ms || 12000);
+    const ctl = typeof AbortController === 'function' ? new AbortController() : null;   // older TV WebViews lack it
+    const t = setTimeout(() => ctl && ctl.abort(), ms || 12000);
     try {
-      const r = await fetch(url, { signal: ctl.signal, cache: 'no-store' });
+      const r = await fetch(url, ctl ? { signal: ctl.signal, cache: 'no-store' } : { cache: 'no-store' });
       if (!r.ok) throw new Error('HTTP ' + r.status);
       return await r.json();
     } finally { clearTimeout(t); }
@@ -77,11 +78,13 @@
     document.body.classList.toggle('ltr', S.lang !== 'ar');
     const loc = (S.lang === 'ar' ? 'ar-OM' : 'en-GB') + '-u-nu-' + S.digits;
     CAL = {
-      parts: new Intl.DateTimeFormat('en-US', { timeZone: P.tz, hourCycle: 'h23', year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: 'numeric', second: 'numeric', weekday: 'short' }),
+      parts: new Intl.DateTimeFormat('en-US', { timeZone: P.tz, hour12: false, year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: 'numeric', second: 'numeric', weekday: 'short' }),
       greg: new Intl.DateTimeFormat(loc + '-ca-gregory', { timeZone: P.tz, weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }),
       hijri: new Intl.DateTimeFormat(loc + '-ca-islamic-umalqura', { timeZone: P.tz, day: 'numeric', month: 'long', year: 'numeric' }),
       hijriNum: new Intl.DateTimeFormat('en-US-u-ca-islamic-umalqura-nu-latn', { timeZone: P.tz, day: 'numeric', month: 'numeric', year: 'numeric' }),
       wd: new Intl.DateTimeFormat(loc, { timeZone: P.tz, weekday: 'short' }),
+      // an old WebView may silently fall back to the Gregorian calendar: then use the arithmetic one
+      umalqura: (() => { try { return new Intl.DateTimeFormat('en-u-ca-islamic-umalqura').resolvedOptions().calendar === 'islamic-umalqura'; } catch (e) { return false; } })(),
       day: new Intl.DateTimeFormat(loc, { timeZone: P.tz, weekday: 'short', day: 'numeric', month: 'short' }),
     };
     $('city').textContent = S.lang === 'ar' ? P.ar : P.en;
@@ -96,10 +99,26 @@
     $('ampm').textContent = S.clock24 ? '' : (l.h < 12 ? T.am : T.pm);
   }
 
+  /** Umm al-Qura from the table in content/umalqura.json (month starts, 1440–1480 AH), for WebViews whose ICU lacks it. */
+  function tableHijri(epochDay) {
+    const t = DATA.umalqura;
+    let lo = 0, hi = t.length - 1;
+    if (!t.length || epochDay < t[0][2]) return null;
+    while (lo < hi) { const mid = (lo + hi + 1) >> 1; if (t[mid][2] <= epochDay) lo = mid; else hi = mid - 1; }
+    return { y: t[lo][0], m: t[lo][1], d: epochDay - t[lo][2] + 1 };
+  }
+  const HIJRI_MONTHS = {
+    ar: ['محرم', 'صفر', 'ربيع الأول', 'ربيع الآخر', 'جمادى الأولى', 'جمادى الآخرة', 'رجب', 'شعبان', 'رمضان', 'شوال', 'ذو القعدة', 'ذو الحجة'],
+    en: ['Muharram', 'Safar', "Rabi' I", "Rabi' II", 'Jumada I', 'Jumada II', 'Rajab', "Sha'ban", 'Ramadan', 'Shawwal', "Dhu al-Qi'dah", 'Dhu al-Hijjah'],
+  };
   function hijriToday() {
     const d = new Date(Date.now() + S.hijriOffset * 86400000);
-    const p = CAL.hijriNum.formatToParts(d).reduce((o, x) => (o[x.type] = x.value, o), {});
-    return { y: parseInt(p.year, 10), m: +p.month, d: +p.day, text: CAL.hijri.format(d) };
+    if (CAL.umalqura) {
+      const p = CAL.hijriNum.formatToParts(d).reduce((o, x) => (o[x.type] = x.value, o), {});
+      return { y: parseInt(p.year, 10), m: +p.month, d: +p.day, text: CAL.hijri.format(d) };
+    }
+    const l = local(d), t = tableHijri(Date.UTC(l.y, l.m - 1, l.d) / 864e5) || { y: 0, m: 1, d: 1 };
+    return { y: t.y, m: t.m, d: t.d, text: `${dg(t.d)} ${HIJRI_MONTHS[S.lang][t.m - 1]} ${dg(t.y)}${S.lang === 'ar' ? ' هـ' : ' AH'}` };
   }
 
   function tickDates() {
@@ -115,18 +134,23 @@
 
   function ensureTimes() {
     const key = dayKey(local()) + P.id + P.method;
-    if (state.prayerDay !== key) { state.prayerDay = key; state.times = computeDay(0); state.tomorrow = computeDay(1); }
+    if (state.prayerDay !== key) {
+      state.prayerDay = key; state.times = computeDay(0); state.tomorrow = computeDay(1);
+      // far north in summer Maghrib or Isha can fall after midnight: keep them after Dhuhr for every comparison
+      state.order = {};
+      for (const k of KEYS) state.order[k] = state.times[k] + ((k === 'maghrib' || k === 'isha') && state.times[k] < state.times.dhuhr ? 1440 : 0);
+    }
   }
 
   /** The next prayer (sunrise included), and the one whose iqama is still ahead. */
   function nextPrayer() {
     ensureTimes();
-    const now = minutesNow(), t = state.times, friday = local().wd === 'Fri';
+    const now = minutesNow(), t = state.order, friday = local().wd === 'Fri';
     for (const k of KEYS) if (t[k] > now) return { key: k, at: t[k], left: t[k] - now, friday };
     return { key: 'fajr', at: state.tomorrow.fajr, left: state.tomorrow.fajr + 1440 - now, friday: false, tomorrow: true };
   }
   function iqamaPending() {
-    const now = minutesNow(), t = state.times, friday = local().wd === 'Fri';
+    const now = minutesNow(), t = state.order, friday = local().wd === 'Fri';
     for (const k of ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha']) {
       const gap = (k === 'dhuhr' && friday) ? 0 : S.iqama[k];
       if (gap > 0 && now >= t[k] && now < t[k] + gap) return { key: k, left: t[k] + gap - now };
@@ -140,7 +164,9 @@
     const box = clear($('prayers')), nx = nextPrayer(), iq = iqamaPending(), friday = local().wd === 'Fri';
     for (const k of KEYS) {
       const el = h('div', 'pr ' + k);
-      el.append(h('div', 'n', prayerName(k, friday)), h('div', 't', fmtTime(state.times[k])));
+      // after Isha the Fajr tile counts down to tomorrow's Fajr, so it shows tomorrow's time too
+      const at = nx.tomorrow && k === 'fajr' ? state.tomorrow.fajr : state.times[k];
+      el.append(h('div', 'n', prayerName(k, friday)), h('div', 't', fmtTime(at)));
       let note = '';
       if (iq && iq.key === k) note = `${T.iqamaIn} ${fmtLeft(iq.left)}`;
       else if (!iq && nx.key === k && !nx.tomorrow) { el.classList.add('next'); note = `${T.in} ${fmtLeft(nx.left)}`; }
@@ -155,7 +181,12 @@
   function daysBetween(a, b) { return Math.round((Date.UTC(b.y, b.m - 1, b.d) - Date.UTC(a.y, a.m - 1, a.d)) / 86400000); }
   function renderChips() {
     const box = clear($('chips')), l = local(), hj = hijriToday();
-    const chip = (text, cls) => box.append(h('span', 'chip ' + (cls || ''), text));
+    const chip = (text, cls) => {
+      const c = h('span', 'chip ' + (cls || ''));
+      if (cls === 'nat') c.append(h('span', 'flag'));
+      c.append(h('span', '', text));
+      box.append(c);
+    };
     if (S.omanDays) {
       // Royal Decree 15/2025: National Day on 20 and 21 November
       const nd = { y: l.y, m: 11, d: 20 };
@@ -263,7 +294,7 @@
 
   // ---------- matches (TheSportsDB, public key; through the proxy in the app, or the server)
   const norm = s => String(s || '').toLowerCase().replace(/\b(al|fc|sc|club|saudi club)\b/g, '').replace(/[^a-z0-9]/g, '');
-  const AR_NAMES = Object.fromEntries(Object.entries(DATA.teamsAr).filter(([k]) => k[0] !== '_').map(([k, v]) => [norm(k), v]));
+  const AR_NAMES = Object.keys(DATA.teamsAr).reduce((o, k) => { if (k[0] !== '_') o[norm(k)] = DATA.teamsAr[k]; return o; }, {});
   const teamAr = (id, en) => { const t = S.teams.find(x => x.id === String(id)); return (t && t.ar) || AR_NAMES[norm(en)] || en || ''; };
   const teamName = (id, en) => S.lang === 'ar' ? teamAr(id, en) : (en || '');
   function eventTime(ev) {
@@ -337,7 +368,7 @@
     if (!list) {
       const seen = new Set(); list = [];
       const all = await Promise.all(days.map(d => getJSON(`https://api.tvmaze.com/schedule/web?date=${d}`).catch(() => [])));
-      for (const e of all.flat()) {
+      for (const e of [].concat.apply([], all)) {
         const s = e._embedded && e._embedded.show; if (!s || seen.has(s.id)) continue;
         if (['News', 'Talk Show', 'Sports', 'Game Show'].includes(s.type)) continue;
         const rating = (s.rating && s.rating.average) || 0;
@@ -434,7 +465,7 @@
   // ---------- night dimming, burn-in shift
   function applyNight() {
     ensureTimes();
-    const now = minutesNow(), t = state.times;
+    const now = minutesNow(), t = state.order;
     const night = S.night && (now >= t.isha + 120 || now < t.fajr - 30);
     document.body.classList.toggle('night', night);
   }
@@ -479,6 +510,6 @@
     window.addEventListener('hashchange', () => location.reload());
   }
 
-  window.LubanScreen = { start, fitCard, _state: state };
+  window.LubanScreen = { start, fitCard, tableHijri, _state: state };
   start();
 })();
