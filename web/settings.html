@@ -6,17 +6,17 @@
 <meta name="color-scheme" content="light dark">
 <title>إعدادات لُبان · Luban settings</title>
 <style>
-@font-face{font-family:Tajawal;font-weight:400;src:url(fonts/tajawal-arabic-400-normal.woff2) format("woff2")}
-@font-face{font-family:Tajawal;font-weight:700;src:url(fonts/tajawal-arabic-700-normal.woff2) format("woff2")}
-:root{--bg:#F6F2EA;--card:#FFFFFF;--ink:#1D2326;--ink-2:#5B6469;--line:#E4DDD0;--luban:#B9822F;--luban-bg:#F3E4C8;--red:#C8102E;--green:#009A44;--ok:#1A8F4B;--err:#C0392B}
-@media (prefers-color-scheme:dark){:root{--bg:#101518;--card:#182024;--ink:#F2EEE6;--ink-2:#A7B0B4;--line:#2A3438;--luban:#E3B062;--luban-bg:#33291A}}
+@font-face{font-family:Messiri;font-weight:400;src:url(fonts/el-messiri-arabic-400-normal.woff2) format("woff2");unicode-range:U+0600-06FF,U+FB50-FDFF,U+FE70-FEFF}
+@font-face{font-family:Messiri;font-weight:600;src:url(fonts/el-messiri-arabic-600-normal.woff2) format("woff2");unicode-range:U+0600-06FF,U+FB50-FDFF,U+FE70-FEFF}
+@font-face{font-family:Messiri;font-weight:400;src:url(fonts/el-messiri-latin-400-normal.woff2) format("woff2");unicode-range:U+0000-00FF}
+@font-face{font-family:Messiri;font-weight:600;src:url(fonts/el-messiri-latin-600-normal.woff2) format("woff2");unicode-range:U+0000-00FF}
+:root{--bg:#F4EFE4;--card:#FFFDF8;--ink:#0C2E45;--ink-2:#4F6575;--line:#E3D9C6;--luban:#A8701F;--luban-bg:#F2E2C2;--ok:#1C7F6F;--err:#B4412F}
+@media (prefers-color-scheme:dark){:root{--bg:#06192A;--card:#0C2438;--ink:#F1EBDD;--ink-2:#9FB2BF;--line:#1C3A52;--luban:#E2A94F;--luban-bg:#2A2416}}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 Tajawal,system-ui,sans-serif;padding:0 16px 120px}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 Messiri,system-ui,sans-serif;padding:0 16px 120px}
 header{position:sticky;top:0;background:var(--bg);padding:16px 0 10px;z-index:2}
 h1{margin:0;font-size:22px;display:flex;align-items:center;gap:10px}
-.flag{display:inline-block;width:36px;height:18px;border-radius:2px;flex:none;direction:ltr;
-  background:linear-gradient(90deg,#C8102E 0 25%,transparent 25%),linear-gradient(180deg,#fff 0 33.34%,#C8102E 33.34% 66.67%,#009A44 66.67%);
-  box-shadow:0 0 0 1px rgba(0,0,0,.25)}
+.mark{width:30px;height:30px;flex:none}
 .sub{color:var(--ink-2);font-size:14px;margin-top:2px}
 section{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px 16px;margin:12px 0}
 section h2{margin:0 0 10px;font-size:17px;color:var(--luban)}
@@ -45,7 +45,7 @@ button{font:inherit;border:1px solid var(--line);background:var(--bg);color:var(
 </style>
 </head>
 <body>
-<header><h1><span class="flag" role="img" aria-label="علم سلطنة عُمان"></span><span data-t="title">إعدادات لُبان</span></h1><div class="sub" id="sub"></div></header>
+<header><h1><svg class="mark" viewBox="-50 -50 100 100" aria-hidden="true"><circle r="38" fill="none" stroke="currentColor" stroke-opacity=".35" stroke-width="3"/><path d="M-26.9 26.9A38 38 0 0 1 26.9 -26.9" fill="none" stroke="#E2A94F" stroke-width="9" stroke-linecap="round"/><circle cx="26.9" cy="-26.9" r="12" fill="#E2A94F" fill-opacity=".35"/><circle cx="26.9" cy="-26.9" r="7" fill="#F7E7C4"/></svg><span data-t="title">إعدادات لُبان</span></h1><div class="sub" id="sub"></div></header>
 
 <section>
   <h2 data-t="place">المكان والوقت</h2>
@@ -87,6 +87,8 @@ button{font:inherit;border:1px solid var(--line);background:var(--bg);color:var(
     <option value="forecast" data-t="pForecast">طقس الأيام القادمة</option><option value="matches" data-t="pMatches">مباريات فرقك</option>
     <option value="shows" data-t="pShows">جديد المسلسلات</option><option value="none" data-t="pNone">بدون بطاقة</option>
   </select>
+  <label for="bg" data-t="bg">الخلفية</label>
+  <select id="bg"><option value="chart" data-t="bgChart">خريطة البحر</option><option value="photos" data-t="bgPhotos">صور من عُمان</option></select>
   <label class="check"><input type="checkbox" id="omanDays"><span data-t="omanDays">العيد الوطني وموسم الخريف</span></label>
   <label class="check"><input type="checkbox" id="night"><span data-t="night">تخفيف الإضاءة ليلاً</span></label>
   <label class="check"><input type="checkbox" id="homeCard"><span data-t="homeCard">بطاقة المواقيت في الشاشة الرئيسية</span></label>

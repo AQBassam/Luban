@@ -36,7 +36,7 @@ android {
 }
 rootProject.ext.releaseSigning(android)
 
-// the home screen's wallpapers: the same first photos the screensaver carries, and the Tajawal font
+// the home screen's wallpapers: the same first photos the screensaver carries, and the El Messiri font
 def copyLuban = tasks.register('copyLuban', Copy) {
     from('../../photos') {
         include { f -> def list = new groovy.json.JsonSlurper().parse(file('../../content/photos.json')); list.take(8)*.f.contains(f.name) }

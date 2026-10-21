@@ -38,8 +38,8 @@ it; this list records which problems found in that review Luban was designed to 
 
 ## Second review
 
-- **Flag:** the three-colour strip read as another country's flag. Every place now draws Oman's actual flag in
-  miniature: the red hoist band, then white, red and green stripes (FOTW colours), never mirrored.
+- **Flag:** the three-colour strip read as another country's flag; the drawn flag that replaced it read as clip art.
+  Both are gone: the identity now comes from the design itself (below), not from symbols placed on it.
 - **Any maker's home screen:** the setup tool knew only Google's homes and would stop on Xiaomi, Philips or a box's
   own launcher; it now asks Android which home is in use and restores exactly that one.
 - **Older TV web engines:** `hourCycle`, `Object.fromEntries`, `.flat()` and an unguarded `AbortController` are gone
@@ -49,3 +49,24 @@ it; this list records which problems found in that review Luban was designed to 
   after midnight is no longer skipped (screen and home card, with tests).
 - **Home screen speed:** app rows are rebuilt only when apps change, not on every return to Home; the Hijri date
   there now follows the ± day setting.
+
+## The design: the sea and frankincense
+
+Four directions were drawn and compared as full screens (the sun's path on a Bahla mud wall, frankincense smoke in
+resin light, a falaj carrying the day, and the sea). The sea won, joined to the name: Oman's wealth at sea was built on
+frankincense, shipped from Sumhuram (Khor Rori) in Dhofar to India, Mesopotamia and Rome; Sumhuram is one of the sites
+of the UNESCO *Land of Frankincense*.
+
+- **The dial** is the navigators' star compass (32 rhumbs, each named for a star's rising or setting) used as a
+  24-hour clock: noon at the top, midnight at the bottom, time running the way the language reads (morning on the right
+  in Arabic, on the left in English). The prayers are bearings on the rim; daylight is a faint resin band; the day
+  lived since Fajr is solid resin.
+- **Now** is a lit grain of frankincense on the rim, its smoke rising across the chart (two pre-drawn layers that
+  breathe with CSS, redrawn once a minute: cheap on a TV's GPU).
+- **The chart:** rhumb lines run out from the dial across the whole screen; engraved waves rise from the bottom.
+- **Colour:** the Indian Ocean at depth (#06192A, #0C2E45), frankincense resin (#E2A94F) for everything lived and
+  warm, sea foam (#8FE0D6) only for what comes next, the pale of Hojari frankincense (#F1EBDD) for text.
+- **Type:** El Messiri (OFL), for its carved, engraved feel; Amiri for the Quran.
+- **The same mark everywhere:** the icon, the TV banners, the home screen's prayer card (`Dial.java`), its background
+  (`SeaChart.java`) and the TV settings screen (`LubanMark.java`) all draw the rim, the lived arc and the ember.
+- **Photos stay as a choice** (phone settings → Background), under a deep-sea veil.

@@ -35,6 +35,8 @@ check("web: no innerHTML / outerHTML / insertAdjacentHTML / document.write",
       not grep(r"innerHTML|outerHTML|insertAdjacentHTML|document\.write", ["web/js/*.js"]))
 check("web: no eval or new Function", not grep(r"\beval\(|new Function\(", ["web/js/*.js"]))
 # the screen runs in TV WebViews that may be years old (Android 8 era, Chrome ~61): no newer syntax or APIs there
+check("web: screen CSS avoids what Chrome 61 lacks (inset, flex/grid gap, logical margins, aspect-ratio, :is/:where)",
+      not grep(r"(^|[;{\s])(inset|gap|row-gap|column-gap|aspect-ratio|margin-inline[-a-z]*|padding-inline[-a-z]*)\s*:|:is\(|:where\(", ["web/css/screen.css"]))
 screen_js = ["web/js/app.js", "web/js/prayer.js", "web/js/settings.js", "web/js/i18n.js"]
 check("web: screen code avoids features older TV WebViews lack (?. ?? fromEntries flat replaceAll hourCycle …)",
       not grep(r"\?\.[A-Za-z_(\[]|\?\?|Object\.fromEntries|\.flat\(|\.flatMap\(|\.replaceAll\(|structuredClone|\.at\(-?\d|hourCycle|Promise\.allSettled|\{\s*\.\.\.", screen_js))
@@ -85,7 +87,7 @@ check("repo: no keystores committed", not [f for f in tracked if re.search(r"\.(
 uses = grep(r"^\s*-?\s*uses:", [".github/workflows/*.yml"])
 unpinned = [u for u in uses if not re.search(r"@[0-9a-f]{40}", (ROOT / u.split(":")[0]).read_text().splitlines()[int(u.split(":")[1]) - 1])]
 check("ci: every action pinned to a commit", not unpinned, unpinned)
-check("fonts: licences shipped", (ROOT / "assets/fonts/OFL-Tajawal.txt").is_file() and (ROOT / "assets/fonts/OFL-Amiri.txt").is_file())
+check("fonts: licences shipped", (ROOT / "assets/fonts/OFL-ElMessiri.txt").is_file() and (ROOT / "assets/fonts/OFL-Amiri.txt").is_file())
 check("repo: LICENSE present", (ROOT / "LICENSE").is_file())
 
 sys.exit(1 if fails else 0)

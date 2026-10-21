@@ -11,7 +11,7 @@ import android.widget.ImageView;
 
 import java.io.InputStream;
 
-/** Omani photos behind the home screen, a new one every 15 minutes, crossfaded. Decoded off the main thread. */
+/** When the owner chose photos (phone settings → Background): Omani photos behind the home screen, a new one every 15 minutes, crossfaded. Decoded off the main thread. */
 final class Wallpaper {
     private static final long EVERY_MS = 15 * 60 * 1000L;
     private final Context c;
@@ -46,6 +46,14 @@ final class Wallpaper {
     }
 
     void pause() { main.removeCallbacks(next); }
+
+    /** The sea chart instead: no photos decoded at all. */
+    void hide() {
+        pause();
+        front.setImageDrawable(null);
+        back.setImageDrawable(null);
+        shownAt = 0;
+    }
 
     private void next() {
         main.removeCallbacks(next);

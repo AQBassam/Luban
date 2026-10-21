@@ -1,77 +1,103 @@
 #!/usr/bin/env python3
 """Draw the brand images: app icons, TV banners, the README hero. Run once after changing the design; the outputs are
-committed. The mark: a drop of frankincense resin above the stepped merlons of an Omani fort, in resin amber."""
+committed.
+
+The mark is the screensaver's dial in miniature: the rim of the navigators' star compass on the deep Indian Ocean,
+the part of the day already lived in frankincense resin, and a lit grain of frankincense where "now" is, its smoke
+rising. Oman shipped frankincense across this sea for three thousand years; the compass is how it travelled.
+"""
+import math
 from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageFilter, ImageFont
 
 ROOT = Path(__file__).resolve().parents[1]
-AMBER, AMBER_SOFT, INK, BG, BG2 = (227, 176, 98), (242, 214, 162), (247, 244, 238), (11, 16, 19), (36, 28, 18)
-RED, GREEN, WHITE = (200, 16, 46), (0, 154, 68), (255, 255, 255)   # Oman's flag (FOTW: Pantone 186 / 347)
-BOLD = str(ROOT / "assets/native/Tajawal-ExtraBold.ttf")
-MED = str(ROOT / "assets/native/Tajawal-Medium.ttf")
+DEEP, SEA = (6, 25, 42), (12, 46, 69)
+RESIN, RESIN_SOFT, INK, GRAIN = (226, 169, 79), (243, 217, 164), (241, 235, 221), (247, 231, 196)
+SEMI = str(ROOT / "assets/native/ElMessiri-SemiBold.ttf")
+MED = str(ROOT / "assets/native/ElMessiri-Medium.ttf")
 
 
-def background(w, h):
-    im = Image.new("RGB", (w, h), BG)
-    glow = Image.new("RGB", (w, h), BG)
-    d = ImageDraw.Draw(glow)
-    d.ellipse((int(w * .35), int(-h * .4), int(w * 1.25), int(h * 1.1)), fill=BG2)
-    return Image.blend(im, glow.filter(ImageFilter.GaussianBlur(max(w, h) // 6)), 1.0)
+def sea(w, h, cx, cy, rhumbs=True):
+    """The deep sea, lighter around the rose, with a chart's rhumb lines running out of it."""
+    im = Image.new("RGB", (w, h), DEEP)
+    glow = Image.new("RGB", (w, h), DEEP)
+    r = max(w, h) * .55
+    ImageDraw.Draw(glow).ellipse((cx - r, cy - r, cx + r, cy + r), fill=SEA)
+    im = glow.filter(ImageFilter.GaussianBlur(max(w, h) // 5))
+    if rhumbs:
+        lines = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+        d = ImageDraw.Draw(lines)
+        L = w + h
+        for i in range(32):
+            a = i / 32 * 2 * math.pi
+            d.line((cx, cy, cx + L * math.sin(a), cy - L * math.cos(a)), fill=RESIN + ((44 if i % 4 == 0 else 20),), width=max(1, w // 700))
+        im = Image.alpha_composite(im.convert("RGBA"), lines).convert("RGB")
+    return im
 
 
-def merlons(d, x0, y_base, width, unit, color):
-    """A wall line with stepped merlons standing on it, like the crenel on the screen."""
-    d.rectangle((x0, y_base - unit * .5, x0 + width, y_base), fill=color)
-    x = x0 + unit
-    while x + unit * 6 <= x0 + width:
-        for step in range(3):
-            d.rectangle((x + step * unit, y_base - (step + 1) * unit * 1.2, x + (6 - step) * unit, y_base), fill=color)
-        x += unit * 10
-
-
-def drop(d, cx, cy, r, color):
-    """A resin drop: a circle with a pointed top."""
-    d.ellipse((cx - r, cy - r, cx + r, cy + r), fill=color)
-    d.polygon([(cx - r * .86, cy - r * .5), (cx, cy - r * 2.1), (cx + r * .86, cy - r * .5)], fill=color)
+def mark(im, cx, cy, r, smoke=True):
+    """Rim, the lived arc from Fajr round through noon, and the grain (upper left: late morning, read right to left)."""
+    over = Image.new("RGBA", im.size, (0, 0, 0, 0))
+    d = ImageDraw.Draw(over)
+    w = max(2, int(r * .06))
+    d.ellipse((cx - r, cy - r, cx + r, cy + r), outline=INK + (90,), width=max(1, w // 2))
+    band = max(3, int(r * .2))
+    # PIL angles: 0 = 3 o'clock, clockwise. From lower right (Fajr) anticlockwise over the top to the left.
+    d.arc((cx - r, cy - r, cx + r, cy + r), start=200, end=45 + 360 - 360, fill=RESIN + (255,), width=band)
+    d.arc((cx - r, cy - r, cx + r, cy + r), start=45, end=200, fill=RESIN + (50,), width=band)
+    a = math.radians(200)
+    ex, ey = cx + (r - band / 2) * math.cos(a), cy + (r - band / 2) * math.sin(a)
+    # glow
+    g = Image.new("RGBA", im.size, (0, 0, 0, 0))
+    gr = r * .55
+    ImageDraw.Draw(g).ellipse((ex - gr, ey - gr, ex + gr, ey + gr), fill=(255, 160, 60, 150))
+    g = g.filter(ImageFilter.GaussianBlur(gr * .45))
+    base = Image.alpha_composite(im.convert("RGBA"), g)
+    base = Image.alpha_composite(base, over)
+    if smoke:
+        # a soft plume and two fine threads that leave the grain together, then curl apart and fade as they rise
+        for blur, width, alpha, threads in ((r * .06, r * .12, 40, ((.0, .5),)), (r * .01, r * .022, 150, ((.06, 0), (-.05, 2.4)))):
+            sm = Image.new("RGBA", im.size, (0, 0, 0, 0))
+            sd = ImageDraw.Draw(sm)
+            for drift, ph in threads:
+                prev = (ex, ey - r * .08)
+                for j in range(1, 70):
+                    q = j / 70
+                    pt = (ex + math.sin(q * 5.2 + ph) * r * .09 * q + (drift + .12 * q) * r * q * 2, ey - r * .08 - q * r * 1.2)
+                    sd.line((prev, pt), fill=(246, 236, 218, int(alpha * (1 - q) * min(1, q * 8))), width=max(1, int(width)))
+                    prev = pt
+            base = Image.alpha_composite(base, sm.filter(ImageFilter.GaussianBlur(max(1, blur))))
+    gd = ImageDraw.Draw(base)
+    gs = r * .13
+    gd.ellipse((ex - gs, ey - gs, ex + gs, ey + gs), fill=GRAIN + (255,))
+    gd.ellipse((ex - gs * .45, ey - gs * .55, ex + gs * .05, ey - gs * .1), fill=(255, 255, 255, 200))
+    return base.convert("RGB")
 
 
 def icon(size):
     s = 4
-    im = background(size * s, size * s)
-    d = ImageDraw.Draw(im)
     S = size * s
-    drop(d, S / 2, S * .44, S * .17, AMBER)
-    d.ellipse((S * .43, S * .40, S * .49, S * .46), fill=AMBER_SOFT)
-    merlons(d, S * .16, S * .80, S * .68, S * .022, AMBER)
-    mask = Image.new("L", (S, S), 0)
-    ImageDraw.Draw(mask).rounded_rectangle((0, 0, S - 1, S - 1), radius=S * .22, fill=255)
+    im = sea(S, S, S * .5, S * .56, rhumbs=False)
+    im = mark(im, S * .5, S * .56, S * .3)
+    m = Image.new("L", (S, S), 0)
+    ImageDraw.Draw(m).rounded_rectangle((0, 0, S - 1, S - 1), radius=S * .22, fill=255)
     out = Image.new("RGBA", (S, S), (0, 0, 0, 0))
-    out.paste(im, (0, 0), mask)
+    out.paste(im, (0, 0), m)
     return out.resize((size, size), Image.LANCZOS)
 
 
-def flag(d, x, y, w):
-    """The flag of Oman, 1:2: a red hoist band (a quarter of the length), then white, red, green stripes. No emblem
-    at this size. Flags are never mirrored."""
-    h, hoist = w / 2, w / 4
-    for i, c in enumerate((WHITE, RED, GREEN)):
-        d.rectangle((x + hoist, y + i * h / 3, x + w, y + (i + 1) * h / 3), fill=c)
-    d.rectangle((x, y, x + hoist, y + h), fill=RED)
-
-
-def banner(w, h, sub=None):
+def banner(w, h, sub):
     s = 3
     W, H = w * s, h * s
-    im = background(W, H)
+    cx, cy = W * .80, H * .54
+    im = sea(W, H, cx, cy)
+    im = mark(im, cx, cy, H * .3)
     d = ImageDraw.Draw(im)
-    drop(d, W * .80, H * .43, H * .13, AMBER)
-    merlons(d, W * .66, H * .80, W * .28, H * .02, AMBER)
-    f = ImageFont.truetype(BOLD, int(H * .34), layout_engine=ImageFont.Layout.RAQM)
-    d.text((W * .38, H * .40), "لُبان", font=f, fill=INK, anchor="mm", direction="rtl", language="ar")
-    f2 = ImageFont.truetype(MED, int(H * .12))
-    d.text((W * .38, H * .70), sub or "LUBAN", font=f2, fill=AMBER_SOFT, anchor="mm")
-    flag(d, W * .38 - W * .035, H * .80, W * .07)
+    f = ImageFont.truetype(SEMI, int(H * .34), layout_engine=ImageFont.Layout.RAQM)
+    d.text((W * .38, H * .42), "لُبان", font=f, fill=INK, anchor="mm", direction="rtl", language="ar")
+    f2 = ImageFont.truetype(MED, int(H * .1))
+    d.text((W * .38, H * .74), sub, font=f2, fill=RESIN_SOFT, anchor="mm")
     return im.resize((w, h), Image.LANCZOS)
 
 
@@ -87,7 +113,7 @@ def main():
         banner(320, 180, "SCREENSAVER" if name == "app" else "HOME").save(p, optimize=True)
     brand = ROOT / "docs/brand"
     brand.mkdir(parents=True, exist_ok=True)
-    banner(1600, 600, "LUBAN · OMANI TV SCREEN").save(brand / "hero.png", optimize=True)
+    banner(1600, 600, "LUBAN · FRANKINCENSE, BY SEA").save(brand / "hero.png", optimize=True)
     icon(512).save(brand / "icon-512.png", optimize=True)
     print("brand images written")
 

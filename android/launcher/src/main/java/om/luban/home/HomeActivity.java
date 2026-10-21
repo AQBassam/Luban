@@ -42,6 +42,7 @@ public class HomeActivity extends Activity {
     private static java.lang.ref.WeakReference<HomeActivity> live = new java.lang.ref.WeakReference<>(null);
     private final Handler main = new Handler(Looper.getMainLooper());
     private Wallpaper wallpaper;
+    private View scrim;
     private PrayerCard card;
     private TextView clock, ampm, dates, network;
     private LinearLayout favRow, allRow;
@@ -90,7 +91,9 @@ public class HomeActivity extends Activity {
         android.content.pm.ChangedPackages changed = getPackageManager().getChangedPackages(Math.max(0, packagesSeq));
         if (changed != null) { packagesSeq = changed.getSequenceNumber(); rowsDirty |= !changed.getPackageNames().isEmpty(); }
         if (rowsDirty) buildRows();
-        wallpaper.resume();
+        boolean photos = card.photos();
+        scrim.setVisibility(photos ? View.VISIBLE : View.GONE);
+        if (photos) wallpaper.resume(); else wallpaper.hide();
         main.postDelayed(every30s, 30_000);
     }
 
@@ -136,13 +139,14 @@ public class HomeActivity extends Activity {
 
     private View build() {
         FrameLayout root = new FrameLayout(this);
-        root.setBackgroundColor(0xFF0B1013);
+        root.setBackground(new SeaChart());
         root.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
         wallpaper = new Wallpaper(this, root);
 
-        View scrim = new View(this);
+        // over the photos (when the owner chose them): the deep sea, so the words stay readable
+        scrim = new View(this);
         scrim.setBackground(new GradientDrawable(GradientDrawable.Orientation.BOTTOM_TOP,
-            new int[] {0xF006090B, 0x9906090B, 0x3306090B, 0x8806090B}));
+            new int[] {0xF206192A, 0xB306192A, 0x6606192A, 0xA606192A}));
         root.addView(scrim, new FrameLayout.LayoutParams(-1, -1));
 
         LinearLayout col = new LinearLayout(this);
@@ -163,18 +167,17 @@ public class HomeActivity extends Activity {
         clockLine.setOrientation(LinearLayout.HORIZONTAL);
         clockLine.setGravity(Gravity.BOTTOM);
         clockLine.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
-        clock = Ui.text(this, "", 64, Ui.heavy(), Ui.INK);
-        ampm = Ui.text(this, "", 20, Ui.medium(), Ui.INK2);
+        clock = Ui.text(this, "", 64, Ui.medium(), Ui.INK);
+        ampm = Ui.text(this, "", 20, Ui.medium(), Ui.LUBAN);
         ampm.setPadding(Ui.dp(this, 10), 0, 0, Ui.dp(this, 12));
         clockLine.addView(clock);
         clockLine.addView(ampm);
         time.addView(clockLine);
-        View flag = new View(this);
-        flag.setBackground(new OmanFlag());
-        flag.setContentDescription("علم سلطنة عُمان");
-        LinearLayout.LayoutParams bl = new LinearLayout.LayoutParams(Ui.dp(this, 36), Ui.dp(this, 18));
-        bl.setMargins(0, Ui.dp(this, 8), 0, Ui.dp(this, 10));
-        time.addView(flag, bl);
+        View rule = new View(this);   // a short resin rule under the clock
+        rule.setBackgroundColor(Ui.LUBAN);
+        LinearLayout.LayoutParams bl = new LinearLayout.LayoutParams(Ui.dp(this, 56), Ui.dp(this, 2));
+        bl.setMargins(0, Ui.dp(this, 10), 0, Ui.dp(this, 12));
+        time.addView(rule, bl);
         dates = Ui.text(this, "", 17, Ui.regular(), Ui.INK2);
         time.addView(dates);
         top.addView(time, new LinearLayout.LayoutParams(0, -2, 1f));

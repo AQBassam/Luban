@@ -30,7 +30,7 @@ import java.util.Collections;
  * Everything is set from the phone, so the remote only has to move between three buttons.
  */
 public class SettingsActivity extends Activity {
-    private static final int LUBAN = 0xFFE3B062, INK = 0xFFF7F4EE, INK2 = 0xB3F7F4EE, BG = 0xFF0B1013, CARD = 0xFF151D21;
+    private static final int LUBAN = 0xFFE2A94F, INK = 0xFFF1EBDD, INK2 = 0xBDF1EBDD, BG = 0xFF06192A, CARD = 0xFF0C2E45;
     private PhoneServer server;
     private ImageView qr;
     private TextView url, status;
@@ -39,8 +39,8 @@ public class SettingsActivity extends Activity {
     @Override
     protected void onCreate(Bundle b) {
         super.onCreate(b);
-        regular = font("native/Tajawal-Regular.ttf");
-        bold = font("native/Tajawal-Bold.ttf");
+        regular = font("native/ElMessiri-Regular.ttf");
+        bold = font("native/ElMessiri-SemiBold.ttf");
         setContentView(build());
     }
 
@@ -76,12 +76,11 @@ public class SettingsActivity extends Activity {
         text.setOrientation(LinearLayout.VERTICAL);
         root.addView(text, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
 
-        View flag = new View(this);
-        flag.setBackground(new OmanFlag());
-        flag.setContentDescription("علم سلطنة عُمان");
-        LinearLayout.LayoutParams fl = new LinearLayout.LayoutParams(dp(48), dp(24));
+        View mark = new View(this);
+        mark.setBackground(new LubanMark());
+        LinearLayout.LayoutParams fl = new LinearLayout.LayoutParams(dp(72), dp(72));
         fl.gravity = Gravity.START;
-        text.addView(flag, fl);
+        text.addView(mark, fl);
 
         text.addView(label("لُبان", 44, bold, INK, 12));
         text.addView(label("امسح الرمز بكاميرا جوالك لضبط المدينة والمواقيت والفرق وكل شيء.\nScan with your phone to set everything up.", 20, regular, INK2, 8));

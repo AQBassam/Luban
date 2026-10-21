@@ -1,123 +1,128 @@
-/* Luban screen. 1rem = 10px on a 1920px-wide TV; everything scales with the width. */
-@font-face{font-family:Tajawal;font-weight:300;font-display:block;src:url(__FONT__tajawal-arabic-300-normal.woff2) format("woff2");unicode-range:U+0600-06FF,U+0750-077F,U+0870-08FF,U+FB50-FDFF,U+FE70-FEFF,U+200C-200E}
-@font-face{font-family:Tajawal;font-weight:400;font-display:block;src:url(__FONT__tajawal-arabic-400-normal.woff2) format("woff2");unicode-range:U+0600-06FF,U+0750-077F,U+0870-08FF,U+FB50-FDFF,U+FE70-FEFF,U+200C-200E}
-@font-face{font-family:Tajawal;font-weight:500;font-display:block;src:url(__FONT__tajawal-arabic-500-normal.woff2) format("woff2");unicode-range:U+0600-06FF,U+0750-077F,U+0870-08FF,U+FB50-FDFF,U+FE70-FEFF,U+200C-200E}
-@font-face{font-family:Tajawal;font-weight:700;font-display:block;src:url(__FONT__tajawal-arabic-700-normal.woff2) format("woff2");unicode-range:U+0600-06FF,U+0750-077F,U+0870-08FF,U+FB50-FDFF,U+FE70-FEFF,U+200C-200E}
-@font-face{font-family:Tajawal;font-weight:800;font-display:block;src:url(__FONT__tajawal-arabic-800-normal.woff2) format("woff2");unicode-range:U+0600-06FF,U+0750-077F,U+0870-08FF,U+FB50-FDFF,U+FE70-FEFF,U+200C-200E}
-@font-face{font-family:Tajawal;font-weight:300;font-display:block;src:url(__FONT__tajawal-latin-300-normal.woff2) format("woff2");unicode-range:U+0000-00FF,U+2000-206F,U+20AC,U+2122,U+2190-21FF}
-@font-face{font-family:Tajawal;font-weight:400;font-display:block;src:url(__FONT__tajawal-latin-400-normal.woff2) format("woff2");unicode-range:U+0000-00FF,U+2000-206F,U+20AC,U+2122,U+2190-21FF}
-@font-face{font-family:Tajawal;font-weight:500;font-display:block;src:url(__FONT__tajawal-latin-500-normal.woff2) format("woff2");unicode-range:U+0000-00FF,U+2000-206F,U+20AC,U+2122,U+2190-21FF}
-@font-face{font-family:Tajawal;font-weight:700;font-display:block;src:url(__FONT__tajawal-latin-700-normal.woff2) format("woff2");unicode-range:U+0000-00FF,U+2000-206F,U+20AC,U+2122,U+2190-21FF}
-@font-face{font-family:Tajawal;font-weight:800;font-display:block;src:url(__FONT__tajawal-latin-800-normal.woff2) format("woff2");unicode-range:U+0000-00FF,U+2000-206F,U+20AC,U+2122,U+2190-21FF}
+/* Luban screen: the sea and frankincense (docs/DESIGN-DECISIONS.md). 1rem = 10px on a 1920px-wide TV.
+   Written for the oldest WebView a TV may carry (Chrome 61): no `inset`, no flex `gap`, no logical margins. */
+@font-face{font-family:Messiri;font-weight:400;font-display:block;src:url(__FONT__el-messiri-arabic-400-normal.woff2) format("woff2");unicode-range:U+0600-06FF,U+0750-077F,U+0870-08FF,U+FB50-FDFF,U+FE70-FEFF,U+200C-200E}
+@font-face{font-family:Messiri;font-weight:400;font-display:block;src:url(__FONT__el-messiri-latin-400-normal.woff2) format("woff2");unicode-range:U+0000-00FF,U+2000-206F,U+20AC,U+2122,U+2190-21FF}
+@font-face{font-family:Messiri;font-weight:500;font-display:block;src:url(__FONT__el-messiri-arabic-500-normal.woff2) format("woff2");unicode-range:U+0600-06FF,U+0750-077F,U+0870-08FF,U+FB50-FDFF,U+FE70-FEFF,U+200C-200E}
+@font-face{font-family:Messiri;font-weight:500;font-display:block;src:url(__FONT__el-messiri-latin-500-normal.woff2) format("woff2");unicode-range:U+0000-00FF,U+2000-206F,U+20AC,U+2122,U+2190-21FF}
+@font-face{font-family:Messiri;font-weight:600;font-display:block;src:url(__FONT__el-messiri-arabic-600-normal.woff2) format("woff2");unicode-range:U+0600-06FF,U+0750-077F,U+0870-08FF,U+FB50-FDFF,U+FE70-FEFF,U+200C-200E}
+@font-face{font-family:Messiri;font-weight:600;font-display:block;src:url(__FONT__el-messiri-latin-600-normal.woff2) format("woff2");unicode-range:U+0000-00FF,U+2000-206F,U+20AC,U+2122,U+2190-21FF}
 @font-face{font-family:Amiri;font-weight:400;font-display:block;src:url(__FONT__amiri-arabic-400-normal.woff2) format("woff2")}
-@font-face{font-family:Amiri;font-weight:700;font-display:block;src:url(__FONT__amiri-arabic-700-normal.woff2) format("woff2")}
 
 :root{
-  --luban:#E3B062;      /* frankincense resin */
-  --luban-soft:#F2D6A2;
-  --om-red:#C8102E;     /* Oman's flag (FOTW: Pantone 186 / 347): red hoist band, then white, red, green stripes */
-  --om-green:#009A44;
-  --om-white:#FFFFFF;
-  --ink:#F7F4EE;
-  --ink-2:rgba(247,244,238,.78);
-  --ink-3:rgba(247,244,238,.55);
-  --glass:rgba(14,20,24,.42);
-  --line:rgba(247,244,238,.14);
+  --deep:#06192A;       /* the Indian Ocean at depth */
+  --sea:#0C2E45;
+  --resin:#E2A94F;      /* frankincense resin: the one warm colour */
+  --resin-soft:#F3D9A4;
+  --foam:#8FE0D6;       /* sea foam: only for what comes next */
+  --ink:#F1EBDD;        /* the pale of Hojari frankincense */
+  --ink-2:rgba(241,235,221,.74);
+  --ink-3:rgba(241,235,221,.5);
+  --line:rgba(226,169,79,.22);
   --shift-x:0px; --shift-y:0px;
 }
 *{box-sizing:border-box;margin:0;padding:0}
-html{font-size:calc(100vw / 192);background:#0B1013;color:var(--ink)}
-body{font-family:Tajawal,system-ui,sans-serif;width:100vw;height:100vh;overflow:hidden;cursor:none;
+html{font-size:calc(100vw / 192);background:var(--deep);color:var(--ink)}
+body{font-family:Messiri,system-ui,sans-serif;width:100vw;height:100vh;overflow:hidden;cursor:none;
   -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
 body.ltr{direction:ltr}
 [hidden]{display:none!important}
 
-/* background: two layers crossfade, a slow drift keeps pixels moving */
-#bg,#bg .ph,#bg .veil{position:fixed;inset:0}
-#bg{background:radial-gradient(ellipse at 75% 30%,#3A2A17 0%,#1A1712 45%,#0B1013 100%)}
-#bg .ph{background-size:cover;background-position:center;opacity:0;transition:opacity 2.5s ease;
+/* the sea */
+#bg,#bg .ph,#bg .veil,#rhumbs{position:fixed;top:0;right:0;bottom:0;left:0}
+#bg{background:radial-gradient(ellipse 75% 100% at 28% 52%,var(--sea) 0%,var(--deep) 78%)}
+body.ltr #bg{background:radial-gradient(ellipse 75% 100% at 72% 52%,var(--sea) 0%,var(--deep) 78%)}
+#bg .ph,#bg .veil{display:none}
+body.photos #bg .ph{display:block;background-size:cover;background-position:center;opacity:0;transition:opacity 2.5s ease;
   animation:drift 90s ease-in-out infinite alternate}
-#bg .ph.on{opacity:1}
-#bg .veil{background:
-  linear-gradient(to top, rgba(6,9,11,.90) 0%, rgba(6,9,11,.58) 30%, rgba(6,9,11,.42) 58%, rgba(6,9,11,.62) 100%),
-  radial-gradient(ellipse at 50% 45%, rgba(6,9,11,.10) 0%, rgba(6,9,11,.40) 100%)}
-#place,#dates,#ampm,#credit,#match{text-shadow:0 .2rem 1.2rem rgba(0,0,0,.65),0 0 .4rem rgba(0,0,0,.5)}
-.crenel{filter:drop-shadow(0 .2rem .6rem rgba(0,0,0,.6))}
-@keyframes drift{from{transform:scale(1.04) translate(0,0)}to{transform:scale(1.10) translate(-1.2%,-.8%)}}
-body.night #bg .ph{filter:brightness(.55) saturate(.8)}
-body.night #stage{opacity:.72}
+body.photos #bg .ph.on{opacity:1}
+body.photos #bg .veil{display:block;background:
+  linear-gradient(to left,rgba(6,25,42,.45) 0%,rgba(6,25,42,.78) 55%,rgba(6,25,42,.9) 100%)}
+body.photos.ltr #bg .veil{background:linear-gradient(to right,rgba(6,25,42,.45) 0%,rgba(6,25,42,.78) 55%,rgba(6,25,42,.9) 100%)}
+@keyframes drift{from{transform:scale(1.04) translate(0,0)}to{transform:scale(1.1) translate(-1.2%,-.8%)}}
+#bg .waves{position:fixed;left:0;right:0;bottom:0;height:30%;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='22'%3E%3Cpath d='M0 11 Q30 4 60 11 T120 11' fill='none' stroke='%238FE0D6' stroke-opacity='.09' stroke-width='1.5'/%3E%3C/svg%3E");background-size:12rem 2.2rem;
+  -webkit-mask-image:linear-gradient(to bottom,transparent,#000);mask-image:linear-gradient(to bottom,transparent,#000)}
+#rhumbs{width:100%;height:100%;pointer-events:none}
+body.night #stage,body.night #rhumbs{opacity:.62}
 
-#stage{position:fixed;inset:0;padding:5.2rem 7.2rem 4.6rem;display:grid;
-  grid-template-rows:auto 1fr auto auto;row-gap:2.4rem;transform:translate(var(--shift-x),var(--shift-y));
-  transition:opacity 2s, transform 3s ease}
+#stage{position:fixed;top:0;right:0;bottom:0;left:0;padding:6rem 7.2rem 5.6rem;display:flex;align-items:stretch;
+  transform:translate(var(--shift-x),var(--shift-y));transition:opacity 2s, transform 3s ease}
 
-/* top row */
-#top{display:flex;align-items:flex-start;justify-content:space-between;gap:3rem}
-#place .city{font-size:3.4rem;font-weight:700;letter-spacing:.01em}
-#place .wx{margin-top:.6rem;font-size:2.4rem;color:var(--ink-2);display:flex;align-items:center;gap:1rem}
-#place .wx svg{width:3.4rem;height:3.4rem}
-#place .wx .t{font-weight:700;color:var(--ink)}
-#chips{flex:1;display:flex;flex-wrap:wrap;gap:1rem;justify-content:center;padding-top:.6rem}
-.chip{font-size:2rem;font-weight:500;padding:.7rem 1.8rem;border-radius:99rem;background:var(--glass);
-  border:1px solid var(--line);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);white-space:nowrap}
-.chip.luban{border-color:rgba(227,176,98,.55);color:var(--luban-soft)}
-.chip.nat{display:inline-flex;align-items:center;gap:1rem;border-color:rgba(247,244,238,.35)}
-#markets{display:flex;gap:2.6rem;font-size:2rem;color:var(--ink-2)}
-.mk{display:flex;flex-direction:column;align-items:flex-end;gap:.3rem;min-width:9rem}
-body.ltr .mk{align-items:flex-start}
-.mk .n{font-size:1.6rem;color:var(--ink-3)}
-.mk .v{font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums}
-.mk .d{font-size:1.6rem;font-variant-numeric:tabular-nums}
-.mk .d.up{color:#7FD99A}.mk .d.down{color:#FF8A7A}
+/* the words: place, clock, dates, the card */
+#info{flex:1;min-width:0;display:flex;flex-direction:column;margin-left:4rem}
+body.ltr #info{margin-left:0;margin-right:4rem}
+#top{display:flex;align-items:flex-start;justify-content:space-between}
+#place .city{font-size:3.6rem;font-weight:600;line-height:1.2}
+#place .wx{margin-top:.4rem;font-size:2.4rem;color:var(--resin);display:flex;align-items:center}
+#place .wx svg{width:3rem;height:3rem;margin-left:1rem}
+body.ltr #place .wx svg{margin-left:0;margin-right:1rem}
+#place .wx .t{margin-left:1rem;color:var(--ink)}
+body.ltr #place .wx .t{margin-left:0;margin-right:1rem}
+#chips{display:flex;flex-wrap:wrap;justify-content:flex-end;max-width:60%;padding-top:.6rem}
+.chip{font-size:2rem;font-weight:500;padding:.6rem 1.8rem;margin:0 1rem 1rem 0;border-radius:99rem;
+  border:1px solid var(--line);color:var(--ink-2);white-space:nowrap;background:rgba(6,25,42,.5)}
+body.ltr .chip{margin:0 0 1rem 1rem}
+.chip.luban,.chip.nat{border-color:rgba(226,169,79,.6);color:var(--resin-soft)}
 
-/* centre: clock and the card */
-#center{display:flex;align-items:center;justify-content:space-between;gap:6rem;min-height:0}
-#clock{font-weight:800;font-size:22rem;line-height:.95;letter-spacing:-.01em;font-variant-numeric:tabular-nums;
-  direction:ltr;display:flex;align-items:baseline;text-shadow:0 .6rem 3rem rgba(0,0,0,.35)}
-#clock .colon{opacity:.75;margin:0 .6rem;transform:translateY(-1.4rem)}
-#ampm{font-size:4.2rem;font-weight:500;margin-inline-start:2rem;color:var(--ink-2)}
-.crenel{display:block;width:48rem;height:2rem;margin:2.4rem 0 2rem;fill:var(--luban);opacity:.8}
-#dates{font-size:3rem;color:var(--ink-2);display:flex;gap:1.4rem;align-items:center}
-#dates .dot{color:var(--luban)}
-#hijri{color:var(--luban-soft)}
+#clock{margin-top:3rem;font-weight:500;font-size:24rem;line-height:.86;letter-spacing:-.01em;direction:ltr;
+  display:flex;align-items:baseline;justify-content:flex-end}
+body.ltr #clock{justify-content:flex-start}
+#clock .colon{margin:0 .4rem;position:relative;top:-1.6rem}
+#ampm{font-size:5.6rem;color:var(--resin);margin-left:1.6rem}
+#ampm:empty{display:none}
+#dates{margin-top:3.4rem;font-size:3.2rem;color:var(--ink-2)}
+#dates .dot{display:inline-block;width:.8rem;height:.8rem;border-radius:50%;background:var(--resin);margin:0 1.6rem;vertical-align:.5rem}
+#hijri{color:var(--resin-soft)}
 
-#card{width:62rem;max-height:56rem;padding:3rem 3.4rem;border-radius:2.4rem;background:var(--glass);
-  border:1px solid var(--line);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);overflow:hidden}
-.card-hd{display:flex;align-items:center;gap:1.4rem;font-size:2.2rem;font-weight:700;color:var(--luban-soft);margin-bottom:2rem}
-/* the flag of Oman in miniature, 1:2: a red band at the hoist (a quarter of the length), then white, red and green
-   stripes of equal height. Flags are never mirrored, so this stays the same in right-to-left layouts. */
-.flag{display:inline-block;flex:none;width:4.4rem;height:2.2rem;border-radius:.25rem;direction:ltr;
-  background:linear-gradient(90deg,var(--om-red) 0 25%,transparent 25%),
-             linear-gradient(180deg,var(--om-white) 0 33.34%,var(--om-red) 33.34% 66.67%,var(--om-green) 66.67%);
-  box-shadow:0 0 0 1px rgba(0,0,0,.35)}
-.chip .flag{width:3.2rem;height:1.6rem}
+#card{flex:1;min-height:0;margin-top:3.4rem;padding:2.8rem 3.4rem;border-radius:1.2rem;overflow:hidden;
+  background:rgba(6,25,42,.62);border:1px solid var(--line)}
+.card-hd{font-size:2.2rem;font-weight:500;color:var(--resin);margin-bottom:1.6rem}
 #card-body{font-size:2.4rem;line-height:1.55}
 #card-body.fade{animation:fade .9s ease}
 @keyframes fade{from{opacity:0;transform:translateY(.8rem)}to{opacity:1;transform:none}}
-.quote{font-family:Amiri,serif;font-size:3.1rem;line-height:1.9;color:var(--ink)}
-.quote.hadith{font-family:Tajawal,sans-serif;font-size:2.5rem;line-height:1.75}
-.src{margin-top:1.6rem;font-size:1.9rem;color:var(--ink-3)}
-.rows{list-style:none;display:flex;flex-direction:column;gap:1.2rem}
-.rows li{display:flex;justify-content:space-between;gap:2rem;align-items:baseline;padding-bottom:1.1rem;border-bottom:1px solid var(--line)}
+.quote{font-family:Amiri,serif;font-size:3.3rem;line-height:1.9;color:var(--ink)}
+.quote.hadith{font-family:Messiri,sans-serif;font-size:2.7rem;line-height:1.75}
+.src{margin-top:1.4rem;font-size:2rem;color:var(--ink-3)}
+.rows{list-style:none}
+.rows li{display:flex;justify-content:space-between;align-items:baseline;padding:.9rem 0;border-bottom:1px solid var(--line)}
 .rows li:last-child{border-bottom:0}
-.rows .a{font-weight:500}
-.rows .b{color:var(--ink-2);font-variant-numeric:tabular-nums;white-space:nowrap}
-.rows li.now .a,.rows li.now .b{color:var(--luban)}
+.rows .a{font-weight:500;margin-left:2rem}
+body.ltr .rows .a{margin-left:0;margin-right:2rem}
+.rows .b{color:var(--ink-2);white-space:nowrap}
+.rows li.now .a,.rows li.now .b{color:var(--foam)}
 .empty{color:var(--ink-3)}
 
-/* prayer bar */
-#prayers{display:grid;grid-template-columns:repeat(6,1fr);gap:1.2rem}
-.pr{padding:1.8rem 2rem;border-radius:1.8rem;background:var(--glass);border:1px solid var(--line);
-  backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);display:flex;flex-direction:column;gap:.5rem}
-.pr .n{font-size:2.2rem;color:var(--ink-2)}
-.pr .t{font-size:3.6rem;font-weight:700;font-variant-numeric:tabular-nums}
-.pr .c{font-size:1.9rem;color:var(--ink-3);min-height:2.4rem}
-.pr.next{background:linear-gradient(160deg,rgba(227,176,98,.32),rgba(227,176,98,.12));border-color:rgba(227,176,98,.7)}
-.pr.next .n,.pr.next .c{color:var(--luban-soft)}
-.pr.sunrise .t{font-weight:500;color:var(--ink-2)}
+#foot{display:flex;justify-content:space-between;align-items:flex-end;margin-top:2.6rem;font-size:2rem;color:var(--ink-2)}
+#markets{display:flex}
+.mk{display:flex;flex-direction:column;align-items:flex-end;min-width:9rem;margin-left:2.8rem}
+body.ltr .mk{align-items:flex-start;margin-left:0;margin-right:2.8rem}
+.mk .n{font-size:1.6rem;color:var(--ink-3)}
+.mk .v{font-weight:600;color:var(--ink);margin:.2rem 0}
+.mk .d{font-size:1.6rem}
+.mk .d.up{color:var(--foam)}.mk .d.down{color:#FF9A85}
+#match{display:flex;align-items:center}
+#match span{margin:0 .7rem}
+#match .vs{color:var(--resin)}
+#match .live{color:#FF9A85;font-weight:600}
+#credit{position:fixed;bottom:2rem;left:7.2rem;font-size:1.4rem;color:var(--ink-3);display:none}
+body.ltr #credit{left:auto;right:7.2rem}
+body.photos #credit{display:block}
 
-#foot{display:flex;justify-content:space-between;align-items:flex-end;gap:3rem;font-size:2rem;color:var(--ink-2)}
-#match{display:flex;gap:1.4rem;align-items:center}
-#match .vs{color:var(--luban)}
-#match .live{color:#FF8A7A;font-weight:700}
-#credit{font-size:1.5rem;color:var(--ink-3)}
+/* the dial */
+#dialbox{flex:none;width:80rem;display:flex;align-items:center;justify-content:center}
+#dial{position:relative;width:76rem;height:76rem}
+#dial-svg{position:absolute;top:0;left:0;width:100%;height:100%;overflow:visible}
+.pr{position:absolute;width:16rem;margin-left:-8rem;margin-top:-4rem;text-align:center;line-height:1.15}
+.pr .t{font-size:3.6rem;font-weight:500}
+.pr .n{font-size:2.6rem;color:var(--ink-2)}
+.pr.sunrise .t{color:var(--ink-2);font-weight:400}
+.pr.next .t{color:var(--foam);font-weight:600;font-size:4rem}
+.pr.next .n{color:var(--foam)}
+#next{position:absolute;top:50%;left:50%;width:36rem;margin:-6.4rem 0 0 -18rem;text-align:center}
+#next .nn{font-size:4.8rem;font-weight:600;color:var(--foam);line-height:1.1}
+#next .nt{font-size:3rem;font-weight:500;margin-top:.4rem}
+#next .nl{font-size:2.6rem;color:var(--ink-2);margin-top:.6rem}
+.smoke{position:absolute;width:30rem;height:42rem;pointer-events:none;mix-blend-mode:screen}
+#smoke-a{animation:breathe 9s ease-in-out infinite alternate}
+#smoke-b{animation:breathe 9s ease-in-out -4.5s infinite alternate-reverse}
+@keyframes breathe{from{opacity:.25;transform:translateY(0)}to{opacity:1;transform:translateY(-1.2rem)}}
+body.night .smoke{opacity:.4;animation:none}

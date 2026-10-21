@@ -8,37 +8,47 @@
 <!--STYLE-->
 </head>
 <body>
-<div id="bg"><div class="ph" id="ph-a"></div><div class="ph" id="ph-b"></div><div class="veil"></div></div>
+<!-- The sea: a chart's rhumb lines running out from the dial, engraved waves, and (optionally) the photos under a veil -->
+<div id="bg"><div class="ph" id="ph-a"></div><div class="ph" id="ph-b"></div><div class="veil"></div><div class="waves"></div></div>
+<svg id="rhumbs" aria-hidden="true"></svg>
 
 <main id="stage">
-  <header id="top">
-    <div id="place">
-      <div class="city" id="city"></div>
-      <div class="wx" id="wx"></div>
-    </div>
-    <div id="chips"></div>
-    <div id="markets"></div>
-  </header>
+  <section id="info">
+    <header id="top">
+      <div id="place">
+        <div class="city" id="city"></div>
+        <div class="wx" id="wx"></div>
+      </div>
+      <div id="chips"></div>
+    </header>
 
-  <section id="center">
-    <div id="clockbox">
-      <div id="clock"><span id="hh"></span><span class="colon">:</span><span id="mm"></span><span id="ampm"></span></div>
-      <svg class="crenel" viewBox="0 0 240 12" preserveAspectRatio="none" aria-hidden="true"><path id="crenel-path"/></svg>
-      <div id="dates"><span id="greg"></span><span class="dot">•</span><span id="hijri"></span></div>
-    </div>
+    <div id="clock"><span id="hh"></span><span class="colon">:</span><span id="mm"></span><span id="ampm"></span></div>
+    <div id="dates"><span id="greg"></span><span class="dot"></span><span id="hijri"></span></div>
+
     <aside id="card" hidden>
-      <div class="card-hd"><span class="flag" role="img" aria-label="علم سلطنة عُمان"></span><span id="card-title"></span></div>
+      <div class="card-hd" id="card-title"></div>
       <div id="card-body"></div>
     </aside>
+
+    <footer id="foot">
+      <div id="markets"></div>
+      <div id="match"></div>
+    </footer>
   </section>
 
-  <section id="prayers"></section>
-
-  <footer id="foot">
-    <div id="match"></div>
-    <div id="credit"></div>
-  </footer>
+  <!-- The navigators' star compass as a 24-hour dial: noon at the top, the prayers as bearings on the rim,
+       and "now" a lit grain of frankincense whose smoke rises across the chart -->
+  <section id="dialbox">
+    <div id="dial">
+      <svg id="dial-svg" viewBox="-400 -400 800 800" aria-hidden="true"></svg>
+      <canvas class="smoke" id="smoke-a" width="300" height="420"></canvas>
+      <canvas class="smoke" id="smoke-b" width="300" height="420"></canvas>
+      <div id="prayers"></div>
+      <div id="next"><div class="nn" id="next-name"></div><div class="nt" id="next-time"></div><div class="nl" id="next-left"></div></div>
+    </div>
+  </section>
 </main>
+<div id="credit"></div>
 <!--SCRIPT-->
 </body>
 </html>

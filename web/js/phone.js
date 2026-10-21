@@ -17,7 +17,7 @@
     asrStd: 'Standard (shadow ×1)', asrHan: 'Hanafi (shadow ×2)', offsets: 'Adjust in minutes (to match the local calendar)', iqama: 'Iqama, minutes after adhan',
     hijri: 'Hijri date adjustment', screen: 'Screen', panel: 'Card beside the clock', pVerse: 'Verse or hadith of the day', pPrayers: "Today's prayers and iqama",
     pForecast: 'Weather, next days', pMatches: 'Your teams', pShows: 'New episodes', pNone: 'No card', omanDays: 'Oman National Day and Khareef season',
-    night: 'Dim at night', homeCard: 'Prayer card on the home screen', markets: 'Markets', teams: 'Your teams', search: 'Search',
+    night: 'Dim at night', bg: 'Background', bgChart: 'The sea chart', bgPhotos: 'Photos of Oman', homeCard: 'Prayer card on the home screen', markets: 'Markets', teams: 'Your teams', search: 'Search',
     teamsHint: 'Up to 10 teams. Edit the Arabic name as you like it shown.', shows: 'TV shows', genres: 'Genres (empty = all)', minRating: 'Minimum rating',
     advanced: 'Advanced', api: 'Data server (optional)', channel: 'Update channel', stable: 'Stable', canary: 'Canary (gets updates first)', save: 'Save',
     saved: 'Saved. The screen updates now.', failed: 'Not saved: ', custom: 'Other place…', default: 'Country default', teamSearch: 'Search in English: Oman, Al Seeb…',
@@ -111,7 +111,7 @@
       ...S, lang: $('lang').value, digits: $('digits').value, clock24: $('clock24').checked, city: $('city').value,
       place: custom ? { ar: $('c-ar').value, en: $('c-en').value, lat: +$('c-lat').value, lon: +$('c-lon').value, tz: $('c-tz').value.trim() } : null,
       method: $('method').value, asr: $('asr').value, offsets: grid('offsets'), iqama: grid('iqama'), hijriOffset: +$('hijri').value,
-      panel: $('panel').value, omanDays: $('omanDays').checked, night: $('night').checked, homeCard: $('homeCard').checked,
+      panel: $('panel').value, bg: $('bg').value, omanDays: $('omanDays').checked, night: $('night').checked, homeCard: $('homeCard').checked,
       markets: checked('markets'), shows: { genres: checked('genres'), langs: S.shows.langs, minRating: +$('minRating').value },
       api: $('api').value.trim(), channel: $('channel').value,
     }, METHODS);
@@ -134,7 +134,7 @@
     $('method').value = S.method; $('asr').value = S.asr; $('hijri').value = String(S.hijriOffset);
     numberGrid('offsets', PR, S.offsets, -30, 30);
     numberGrid('iqama', ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'], S.iqama, 0, 60);
-    $('panel').value = S.panel; $('omanDays').checked = S.omanDays; $('night').checked = S.night; $('homeCard').checked = S.homeCard;
+    $('panel').value = S.panel; $('bg').value = S.bg; $('omanDays').checked = S.omanDays; $('night').checked = S.night; $('homeCard').checked = S.homeCard;
     checks('markets', ['gold', 'brent', 'btc', 'spx'], S.markets, t);
     checks('genres', GENRES, S.shows.genres);
     $('minRating').value = String(S.shows.minRating); $('api').value = S.api; $('channel').value = S.channel;

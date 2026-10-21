@@ -16,7 +16,7 @@ import java.util.Calendar;
 import java.util.TimeZone;
 
 /**
- * The prayer card on the home screen: the next prayer, the time left, and today's five times. Off until it is switched
+ * The prayer card on the home screen: the dial, the next prayer, the time left, and today's five times. Off until it is switched
  * on in the screensaver's phone settings; the city and method come from there (ConfigProvider, signature permission).
  */
 final class PrayerCard {
@@ -26,6 +26,7 @@ final class PrayerCard {
     private final Context c;
     final LinearLayout view;
     private final TextView title, next, left;
+    private final Dial dial;
     private final TextView[] small = new TextView[5];
     private JSONObject cfg;
     private String computedFor = "";
@@ -40,10 +41,15 @@ final class PrayerCard {
         int p = Ui.dp(c, 20);
         view.setPadding(p, Ui.dp(c, 14), p, Ui.dp(c, 14));
 
+        dial = new Dial(c);
+        LinearLayout.LayoutParams dl = new LinearLayout.LayoutParams(Ui.dp(c, 104), Ui.dp(c, 104));
+        dl.setMarginEnd(Ui.dp(c, 20));
+        view.addView(dial, dl);
+
         LinearLayout main = new LinearLayout(c);
         main.setOrientation(LinearLayout.VERTICAL);
         title = Ui.text(c, "", 14, Ui.medium(), Ui.LUBAN_SOFT);
-        next = Ui.text(c, "", 26, Ui.heavy(), Ui.INK);
+        next = Ui.text(c, "", 26, Ui.bold(), Ui.FOAM);
         left = Ui.text(c, "", 15, Ui.regular(), Ui.INK2);
         next.setPadding(0, Ui.dp(c, 6), 0, Ui.dp(c, 4));
         main.addView(title);
@@ -65,6 +71,9 @@ final class PrayerCard {
         }
         view.setVisibility(View.GONE);
     }
+
+    /** The owner chose Omani photos behind the home screen instead of the sea chart. */
+    boolean photos() { return cfg != null && "photos".equals(cfg.optString("bg")); }
 
     /** Re-read the settings (on resume). */
     void reload() {
@@ -118,8 +127,9 @@ final class PrayerCard {
             String n = k == 2 && friday ? (ar ? "الجمعة" : "Jumu'ah") : (ar ? AR : EN)[k];
             double shown = afterIsha && k == 0 ? tomorrow[0] : today[k];   // after Isha: tomorrow's Fajr
             small[i].setText(Ui.digits(n + "\n" + fmt(shown, ar), arab));
-            small[i].setTextColor(k == idx ? Ui.LUBAN : Ui.INK2);
+            small[i].setTextColor(k == idx ? Ui.FOAM : Ui.INK2);
         }
+        dial.set(order, mins, idx, ar);
     }
 
     private double[] compute(int y, int m, int d, TimeZone tz, int dayOffset) {

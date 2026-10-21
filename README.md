@@ -1,5 +1,5 @@
 <p align="center"><img src="docs/brand/hero.png" alt="لُبان · Luban" width="100%"></p>
-<p align="center"><img src="docs/brand/screen-ar.jpg" alt="شاشة لُبان في نزوى" width="100%"></p>
+<p align="center"><img src="docs/brand/screen-ar.jpg" alt="شاشة لُبان في مسقط" width="100%"></p>
 <p align="center"><img src="docs/brand/screen-en.jpg" alt="Luban screen in London" width="100%"></p>
 
 <div dir="rtl">
@@ -8,8 +8,10 @@
 
 **شاشة توقف وواجهة رئيسية لتلفزيونات Android TV و Google TV، بهويّة عُمانية، لكل بيت في العالم.**
 
-الساعة، والتاريخ الهجري، ومواقيت الصلاة والإقامة محسوبة على التلفزيون نفسه، والطقس والغبار، ومباريات فرقك،
-والذهب بالريال العُماني، وآية أو حديث اليوم. كل ذلك فوق صور من عُمان: مطرح ونزوى ورمال الشرقية وخريف ظفار.
+اليوم كله على بوصلة الملّاحين العُمانيين: الزوال في الأعلى ومنتصف الليل في الأسفل، والصلوات مواقع على حافتها،
+و«الآن» حبّة لُبان متّقدة يتصاعد دخانها فوق خريطة بحرية؛ فاللبان هو ما حمله العُمانيون عبر هذا البحر إلى العالم.
+ومعها الساعة والتاريخ الهجري ومواقيت الصلاة والإقامة (مطابقة لتقويم وزارة الأوقاف)، والطقس والغبار، ومباريات
+فرقك، والذهب بالريال العُماني، وآية أو حديث اليوم. ويمكن اختيار صور من عُمان خلفيةً بدل الخريطة.
 يوجد عدّ تنازلي للعيد الوطني (20 و21 نوفمبر)، وتنبيه لموسم الخريف في ظفار. وتُضبط الإعدادات كلها من الجوال
 بمسح رمز QR، دون حاجة إلى الريموت.
 
@@ -17,7 +19,7 @@
 
 | | |
 |---|---|
-| **شاشة لُبان** (شاشة التوقف) | ساعة كبيرة تحتها شرفات حصون عُمان، والتاريخان الميلادي والهجري، والصلوات الست مع العدّ للصلاة القادمة ثم للإقامة، و«الجمعة» مكان الظهر يوم الجمعة. وبطاقة بجانب الساعة تختارها: آية أو حديث، مواقيت اليوم، طقس الأيام القادمة، مباريات فرقك، أو جديد المسلسلات |
+| **شاشة لُبان** (شاشة التوقف) | بوصلة اليوم وجمرة اللبان، وساعة كبيرة، والتاريخان الميلادي والهجري، والصلوات الست مع العدّ للصلاة القادمة ثم للإقامة، و«الجمعة» مكان الظهر يوم الجمعة. وبطاقة بجانب الساعة تختارها: آية أو حديث، مواقيت اليوم، طقس الأيام القادمة، مباريات فرقك، أو جديد المسلسلات |
 | **لُبان الرئيسية** (الواجهة) | واجهة عربية خفيفة فيها صفّ المفضلة، وكل التطبيقات، والمداخل (HDMI)، وحالة الشبكة، وبطاقة «الصلاة القادمة» إن أردتها |
 | **إعدادات من الجوال** | افتح التطبيق على التلفزيون، وامسح الرمز، واختر المدينة وطريقة الحساب والفرق وكل شيء |
 | **خادم بيانات** (اختياري) | خدمة صغيرة على Coolify تجمع المباريات والأسواق مرة واحدة لكل التلفزيونات |
@@ -74,9 +76,11 @@ python3 tools/luban.py setup
 
 **A screensaver and home screen for Android TV / Google TV, Omani by design, for homes everywhere.**
 
-Clock, Hijri date, prayer times and iqama computed on the TV, weather and dust, your teams' matches, gold in Omani
-rials, a verse or hadith of the day, over photographs of Oman: Muttrah, Nizwa, the Sharqiyah Sands, Dhofar in the
-Khareef. A countdown to Oman's National Day (20–21 November) and the Khareef season in Dhofar. Every setting from
+The whole day on an Omani navigator's star compass: noon at the top, midnight at the bottom, the prayers as bearings
+on the rim, and "now" a lit grain of frankincense whose smoke rises across a sea chart, because frankincense is what
+Oman carried across this sea to the world. With it: the clock, Hijri date, prayer times and iqama computed on the TV
+(matching Oman's Ministry of Awqaf calendar), weather and dust, your teams' matches, gold in Omani rials, a verse or
+hadith of the day. Photographs of Oman can replace the chart as the background. A countdown to Oman's National Day (20–21 November) and the Khareef season in Dhofar. Every setting from
 your phone by scanning a QR code; the remote is never needed for typing.
 
 Luban (لُبان) is frankincense, which Oman has traded with the world for thousands of years.
@@ -85,7 +89,7 @@ Luban (لُبان) is frankincense, which Oman has traded with the world for tho
 
 | | |
 |---|---|
-| **Luban screen** (screensaver) | A large clock over the stepped merlons of an Omani fort, Gregorian and Hijri dates, six prayer times with a countdown to the next and then to the iqama, Jumu'ah on Fridays. A card beside the clock: verse or hadith, today's prayers, the forecast, your teams, or new episodes |
+| **Luban screen** (screensaver) | The day's compass and the frankincense ember, a large clock, Gregorian and Hijri dates, six prayer times with a countdown to the next and then to the iqama, Jumu'ah on Fridays. A card beside the clock: verse or hadith, today's prayers, the forecast, your teams, or new episodes |
 | **Luban home** (launcher) | A light Arabic home screen: favourites, all apps, HDMI inputs, network state, an optional "next prayer" card |
 | **Phone settings** | Open the app on the TV, scan the code, set the city, method, teams, everything |
 | **Data server** (optional) | A small service for Coolify that fetches matches and markets once for every TV ([server/](server/README.md)) |
@@ -148,7 +152,7 @@ after 48 hours. Repository secrets: `LUBAN_KEYSTORE_B64`, `LUBAN_KEYSTORE_PASSWO
 
 ## Credits
 
-Fonts: [Tajawal](https://fonts.google.com/specimen/Tajawal) and [Amiri](https://www.amirifont.org/) (SIL OFL).
+Fonts: [El Messiri](https://github.com/Gue3bara/El-Messiri) and [Amiri](https://www.amirifont.org/) (SIL OFL).
 Photos: Wikimedia Commons photographers (Quality images of Oman), each with its licence in [docs/PHOTO-CREDITS.md](docs/PHOTO-CREDITS.md). Quran text: King Fahd Complex Uthmani
 Hafs edition and the Forty Hadith of an-Nawawi, via [fawazahmed0](https://github.com/fawazahmed0)'s public-domain
 datasets. Weather: [Open-Meteo](https://open-meteo.com). Matches: [TheSportsDB](https://www.thesportsdb.com).

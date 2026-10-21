@@ -23,6 +23,7 @@ const enc = s => Buffer.from(JSON.stringify(s)).toString('base64').replace(/\+/g
   check('settings: a plain-http data server is refused (the default stays)', s.api === 'https://luban.bassamailab.xyz');
   check('settings: the data server can be turned off', sanitize({ api: '' }, P.METHODS).api === '');
   check('settings: unknown keys dropped', !('extra' in s));
+  check('settings: background is the sea chart unless photos are chosen', s.bg === 'chart' && sanitize({ bg: 'photos' }, P.METHODS).bg === 'photos' && sanitize({ bg: 'x' }, P.METHODS).bg === 'chart');
   const c = sanitize({ city: 'custom', place: { en: 'Reykjavik', lat: 64.1, lon: -21.9, tz: 'Not/AZone' } }, P.METHODS);
   check('settings: custom place with a bad time zone falls back', c.city === 'muscat' && c.place === null);
   const c2 = sanitize({ city: 'custom', place: { en: 'Zanzibar', lat: -6.16, lon: 39.19, tz: 'Africa/Dar_es_Salaam' } }, P.METHODS);
@@ -77,12 +78,19 @@ const text = (page, sel) => page.$eval(sel, e => e.textContent);
   check('screen: Dhuhr is next and highlighted', (await page.$eval('#prayers .pr.next .n', e => e.textContent)) === 'الظهر');
   check('screen: National Day countdown on 21 October', (await text(page, '#chips')).includes('العيد الوطني') && (await text(page, '#chips')).includes('30'));
   check('screen: Western digits by default', /\d/.test(await text(page, '#hh')));
+  check('dial: the centre names the next prayer and counts down in words', (await text(page, '#next-name')) === 'الظهر' && (await text(page, '#next-left')).startsWith('بعد ساعتين و'), await text(page, '#next-left'));
+  check('dial: a lit grain of frankincense marks now, its smoke drawn', await page.evaluate(() => !!document.querySelector('#dial-svg circle[fill="url(#glow)"]') && document.getElementById('smoke-a').toDataURL().length > 2000));
+  check('dial: morning on the right in Arabic (Fajr right of centre, Maghrib left)', await page.evaluate(() =>
+    parseFloat(document.querySelector('.pr.fajr').style.left) > 50 && parseFloat(document.querySelector('.pr.maghrib').style.left) < 50));
+  check('chart: 48 rhumb lines run out from the dial', await page.evaluate(() => document.querySelectorAll('#rhumbs line').length === 48));
+  check('chart: no photos unless chosen', await page.evaluate(() => !document.body.classList.contains('photos')));
   await page.close();
 }
 {
   const page = await open({ lang: 'en', digits: 'arab', city: 'london', panel: 'verse' });
   check('screen: no script errors (English, London)', page.errors.length === 0, page.errors);
   check('screen: English layout is left-to-right', (await page.evaluate(() => document.documentElement.dir)) === 'ltr');
+  check('dial: morning on the left in English', await page.evaluate(() => parseFloat(document.querySelector('.pr.fajr').style.left) < 50));
   check('screen: London clock (06:10 BST)', (await text(page, '#hh')) === '٦');
   check('screen: Arabic-Indic digits when chosen', /[٠-٩]/.test(await text(page, '#mm')));
   await page.close();

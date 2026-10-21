@@ -4,7 +4,7 @@
   const T = {
     ar: {
       fajr: 'الفجر', sunrise: 'الشروق', dhuhr: 'الظهر', jumuah: 'الجمعة', asr: 'العصر', maghrib: 'المغرب', isha: 'العشاء',
-      am: 'ص', pm: 'م', in: 'بعد', iqamaIn: 'الإقامة بعد', now: 'الآن',
+      am: 'ص', pm: 'م', noon: 'الزوال', midnight: 'منتصف الليل', in: 'بعد', iqamaIn: 'الإقامة بعد', now: 'الآن',
       min: n => n === 1 ? 'دقيقة' : n === 2 ? 'دقيقتان' : n <= 10 ? 'دقائق' : 'دقيقة',
       hr: n => n === 1 ? 'ساعة' : n === 2 ? 'ساعتان' : n <= 10 ? 'ساعات' : 'ساعة',
       day: n => n === 1 ? 'يوم' : n === 2 ? 'يومان' : n <= 10 ? 'أيام' : 'يوماً',
@@ -23,7 +23,7 @@
     },
     en: {
       fajr: 'Fajr', sunrise: 'Sunrise', dhuhr: 'Dhuhr', jumuah: "Jumu'ah", asr: 'Asr', maghrib: 'Maghrib', isha: 'Isha',
-      am: 'AM', pm: 'PM', in: 'in', iqamaIn: 'Iqama in', now: 'now',
+      noon: 'Noon', midnight: 'Midnight', am: 'AM', pm: 'PM', in: 'in', iqamaIn: 'Iqama in', now: 'now',
       min: n => n === 1 ? 'min' : 'min', hr: n => n === 1 ? 'hr' : 'hr', day: n => n === 1 ? 'day' : 'days',
       verse: 'Verse of the day', hadith: 'Hadith of the day', prayersToday: "Today's prayers", forecast: 'Next days',
       matches: 'Your teams', shows: 'New episodes this week', noData: 'No data right now',

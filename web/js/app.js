@@ -45,11 +45,21 @@
   const minutesNow = () => { const l = local(); return l.h * 60 + l.mi + l.s / 60; };
   const dayKey = l => `${l.y}-${pad(l.m)}-${pad(l.d)}`;
 
-  function fmtTime(min) {
+  /** bare: no AM/PM, for the dial's rim where the position on the day already says it */
+  function fmtTime(min, bare) {
     const r = Math.round(min) % 1440, hh = Math.floor(r / 60), mm = r % 60;
     if (S.clock24) return dg(pad(hh) + ':' + pad(mm));
     const h12 = hh % 12 === 0 ? 12 : hh % 12;
-    return dg(h12 + ':' + pad(mm)) + ' ' + (hh < 12 ? T.am : T.pm);
+    return dg(h12 + ':' + pad(mm)) + (bare ? '' : ' ' + (hh < 12 ? T.am : T.pm));
+  }
+  /** "بعد ساعتين و47 دقيقة" / "in 2 h 47 min": the dial's centre has room for the full words */
+  function leftLong(mins) {
+    mins = Math.max(0, Math.ceil(mins));
+    const hh = Math.floor(mins / 60), mm = mins % 60;
+    if (S.lang !== 'ar') return `${T.in} ${hh ? hh + ' h ' : ''}${hh && !mm ? '' : mm + ' min'}`.trim();
+    const hs = hh === 1 ? 'ساعة' : hh === 2 ? 'ساعتين' : hh <= 10 ? `${dg(hh)} ساعات` : `${dg(hh)} ساعة`;
+    const ms = mm === 1 ? 'دقيقة' : mm === 2 ? 'دقيقتين' : mm <= 10 ? `${dg(mm)} دقائق` : `${dg(mm)} دقيقة`;
+    return `${T.in} ${hh && mm ? hs + ' و' + ms : hh ? hs : ms}`;
   }
   function fmtLeft(mins) {
     mins = Math.max(0, Math.ceil(mins));
@@ -76,6 +86,7 @@
     document.documentElement.lang = S.lang;
     document.documentElement.dir = S.lang === 'ar' ? 'rtl' : 'ltr';
     document.body.classList.toggle('ltr', S.lang !== 'ar');
+    document.body.classList.toggle('photos', S.bg === 'photos');
     const loc = (S.lang === 'ar' ? 'ar-OM' : 'en-GB') + '-u-nu-' + S.digits;
     CAL = {
       parts: new Intl.DateTimeFormat('en-US', { timeZone: P.tz, hour12: false, year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: 'numeric', second: 'numeric', weekday: 'short' }),
@@ -159,21 +170,144 @@
   }
   const prayerName = (k, friday) => (k === 'dhuhr' && friday) ? T.jumuah : T[k];
 
+  // ---------- the dial: the navigators' star compass as a 24-hour clock
+  const SVGNS = 'http://www.w3.org/2000/svg', R = 300;
+  function svg(tag, attrs, parent) {
+    const e = document.createElementNS(SVGNS, tag);
+    for (const k in attrs) e.setAttribute(k, attrs[k]);
+    if (parent) parent.appendChild(e);
+    return e;
+  }
+  /** Noon at the top, midnight at the bottom. Time runs the way the language reads: morning on the right in Arabic. */
+  function at(min, r) {
+    const a = (min - 720) / 1440 * 2 * Math.PI, side = S.lang === 'ar' ? -1 : 1;
+    return [side * r * Math.sin(a), -r * Math.cos(a)];
+  }
+  function arc(t0, t1, r) {
+    const p = at(t0, r), q = at(t1, r), sweep = S.lang === 'ar' ? 0 : 1;
+    return `M${p[0].toFixed(1)} ${p[1].toFixed(1)} A${r} ${r} 0 ${t1 - t0 > 720 ? 1 : 0} ${sweep} ${q[0].toFixed(1)} ${q[1].toFixed(1)}`;
+  }
+  let dialDyn = null;
+  function drawDialFrame() {
+    const root = clear($('dial-svg'));
+    const defs = svg('defs', {}, root), g = svg('radialGradient', { id: 'glow' }, defs);
+    svg('stop', { offset: '0', 'stop-color': '#FFB547', 'stop-opacity': '.95' }, g);
+    svg('stop', { offset: '.35', 'stop-color': '#E2762A', 'stop-opacity': '.45' }, g);
+    svg('stop', { offset: '1', 'stop-color': '#E2762A', 'stop-opacity': '0' }, g);
+    svg('circle', { r: 372, fill: '#06192A', 'fill-opacity': '.55' }, root);
+    svg('circle', { r: R, fill: 'none', stroke: '#E2A94F', 'stroke-opacity': '.5', 'stroke-width': 1.5 }, root);
+    svg('circle', { r: R - 26, fill: 'none', stroke: '#E2A94F', 'stroke-opacity': '.25' }, root);
+    for (let q = 0; q < 96; q++) {   // quarter hours, the hours longer
+      const hour = q % 4 === 0, p = at(q * 15, R), i = at(q * 15, R - (hour ? 22 : 9));
+      svg('line', { x1: p[0], y1: p[1], x2: i[0], y2: i[1], stroke: '#E2A94F', 'stroke-opacity': hour ? '.8' : '.4', 'stroke-width': hour ? 2 : 1 }, root);
+    }
+    for (let k = 0; k < 8; k++) {   // the eight principal rhumbs, kept clear of the words in the middle
+      const a = k / 8 * 2 * Math.PI, s0 = Math.sin(a), c0 = Math.cos(a);
+      svg('line', { x1: 200 * s0, y1: -200 * c0, x2: 262 * s0, y2: -262 * c0, stroke: '#E2A94F', 'stroke-opacity': '.25' }, root);
+    }
+    const word = (txt, y, op) => { const t = svg('text', { x: 0, y, 'text-anchor': 'middle', 'font-family': 'Messiri', 'font-size': 24, fill: '#E2A94F', 'fill-opacity': op }, root); t.textContent = txt; };
+    word(T.noon, -R + 62, '.8');
+    word(T.midnight, R - 44, '.6');
+    dialDyn = svg('g', {}, root);
+  }
+
+  /** The smoke: fine threads that curl and fade as they rise, drawn once per minute; CSS breathes the two layers. */
+  function drawSmoke(id, seed) {
+    const cv = $(id), c = cv.getContext && cv.getContext('2d');
+    if (!c) return;
+    let s = seed;
+    const rnd = () => (s = (s * 16807) % 2147483647) / 2147483647;
+    c.clearRect(0, 0, cv.width, cv.height);
+    const x0 = cv.width / 2, y0 = cv.height - 12, lean = S.lang === 'ar' ? -1 : 1;
+    const layers = [[18, 34, .06, 4], [6, 10, .08, 7], [1.2, 2, .3, 10]];
+    for (const [blur, w, al, n] of layers) {
+      c.save();
+      c.filter = `blur(${blur}px)`;
+      c.lineCap = 'round'; c.lineWidth = w;
+      const g = c.createLinearGradient(0, y0, 0, 0);
+      g.addColorStop(0, 'rgba(246,236,218,0)'); g.addColorStop(.06, `rgba(246,236,218,${al})`); g.addColorStop(1, 'rgba(246,236,218,0)');
+      c.strokeStyle = g;
+      for (let k = 0; k < n; k++) {
+        let y = y0, dx = 0;
+        const t = rnd() * 6.28, sp = (rnd() - .5) * 1.4;
+        c.beginPath(); c.moveTo(x0, y);
+        for (let j = 0; j < 86; j++) {
+          const q = j / 86;
+          dx += Math.sin(j * .11 + t) * (.6 + q * 3) + Math.sin(j * .27 + t * 2) * (.3 + q * .8) + sp * q * 2.4;
+          y -= 4.6; c.lineTo(x0 + dx + lean * q * q * 70, y);
+        }
+        c.stroke();
+      }
+      c.restore();
+    }
+  }
+
+  let smokeAt = -1;
   function renderPrayers() {
     ensureTimes();
-    const box = clear($('prayers')), nx = nextPrayer(), iq = iqamaPending(), friday = local().wd === 'Fri';
+    if (!dialDyn) drawDialFrame();
+    const box = clear($('prayers')), dyn = clear(dialDyn), nx = nextPrayer(), iq = iqamaPending(), friday = local().wd === 'Fri';
+    const t = state.order, now = minutesNow();
+    // daylight, and the part of today already lived (from Fajr), in resin
+    svg('path', { d: arc(t.sunrise, t.maghrib, R - 13), fill: 'none', stroke: '#E2A94F', 'stroke-width': 26, 'stroke-opacity': '.2' }, dyn);
+    if (now > t.fajr) svg('path', { d: arc(t.fajr, Math.min(now, t.fajr + 1439), R - 13), fill: 'none', stroke: '#E2A94F', 'stroke-width': 26, 'stroke-opacity': '.55' }, dyn);
+    const placed = [];
     for (const k of KEYS) {
-      const el = h('div', 'pr ' + k);
-      // after Isha the Fajr tile counts down to tomorrow's Fajr, so it shows tomorrow's time too
-      const at = nx.tomorrow && k === 'fajr' ? state.tomorrow.fajr : state.times[k];
-      el.append(h('div', 'n', prayerName(k, friday)), h('div', 't', fmtTime(at)));
-      let note = '';
-      if (iq && iq.key === k) note = `${T.iqamaIn} ${fmtLeft(iq.left)}`;
-      else if (!iq && nx.key === k && !nx.tomorrow) { el.classList.add('next'); note = `${T.in} ${fmtLeft(nx.left)}`; }
-      if (iq && iq.key === k) el.classList.add('next');
-      if (nx.tomorrow && k === 'fajr') { el.classList.add('next'); note = `${T.in} ${fmtLeft(nx.left)}`; }
-      el.append(h('div', 'c', note));
+      // after Isha the Fajr mark points at tomorrow's Fajr
+      const tm = nx.tomorrow && k === 'fajr' ? state.tomorrow.fajr : state.times[k];
+      const isNext = iq ? iq.key === k : nx.key === k;
+      const o = at(t[k], R + 6), i = at(t[k], R - 40);
+      svg('line', { x1: o[0], y1: o[1], x2: i[0], y2: i[1], stroke: isNext ? '#8FE0D6' : '#F1EBDD', 'stroke-width': isNext ? 5 : 3 }, dyn);
+      // labels outside the rim; one too close to the last steps further out
+      let p = at(t[k], 392);
+      if (placed.some(q => Math.abs(q[0] - p[0]) < 150 && Math.abs(q[1] - p[1]) < 80)) p = at(t[k], 470);
+      placed.push(p);
+      const el = h('div', 'pr ' + k + (isNext ? ' next' : ''));
+      el.style.left = ((p[0] + 400) / 8) + '%'; el.style.top = ((p[1] + 400) / 8) + '%';
+      el.append(h('div', 't', fmtTime(tm, true)), h('div', 'n', prayerName(k, friday)));
       box.append(el);
+    }
+    // now: a lit grain of frankincense on the rim
+    const e = at(now, R - 13), pin = at(now, 214);
+    svg('line', { x1: pin[0], y1: pin[1], x2: e[0], y2: e[1], stroke: '#F6D9A0', 'stroke-width': 2 }, dyn);
+    svg('circle', { cx: e[0], cy: e[1], r: 70, fill: 'url(#glow)' }, dyn);
+    const [x, y] = e;
+    svg('path', { fill: '#F7E7C4', d: `M${x - 15} ${y + 4}C${x - 16} ${y - 12} ${x - 4} ${y - 17} ${x + 6} ${y - 14}C${x + 17} ${y - 10} ${x + 18} ${y + 6} ${x + 8} ${y + 13}C${x - 2} ${y + 18} ${x - 14} ${y + 15} ${x - 15} ${y + 4}Z` }, dyn);
+    svg('path', { d: `M${x - 6} ${y - 6}q6 -5 12 -1`, stroke: '#fff', 'stroke-opacity': '.8', 'stroke-width': 3, fill: 'none', 'stroke-linecap': 'round' }, dyn);
+    // the smoke rises from the grain
+    for (const id of ['smoke-a', 'smoke-b']) {
+      const cv = $(id);
+      cv.style.left = ((x + 400) / 8 - 30 / 76 * 50) + '%';
+      cv.style.top = ((y + 400) / 8 - 42 / 76 * 100 + 1) + '%';
+    }
+    const minute = Math.floor(now);
+    if (minute !== smokeAt) { smokeAt = minute; drawSmoke('smoke-a', 11); drawSmoke('smoke-b', 29); }
+    // the centre: what comes next
+    if (iq) {
+      $('next-name').textContent = prayerName(iq.key, friday);
+      $('next-time').textContent = T.iqama;
+      $('next-left').textContent = leftLong(iq.left);
+    } else {
+      $('next-name').textContent = prayerName(nx.key, nx.friday);
+      $('next-time').textContent = fmtTime(nx.at);
+      $('next-left').textContent = leftLong(nx.left);
+    }
+  }
+
+  /** The chart's rhumb lines, running out from the dial's centre across the whole screen. */
+  function drawRhumbs() {
+    const root = clear($('rhumbs')), r = $('dial').getBoundingClientRect();
+    const cx = r.left + r.width / 2, cy = r.top + r.height / 2, W = window.innerWidth, H = window.innerHeight, L = W + H;
+    root.setAttribute('viewBox', `0 0 ${W} ${H}`);
+    for (let i = 0; i < 32; i++) {
+      const a = i / 32 * 2 * Math.PI;
+      svg('line', { x1: cx, y1: cy, x2: cx + L * Math.sin(a), y2: cy - L * Math.cos(a), stroke: '#E2A94F', 'stroke-opacity': i % 4 ? '.08' : '.17', 'stroke-width': i % 8 ? 1 : 1.5 }, root);
+    }
+    // a second, fainter rose, as old charts had several
+    const x2 = S.lang === 'ar' ? W * .8 : W * .2, y2 = H * 1.15;
+    for (let i = 0; i < 16; i++) {
+      const a = i / 16 * 2 * Math.PI;
+      svg('line', { x1: x2, y1: y2, x2: x2 + L * Math.sin(a), y2: y2 - L * Math.cos(a), stroke: '#E2A94F', 'stroke-opacity': '.04' }, root);
     }
   }
 
@@ -183,7 +317,6 @@
     const box = clear($('chips')), l = local(), hj = hijriToday();
     const chip = (text, cls) => {
       const c = h('span', 'chip ' + (cls || ''));
-      if (cls === 'nat') c.append(h('span', 'flag'));
       c.append(h('span', '', text));
       box.append(c);
     };
@@ -447,7 +580,7 @@
   let photoSlot = -1, layer = 0;
   function photoUrl(f) { return IN_APP ? '/photos/' + f : (window.LUBAN_PHOTO_BASE || 'photos/') + f; }
   function applyPhoto(force) {
-    const list = DATA.photos; if (!list.length) return;
+    const list = DATA.photos; if (!list.length || S.bg !== 'photos') return;
     const l = local(), day = Math.floor(Date.UTC(l.y, l.m - 1, l.d) / 86400000);
     const slot = Math.floor((l.h * 60 + l.mi) / 20);
     if (!force && slot === photoSlot) return;
@@ -475,27 +608,18 @@
     document.documentElement.style.setProperty('--shift-x', s[0] + 'px');
     document.documentElement.style.setProperty('--shift-y', s[1] + 'px');
   }
-  function drawCrenel() {
-    // the stepped merlons of an Omani fort wall (Nizwa, Bahla, Jabrin): a thin wall line, stepped teeth above it
-    let d = 'M0 12 L0 10', x = 0;
-    while (x + 14 <= 240) {
-      d += ` L${x + 2} 10 L${x + 2} 7 L${x + 4} 7 L${x + 4} 4 L${x + 6} 4 L${x + 6} 1 L${x + 8} 1 L${x + 8} 4 L${x + 10} 4 L${x + 10} 7 L${x + 12} 7 L${x + 12} 10 L${x + 20} 10`;
-      x += 20;
-    }
-    $('crenel-path').setAttribute('d', d + ' L240 10 L240 12 Z');
-  }
-
   // ---------- start
   async function start() {
     S = await loadSettings();
     applySettings();
-    drawCrenel();
     state.markets = store.get('markets', {});
     state.matches = store.get('matches', {});
     state.shows = store.get('shows', []);
     const wc = store.get('weather:' + P.id, null);
     if (wc) { state.weather = wc.w; state.forecast = wc.f; }
     tickClock(); tickDates(); renderPrayers(); renderChips(); renderWeather(); renderMarkets(); renderMatch(); renderCard(); applyPhoto(true); applyNight();
+    drawRhumbs();
+    window.addEventListener('resize', () => { drawRhumbs(); renderPrayers(); });
     document.body.classList.add('ready');
 
     setInterval(tickClock, 1000);

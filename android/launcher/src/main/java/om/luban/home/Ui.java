@@ -8,8 +8,11 @@ import android.widget.TextView;
 
 /** Colours, fonts and the focus look shared by every part of the home screen. */
 final class Ui {
-    static final int LUBAN = 0xFFE3B062, LUBAN_SOFT = 0xFFF2D6A2, INK = 0xFFF7F4EE, INK2 = 0xC7F7F4EE, INK3 = 0x8CF7F4EE;
-    static final int GLASS = 0x8C0E1418, LINE = 0x24F7F4EE;
+    /** the sea and frankincense: deep Indian Ocean, resin for what has been lived, foam for what comes next */
+    static final int DEEP = 0xFF06192A, SEA = 0xFF0C2E45;
+    static final int LUBAN = 0xFFE2A94F, LUBAN_SOFT = 0xFFF3D9A4, FOAM = 0xFF8FE0D6;
+    static final int INK = 0xFFF1EBDD, INK2 = 0xBDF1EBDD, INK3 = 0x80F1EBDD;
+    static final int GLASS = 0xA606192A, LINE = 0x38E2A94F;
     private static Typeface regular, medium, bold, heavy;
 
     private Ui() {}
@@ -18,12 +21,12 @@ final class Ui {
         if (regular != null) return;
         regular = font(c, "Regular");
         medium = font(c, "Medium");
-        bold = font(c, "Bold");
-        heavy = font(c, "ExtraBold");
+        bold = font(c, "SemiBold");
+        heavy = bold;
     }
 
     private static Typeface font(Context c, String w) {
-        try { return Typeface.createFromAsset(c.getAssets(), "native/Tajawal-" + w + ".ttf"); }
+        try { return Typeface.createFromAsset(c.getAssets(), "native/ElMessiri-" + w + ".ttf"); }
         catch (Exception e) { return Typeface.DEFAULT; }
     }
 

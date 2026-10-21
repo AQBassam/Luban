@@ -30,6 +30,7 @@ public class ConfigProvider extends ContentProvider {
             o.put("method", p.method).put("asr", "hanafi".equals(s.optString("asr")) ? "hanafi" : "standard");
             o.put("offsets", s.optJSONObject("offsets") != null ? s.optJSONObject("offsets") : new JSONObject());
             o.put("iqama", s.optJSONObject("iqama") != null ? s.optJSONObject("iqama") : new JSONObject());
+            o.put("bg", "photos".equals(s.optString("bg")) ? "photos" : "chart");
             o.put("hijriOffset", Math.max(-2, Math.min(2, s.optInt("hijriOffset", 0))));
             c.addRow(new Object[] {o.toString()});
         } catch (Exception ignored) { }

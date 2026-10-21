@@ -26,6 +26,7 @@
     shows: { genres: [], langs: [], minRating: 7 },
     omanDays: true,             // National Day countdown, Khareef season
     night: true,                // dim after Isha until before Fajr
+    bg: 'chart',                // chart (the sea chart) | photos (Omani photos under a veil)
     api: 'https://luban.bassamailab.xyz',   // the shared data server (server/); '' = every TV asks the sources itself
     channel: 'stable',          // stable | canary: which signed screen updates this TV takes
   };
@@ -73,6 +74,7 @@
     }
     s.omanDays = input.omanDays !== false;
     s.night = input.night !== false;
+    s.bg = pick(input.bg, ['chart', 'photos'], s.bg);
     if (input.api === '') s.api = '';   // the owner turned the shared server off
     else if (typeof input.api === 'string' && /^https:\/\/[A-Za-z0-9.-]+(:\d{2,5})?(\/[A-Za-z0-9._~\/-]*)?$/.test(input.api)) s.api = input.api.replace(/\/+$/, '');
     s.channel = pick(input.channel, ['stable', 'canary'], s.channel);
