@@ -104,6 +104,7 @@ public class HomeActivity extends Activity {
     }
 
     /** System broadcasts only (time, packages); not exported to other apps on Android 13+. */
+    @android.annotation.SuppressLint("UnspecifiedRegisterReceiverFlag")
     private void listen(BroadcastReceiver r, IntentFilter f) {
         if (android.os.Build.VERSION.SDK_INT >= 33) registerReceiver(r, f, Context.RECEIVER_NOT_EXPORTED);
         else registerReceiver(r, f);

@@ -33,6 +33,7 @@
         android:banner="@drawable/banner"
         android:supportsRtl="true"
         android:allowBackup="false"
+        android:dataExtractionRules="@xml/no_backup"
         android:usesCleartextTraffic="false"
         android:theme="@android:style/Theme.Material.NoActionBar.Fullscreen">
 
@@ -43,7 +44,6 @@
             android:stateNotNeeded="true"
             android:clearTaskOnLaunch="true"
             android:excludeFromRecents="true"
-            android:screenOrientation="landscape"
             android:configChanges="keyboard|keyboardHidden|navigation|orientation|screenSize|screenLayout|uiMode|density|locale|layoutDirection">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

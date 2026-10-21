@@ -4,7 +4,8 @@ write content/photos.json (the list the screen rotates through) and docs/PHOTO-C
 
 Run by .github/workflows/photos.yml (this needs the network). Every photo is under the Unsplash License
 (https://unsplash.com/license): free to use, credit given anyway on screen and in the credits file.
-Photos that fail to download or are not landscape are left out and reported, never guessed.
+Photos that fail to download or are not landscape are left out and reported, never guessed; the run fails only
+when fewer than 12 remain.
 """
 import io
 import json

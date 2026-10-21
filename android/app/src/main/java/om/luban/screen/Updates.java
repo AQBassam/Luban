@@ -2,7 +2,6 @@ package om.luban.screen;
 
 import android.content.Context;
 import android.content.SharedPreferences;
-import android.provider.Settings;
 
 import org.json.JSONObject;
 
@@ -18,6 +17,7 @@ import java.util.zip.ZipInputStream;
  * built into this APK, byte-for-byte the signed bundle, and newer than both the APK's own page and the last update.
  * Canary: one TV in ten (by a stable per-install number), or any TV whose owner picked it, takes screen-canary first.
  */
+@android.annotation.SuppressLint("ApplySharedPref")
 final class Updates {
     static final long INTERVAL_MS = 6L * 3600 * 1000;
     private static final String[] FILES = {"index.html", "settings.html"};
@@ -41,8 +41,14 @@ final class Updates {
     static String channel(Context c) {
         JSONObject s = Store.settings(c);
         if ("canary".equals(s.optString("channel"))) return "canary";
-        String id = Settings.Secure.getString(c.getContentResolver(), Settings.Secure.ANDROID_ID);
-        return id != null && Math.abs(id.hashCode() % 10) == 0 ? "canary" : "stable";
+        // a random number drawn once per install, not a device identifier
+        SharedPreferences sp = Store.raw(c);
+        int bucket = sp.getInt("bucket", -1);
+        if (bucket < 0) {
+            bucket = new java.security.SecureRandom().nextInt(10);
+            sp.edit().putInt("bucket", bucket).apply();
+        }
+        return bucket == 0 ? "canary" : "stable";
     }
 
     /** Blocking; off the main thread. Returns a short status for the settings screen. */
@@ -91,7 +97,7 @@ final class Updates {
         deleteTree(out);
         if (!tmp.renameTo(out)) throw new IOException("rename");
         int old = Store.raw(c).getInt("bundleVersion", 0);
-        Store.raw(c).edit().putInt("bundleVersion", version).commit();
+        Store.raw(c).edit().putInt("bundleVersion", version).commit();   // commit, not apply: the switch must be on disk before the old folder goes
         if (old > 0 && old != version) deleteTree(dir(c, old));
     }
 
