@@ -135,7 +135,7 @@ after 48 hours. Repository secrets: `LUBAN_KEYSTORE_B64`, `LUBAN_KEYSTORE_PASSWO
 ## Credits
 
 Fonts: [Tajawal](https://fonts.google.com/specimen/Tajawal) and [Amiri](https://www.amirifont.org/) (SIL OFL).
-Photos: Unsplash photographers, [docs/PHOTO-CREDITS.md](docs/PHOTO-CREDITS.md). Quran text: King Fahd Complex Uthmani
+Photos: Wikimedia Commons photographers (Quality images of Oman), each with its licence in [docs/PHOTO-CREDITS.md](docs/PHOTO-CREDITS.md). Quran text: King Fahd Complex Uthmani
 Hafs edition and the Forty Hadith of an-Nawawi, via [fawazahmed0](https://github.com/fawazahmed0)'s public-domain
 datasets. Weather: [Open-Meteo](https://open-meteo.com). Matches: [TheSportsDB](https://www.thesportsdb.com).
 Shows: [TVMaze](https://www.tvmaze.com). Package ratings: [UAD-ng](https://github.com/Universal-Debloater-Alliance/universal-android-debloater-next-generation).

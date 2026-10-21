@@ -426,7 +426,7 @@
     img.onload = () => {
       const a = $(layer ? 'ph-a' : 'ph-b'), b = $(layer ? 'ph-b' : 'ph-a');
       a.style.backgroundImage = `url("${img.src}")`; a.classList.add('on'); b.classList.remove('on'); layer ^= 1;
-      $('credit').textContent = `${S.lang === 'ar' ? ph.place_ar : ph.place_en} · ${T.photo}: ${ph.by} / Unsplash`;
+      $('credit').textContent = `${S.lang === 'ar' ? ph.place_ar : ph.place_en} · ${T.photo}: ${ph.by}${ph.licence ? ' · ' + ph.licence : ''}`;
     };
     img.src = photoUrl(ph.f);
   }

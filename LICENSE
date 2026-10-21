@@ -21,5 +21,5 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 Third-party material keeps its own licence: fonts under the SIL Open Font License (assets/fonts/OFL-*.txt,
-assets/native/), photos under the Unsplash License (docs/PHOTO-CREDITS.md), Quran and hadith texts from public-domain
+assets/native/), photos under each one's own free licence (docs/PHOTO-CREDITS.md), Quran and hadith texts from public-domain
 datasets (tools/content.py).

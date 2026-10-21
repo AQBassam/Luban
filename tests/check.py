@@ -69,7 +69,7 @@ check("content: at least 50 verses and 25 hadith", len(verses) >= 50 and len(had
 check("content: every verse has a reference", all(re.fullmatch(r"\d+:\d+(-\d+)?", v["ref"]) for v in verses))
 photos = json.loads((ROOT / "content/photos.json").read_text(encoding="utf-8"))
 check("photos: every listed photo is in photos/", all((ROOT / "photos" / p["f"]).is_file() for p in photos))
-check("photos: every photo is credited", all(p.get("by") for p in photos))
+check("photos: every photo is credited with a licence", all(p.get("by") and p.get("licence") for p in photos))
 
 # --- secrets and supply chain
 tracked = subprocess.run(["git", "-C", str(ROOT), "ls-files"], capture_output=True, text=True).stdout.split()
