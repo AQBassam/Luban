@@ -2,7 +2,7 @@
 """Fill photos/ with landscape photographs of Oman (1920x1080 JPEG) and write content/photos.json and
 docs/PHOTO-CREDITS.md. Run by .github/workflows/photos.yml (it needs the network).
 
-Source: Wikimedia Commons, "Quality images of Oman" (peer-reviewed for quality), only free licences (CC0, public
+Source: Wikimedia Commons, the Featured, Quality and Valued images of Oman (peer-reviewed), only free licences (CC0, public
 domain, CC BY, CC BY-SA), each credited on screen and in the credits file with author, licence and link.
 With UNSPLASH_ACCESS_KEY set, the hand-picked list in content/photo-picks.json is fetched from Unsplash's API instead.
 Nothing is guessed: a photo without a clear free licence or author is skipped.
@@ -23,7 +23,8 @@ ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "photos"
 UA = {"User-Agent": "LubanPhotoFetcher/1.0 (https://github.com/AQBassam/Luban)"}
 API = "https://commons.wikimedia.org/w/api.php"
-CATEGORIES = ["Category:Quality images of Oman"]
+CATEGORIES = ["Category:Quality images of Oman", "Category:Featured pictures of Oman", "Category:Valued images of Oman"]
+PER_PLACE = 5   # variety: no place fills the rotation
 MAX = 40
 FREE = re.compile(r"^(CC0|Public domain|PD|CC BY(-SA)? [0-9.]+)", re.I)
 # not a landscape for a TV background
@@ -91,8 +92,21 @@ def commons_candidates():
             out.append({"id": f"c{p['pageid']}", "url": ii.get("thumburl") or ii["url"], "by": author[:80],
                         "licence": lic, "link": ii.get("descriptionurl", ""), "place_ar": ar, "place_en": en,
                         "known": en != "Oman"})
-    out.sort(key=lambda x: (not x["known"], x["place_en"]))   # named places first
-    return out
+    seen, uniq = set(), []
+    for c in out:   # a file can sit in more than one category
+        if c["id"] not in seen:
+            seen.add(c["id"]); uniq.append(c)
+    # round-robin across places so every place gets its turn, named places first
+    by_place = {}
+    for c in sorted(uniq, key=lambda x: (not x["known"], x["place_en"])):
+        by_place.setdefault(c["place_en"], []).append(c)
+    picked, depth = [], 0
+    while depth < PER_PLACE and len(picked) < MAX:
+        for lst in by_place.values():
+            if depth < len(lst) and len(picked) < MAX:
+                picked.append(lst[depth])
+        depth += 1
+    return picked
 
 
 def unsplash_candidates(key):
