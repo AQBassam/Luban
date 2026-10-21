@@ -1,0 +1,116 @@
+/* Luban screen. 1rem = 10px on a 1920px-wide TV; everything scales with the width. */
+@font-face{font-family:Tajawal;font-weight:300;font-display:block;src:url(__FONT__tajawal-arabic-300-normal.woff2) format("woff2");unicode-range:U+0600-06FF,U+0750-077F,U+0870-08FF,U+FB50-FDFF,U+FE70-FEFF,U+200C-200E}
+@font-face{font-family:Tajawal;font-weight:400;font-display:block;src:url(__FONT__tajawal-arabic-400-normal.woff2) format("woff2");unicode-range:U+0600-06FF,U+0750-077F,U+0870-08FF,U+FB50-FDFF,U+FE70-FEFF,U+200C-200E}
+@font-face{font-family:Tajawal;font-weight:500;font-display:block;src:url(__FONT__tajawal-arabic-500-normal.woff2) format("woff2");unicode-range:U+0600-06FF,U+0750-077F,U+0870-08FF,U+FB50-FDFF,U+FE70-FEFF,U+200C-200E}
+@font-face{font-family:Tajawal;font-weight:700;font-display:block;src:url(__FONT__tajawal-arabic-700-normal.woff2) format("woff2");unicode-range:U+0600-06FF,U+0750-077F,U+0870-08FF,U+FB50-FDFF,U+FE70-FEFF,U+200C-200E}
+@font-face{font-family:Tajawal;font-weight:800;font-display:block;src:url(__FONT__tajawal-arabic-800-normal.woff2) format("woff2");unicode-range:U+0600-06FF,U+0750-077F,U+0870-08FF,U+FB50-FDFF,U+FE70-FEFF,U+200C-200E}
+@font-face{font-family:Tajawal;font-weight:300;font-display:block;src:url(__FONT__tajawal-latin-300-normal.woff2) format("woff2");unicode-range:U+0000-00FF,U+2000-206F,U+20AC,U+2122,U+2190-21FF}
+@font-face{font-family:Tajawal;font-weight:400;font-display:block;src:url(__FONT__tajawal-latin-400-normal.woff2) format("woff2");unicode-range:U+0000-00FF,U+2000-206F,U+20AC,U+2122,U+2190-21FF}
+@font-face{font-family:Tajawal;font-weight:500;font-display:block;src:url(__FONT__tajawal-latin-500-normal.woff2) format("woff2");unicode-range:U+0000-00FF,U+2000-206F,U+20AC,U+2122,U+2190-21FF}
+@font-face{font-family:Tajawal;font-weight:700;font-display:block;src:url(__FONT__tajawal-latin-700-normal.woff2) format("woff2");unicode-range:U+0000-00FF,U+2000-206F,U+20AC,U+2122,U+2190-21FF}
+@font-face{font-family:Tajawal;font-weight:800;font-display:block;src:url(__FONT__tajawal-latin-800-normal.woff2) format("woff2");unicode-range:U+0000-00FF,U+2000-206F,U+20AC,U+2122,U+2190-21FF}
+@font-face{font-family:Amiri;font-weight:400;font-display:block;src:url(__FONT__amiri-arabic-400-normal.woff2) format("woff2")}
+@font-face{font-family:Amiri;font-weight:700;font-display:block;src:url(__FONT__amiri-arabic-700-normal.woff2) format("woff2")}
+
+:root{
+  --luban:#E3B062;      /* frankincense resin */
+  --luban-soft:#F2D6A2;
+  --om-red:#D52B1E;     /* the three colours of the Omani flag, used as a thin band only */
+  --om-green:#1A8F4B;
+  --om-white:#F7F4EE;
+  --ink:#F7F4EE;
+  --ink-2:rgba(247,244,238,.78);
+  --ink-3:rgba(247,244,238,.55);
+  --glass:rgba(14,20,24,.42);
+  --line:rgba(247,244,238,.14);
+  --shift-x:0px; --shift-y:0px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{font-size:calc(100vw / 192);background:#0B1013;color:var(--ink)}
+body{font-family:Tajawal,system-ui,sans-serif;width:100vw;height:100vh;overflow:hidden;cursor:none;
+  -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+body.ltr{direction:ltr}
+[hidden]{display:none!important}
+
+/* background: two layers crossfade, a slow drift keeps pixels moving */
+#bg,#bg .ph,#bg .veil{position:fixed;inset:0}
+#bg{background:radial-gradient(ellipse at 75% 30%,#3A2A17 0%,#1A1712 45%,#0B1013 100%)}
+#bg .ph{background-size:cover;background-position:center;opacity:0;transition:opacity 2.5s ease;
+  animation:drift 90s ease-in-out infinite alternate}
+#bg .ph.on{opacity:1}
+#bg .veil{background:
+  linear-gradient(to top, rgba(6,9,11,.88) 0%, rgba(6,9,11,.35) 34%, rgba(6,9,11,.10) 55%, rgba(6,9,11,.55) 100%),
+  radial-gradient(ellipse at 70% 45%, rgba(6,9,11,0) 0%, rgba(6,9,11,.35) 100%)}
+@keyframes drift{from{transform:scale(1.04) translate(0,0)}to{transform:scale(1.10) translate(-1.2%,-.8%)}}
+body.night #bg .ph{filter:brightness(.55) saturate(.8)}
+body.night #stage{opacity:.72}
+
+#stage{position:fixed;inset:0;padding:5.2rem 7.2rem 4.6rem;display:grid;
+  grid-template-rows:auto 1fr auto auto;row-gap:2.4rem;transform:translate(var(--shift-x),var(--shift-y));
+  transition:opacity 2s, transform 3s ease}
+
+/* top row */
+#top{display:flex;align-items:flex-start;justify-content:space-between;gap:3rem}
+#place .city{font-size:3.4rem;font-weight:700;letter-spacing:.01em}
+#place .wx{margin-top:.6rem;font-size:2.4rem;color:var(--ink-2);display:flex;align-items:center;gap:1rem}
+#place .wx svg{width:3.4rem;height:3.4rem}
+#place .wx .t{font-weight:700;color:var(--ink)}
+#chips{flex:1;display:flex;flex-wrap:wrap;gap:1rem;justify-content:center;padding-top:.6rem}
+.chip{font-size:2rem;font-weight:500;padding:.7rem 1.8rem;border-radius:99rem;background:var(--glass);
+  border:1px solid var(--line);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);white-space:nowrap}
+.chip.luban{border-color:rgba(227,176,98,.55);color:var(--luban-soft)}
+.chip.nat{background:linear-gradient(90deg,rgba(213,43,30,.35),rgba(26,143,75,.35));border-color:rgba(247,244,238,.35)}
+#markets{display:flex;gap:2.6rem;font-size:2rem;color:var(--ink-2)}
+.mk{display:flex;flex-direction:column;align-items:flex-end;gap:.3rem;min-width:9rem}
+body.ltr .mk{align-items:flex-start}
+.mk .n{font-size:1.6rem;color:var(--ink-3)}
+.mk .v{font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums}
+.mk .d{font-size:1.6rem;font-variant-numeric:tabular-nums}
+.mk .d.up{color:#7FD99A}.mk .d.down{color:#FF8A7A}
+
+/* centre: clock and the card */
+#center{display:flex;align-items:center;justify-content:space-between;gap:6rem;min-height:0}
+#clock{font-weight:800;font-size:22rem;line-height:.95;letter-spacing:-.01em;font-variant-numeric:tabular-nums;
+  direction:ltr;display:flex;align-items:baseline;text-shadow:0 .6rem 3rem rgba(0,0,0,.35)}
+#clock .colon{opacity:.75;margin:0 .6rem;transform:translateY(-1.4rem)}
+#ampm{font-size:4.2rem;font-weight:500;margin-inline-start:2rem;color:var(--ink-2)}
+.crenel{display:block;width:48rem;height:2rem;margin:2.4rem 0 2rem;fill:var(--luban);opacity:.8}
+#dates{font-size:3rem;color:var(--ink-2);display:flex;gap:1.4rem;align-items:center}
+#dates .dot{color:var(--luban)}
+#hijri{color:var(--luban-soft)}
+
+#card{width:62rem;max-height:56rem;padding:3rem 3.4rem;border-radius:2.4rem;background:var(--glass);
+  border:1px solid var(--line);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);overflow:hidden}
+.card-hd{display:flex;align-items:center;gap:1.4rem;font-size:2.2rem;font-weight:700;color:var(--luban-soft);margin-bottom:2rem}
+.band{width:5.4rem;height:.6rem;border-radius:.3rem;
+  background:linear-gradient(90deg,var(--om-red) 0 33%,var(--om-white) 33% 66%,var(--om-green) 66%)}
+#card-body{font-size:2.4rem;line-height:1.55}
+#card-body.fade{animation:fade .9s ease}
+@keyframes fade{from{opacity:0;transform:translateY(.8rem)}to{opacity:1;transform:none}}
+.quote{font-family:Amiri,serif;font-size:3.1rem;line-height:1.9;color:var(--ink)}
+.quote.hadith{font-family:Tajawal,sans-serif;font-size:2.5rem;line-height:1.75}
+.src{margin-top:1.6rem;font-size:1.9rem;color:var(--ink-3)}
+.rows{list-style:none;display:flex;flex-direction:column;gap:1.2rem}
+.rows li{display:flex;justify-content:space-between;gap:2rem;align-items:baseline;padding-bottom:1.1rem;border-bottom:1px solid var(--line)}
+.rows li:last-child{border-bottom:0}
+.rows .a{font-weight:500}
+.rows .b{color:var(--ink-2);font-variant-numeric:tabular-nums;white-space:nowrap}
+.rows li.now .a,.rows li.now .b{color:var(--luban)}
+.empty{color:var(--ink-3)}
+
+/* prayer bar */
+#prayers{display:grid;grid-template-columns:repeat(6,1fr);gap:1.2rem}
+.pr{padding:1.8rem 2rem;border-radius:1.8rem;background:var(--glass);border:1px solid var(--line);
+  backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);display:flex;flex-direction:column;gap:.5rem}
+.pr .n{font-size:2.2rem;color:var(--ink-2)}
+.pr .t{font-size:3.6rem;font-weight:700;font-variant-numeric:tabular-nums}
+.pr .c{font-size:1.9rem;color:var(--ink-3);min-height:2.4rem}
+.pr.next{background:linear-gradient(160deg,rgba(227,176,98,.32),rgba(227,176,98,.12));border-color:rgba(227,176,98,.7)}
+.pr.next .n,.pr.next .c{color:var(--luban-soft)}
+.pr.sunrise .t{font-weight:500;color:var(--ink-2)}
+
+#foot{display:flex;justify-content:space-between;align-items:flex-end;gap:3rem;font-size:2rem;color:var(--ink-2)}
+#match{display:flex;gap:1.4rem;align-items:center}
+#match .vs{color:var(--luban)}
+#match .live{color:#FF8A7A;font-weight:700}
+#credit{font-size:1.5rem;color:var(--ink-3)}
