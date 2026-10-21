@@ -74,11 +74,13 @@ def main():
     write(DIST / "screen" / "index.html", screen)
     write(DIST / "screen" / "settings.html", settings)
     write(DIST / "luban.html", page("", True, f"window.LUBAN_PHOTO_BASE={json.dumps(PHOTO_BASE)};"))
-    # fixed timestamps so the zip is reproducible
-    with zipfile.ZipFile(DIST / "bundle.zip", "w", zipfile.ZIP_DEFLATED) as z:
+    # fixed timestamps and no compression, so the zip is byte-identical on every machine (zlib versions differ)
+    with zipfile.ZipFile(DIST / "bundle.zip", "w", zipfile.ZIP_STORED) as z:
         for name, text in (("index.html", screen), ("settings.html", settings)):
             info = zipfile.ZipInfo(name, date_time=(2026, 1, 1, 0, 0, 0))
-            info.compress_type = zipfile.ZIP_DEFLATED
+            info.compress_type = zipfile.ZIP_STORED
+            info.external_attr = 0o644 << 16
+            info.create_system = 3
             z.writestr(info, text.encode("utf-8"))
     for p in ("screen/index.html", "screen/settings.html", "luban.html", "bundle.zip"):
         print(f"{p}: {(DIST / p).stat().st_size // 1024} KB")

@@ -13,13 +13,13 @@ permissions:
 
 jobs:
   image:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - run: docker build -t luban-server server
       - run: |
-          docker run -d --name s -p 8080:8080 luban-server
-          for i in $(seq 1 20); do curl -fsS localhost:8080/health && break; sleep 1; done
-          curl -fsS localhost:8080/health | grep -q '"ok":true'
-          test "$(curl -s -o /dev/null -w '%{http_code}' 'localhost:8080/v1/teams?q=%3Cx%3E')" = 400
+          docker run -d --name s -p 18080:8080 luban-server || { echo "::error title=docker run::$(docker ps -a; docker logs s 2>&1 | tail -5)"; exit 1; }
+          for i in $(seq 1 20); do curl -fsS localhost:18080/health && break; sleep 1; done
+          curl -fsS localhost:18080/health | grep -q '"ok":true'
+          test "$(curl -s -o /dev/null -w '%{http_code}' 'localhost:18080/v1/teams?q=%3Cx%3E')" = 400
           docker exec s id -u | grep -qv '^0$'   # not root
