@@ -1,0 +1,63 @@
+plugins {
+    id 'com.android.application'
+}
+
+// the public half of the key that signs screen updates (tools/sign.py); DER, base64, one line
+def updateKey = file('../../keys/screen-update.pub.pem').text.replaceAll(/-----[A-Z ]+-----|\s/, '')
+
+android {
+    namespace 'om.luban.screen'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId 'om.luban.screen'
+        minSdk 26
+        targetSdk 34
+        versionCode rootProject.ext.lubanVersion
+        versionName "1.${rootProject.ext.lubanVersion}"
+        buildConfigField 'String', 'UPDATE_KEY', "\"${updateKey}\""
+        buildConfigField 'int', 'SCREEN_VERSION', "${rootProject.ext.lubanVersion}"
+        buildConfigField 'String', 'REPO', '"AQBassam/Luban"'
+    }
+
+    buildFeatures { buildConfig true }
+
+    buildTypes {
+        release {
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+
+    sourceSets {
+        main { assets.srcDirs += ["$buildDir/generated/luban"] }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    lint { abortOnError true; checkReleaseBuilds true; disable 'ExpiredTargetSdkVersion', 'OldTargetApi', 'GradleDependency' }
+}
+rootProject.ext.releaseSigning(android)
+
+dependencies {
+    implementation 'androidx.webkit:webkit:1.11.0'
+    implementation 'com.google.zxing:core:3.5.3'
+}
+
+// The screen (web/build.py output), its fonts, the content lists the apps read, and the first photos for offline start
+def copyLuban = tasks.register('copyLuban', Copy) {
+    from('../../dist/screen') { into 'screen' }
+    from('../../assets/fonts') { include '*.woff2'; into 'screen/fonts' }
+    from('../../content') { include 'cities.json', 'teams-ar.json', 'photos.json'; into 'content' }
+    from('../../photos') {
+        include { f -> def list = new groovy.json.JsonSlurper().parse(file('../../content/photos.json')); list.take(8)*.f.contains(f.name) }
+        into 'photos'
+    }
+    from('../../assets/native') { include '*.ttf'; into 'native' }
+    into "$buildDir/generated/luban"
+}
+preBuild.dependsOn copyLuban

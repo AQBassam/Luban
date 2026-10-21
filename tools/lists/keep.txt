@@ -1,0 +1,19 @@
+# Never disabled, whatever list asks for it: features people use, or the TV needs.
+com.google.android.gms                      # Google Play services
+com.android.vending                         # Play Store (and app updates)
+com.google.android.gsf                      # Google services framework
+com.google.android.katniss                  # voice search / Assistant
+com.google.android.apps.mediashell          # Chromecast built-in
+com.google.android.tvlauncher               # stock home (Android TV): only disabled by `home`, after Luban's home works
+com.google.android.apps.tv.launcherx        # stock home (Google TV): same
+com.google.android.tungsten.setupwraith     # setup app: handled by `home` only
+com.android.tv.settings                     # Settings
+com.android.providers.tv                    # live TV channels
+com.google.android.tv.remote.service        # phone remote
+com.google.android.tv.bugreportsender
+com.tcl.airplay2                            # AirPlay (TCL)
+com.tcl.miracast                            # screen mirroring (TCL)
+com.tcl.tvinput                             # HDMI inputs (TCL)
+com.tcl.tv                                  # TV app (TCL)
+om.luban.screen
+om.luban.home

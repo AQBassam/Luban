@@ -1,0 +1,48 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'om.luban.home'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId 'om.luban.home'
+        minSdk 26
+        targetSdk 34
+        versionCode rootProject.ext.lubanVersion
+        versionName "1.${rootProject.ext.lubanVersion}"
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+
+    sourceSets {
+        main { assets.srcDirs += ["$buildDir/generated/luban"] }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    lint { abortOnError true; checkReleaseBuilds true; disable 'ExpiredTargetSdkVersion', 'OldTargetApi', 'GradleDependency' }
+}
+rootProject.ext.releaseSigning(android)
+
+// the home screen's wallpapers: the same first photos the screensaver carries, and the Tajawal font
+def copyLuban = tasks.register('copyLuban', Copy) {
+    from('../../photos') {
+        include { f -> def list = new groovy.json.JsonSlurper().parse(file('../../content/photos.json')); list.take(8)*.f.contains(f.name) }
+        into 'wallpapers'
+    }
+    from('../../content') { include 'photos.json'; into 'content' }
+    from('../../assets/native') { include '*.ttf'; into 'native' }
+    into "$buildDir/generated/luban"
+}
+preBuild.dependsOn copyLuban

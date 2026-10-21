@@ -1,0 +1,1 @@
+57:32:E7:89:F5:4D:D9:A1:3E:D4:C8:B5:99:E9:10:42:75:AC:EB:76:3C:4C:28:37:B6:82:5E:A1:A5:BC:59:EE  SHA-256 of Luban's APK signing certificate (CN=Luban, O=Luban, C=OM). tools/luban.py refuses any APK signed by another key.

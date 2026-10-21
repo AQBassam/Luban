@@ -1,0 +1,25 @@
+# Disabled by `luban.py debloat` (pm disable-user: reversible, nothing is uninstalled; `luban.py reset` turns them back on).
+# Ads, telemetry, promotions and demo helpers on Google TV / Android TV sets. A package missing on a TV is skipped.
+# Before disabling, luban.py looks each one up in UAD-ng's ratings and refuses any rated "Unsafe". keep.txt always wins.
+
+# Google
+com.google.android.tvrecommendations        # sponsored recommendation rows
+com.google.android.feedback                 # feedback reporter
+com.google.android.partnersetup             # partner app promotion
+com.google.android.onetimeinitializer       # first-boot helper (already ran)
+com.google.android.play.games               # Play Games
+android.autoinstalls.config.google.gtvpai   # silently installs promoted apps
+com.google.android.apps.tv.dreamx           # Google ambient screensaver (Luban replaces it)
+com.google.android.backdrop                 # Google backdrop screensaver (older sets)
+
+# TCL
+com.tcl.bi                                  # telemetry
+com.tcl.logkit                              # log collection
+com.tcl.partnercustomizer                   # partner rows and promotions
+com.tcl.overseasappshow                     # pre-installed app showcase
+com.tcl.messagebox                          # promotional pop-ups
+com.tcl.esticker                            # on-screen promotional stickers
+com.tcl.exhibit                             # shop demo mode
+com.tcl.useragreement                       # agreement viewer
+com.tcl.guard                               # "TV guard" cleaner
+

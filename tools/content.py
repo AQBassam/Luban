@@ -19,7 +19,7 @@ ROOT = Path(__file__).resolve().parents[1]
 CACHE = ROOT / "tools" / ".cache"
 QURAN = "https://raw.githubusercontent.com/fawazahmed0/quran-api/1/editions/ara-quranuthmanihaf.json"
 NAWAWI = "https://raw.githubusercontent.com/fawazahmed0/hadith-api/1/editions/ara-nawawi.json"
-MAX_WORDS = 60
+MAX_WORDS = 60   # and tests/page.test.mjs checks every text really fits the card
 
 # (surah, first ayah, last ayah). Chosen as complete thoughts that read well on their own.
 VERSES = [
@@ -30,8 +30,8 @@ VERSES = [
     (17, 80, 80), (18, 10, 10), (18, 46, 46), (20, 25, 28), (20, 114, 114), (21, 87, 87), (21, 89, 89),
     (23, 118, 118), (25, 63, 63), (25, 74, 74), (28, 24, 24), (29, 69, 69), (31, 17, 17), (33, 41, 42),
     (39, 10, 10), (39, 53, 53), (40, 44, 44), (40, 60, 60), (41, 34, 34), (42, 19, 19), (49, 10, 10),
-    (49, 13, 13), (55, 1, 4), (55, 60, 60), (57, 4, 4), (59, 10, 10), (64, 16, 16), (65, 2, 3),
-    (67, 1, 2), (73, 20, 20), (87, 1, 3), (93, 3, 5), (94, 5, 8), (97, 1, 5), (103, 1, 3),
+    (49, 13, 13), (55, 1, 4), (55, 60, 60), (59, 10, 10), (64, 16, 16),
+    (67, 1, 2), (87, 1, 3), (93, 3, 5), (94, 5, 8), (97, 1, 5), (103, 1, 3),
     (108, 1, 3), (110, 1, 3), (112, 1, 4), (113, 1, 5), (114, 1, 6),
 ]
 

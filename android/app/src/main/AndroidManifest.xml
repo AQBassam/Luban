@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+
+    <!-- the home screen app (same signing key) reads the prayer settings for its card -->
+    <permission
+        android:name="om.luban.screen.READ_CONFIG"
+        android:protectionLevel="signature" />
+
+    <uses-feature android:name="android.software.leanback" android:required="false" />
+    <uses-feature android:name="android.hardware.touchscreen" android:required="false" />
+
+    <application
+        android:label="@string/app_name"
+        android:icon="@mipmap/ic_launcher"
+        android:banner="@drawable/banner"
+        android:supportsRtl="true"
+        android:allowBackup="false"
+        android:usesCleartextTraffic="false"
+        android:networkSecurityConfig="@xml/network"
+        android:theme="@android:style/Theme.Material.NoActionBar">
+
+        <activity
+            android:name=".SettingsActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+                <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <activity
+            android:name=".PreviewActivity"
+            android:exported="false"
+            android:screenOrientation="landscape"
+            android:theme="@android:style/Theme.Black.NoTitleBar.Fullscreen" />
+
+        <service
+            android:name=".LubanDream"
+            android:exported="true"
+            android:label="@string/app_name"
+            android:permission="android.permission.BIND_DREAM_SERVICE">
+            <intent-filter>
+                <action android:name="android.service.dreams.DreamService" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+            <meta-data android:name="android.service.dream" android:resource="@xml/dream" />
+        </service>
+
+        <service
+            android:name=".UpdateJob"
+            android:exported="false"
+            android:permission="android.permission.BIND_JOB_SERVICE" />
+
+        <receiver
+            android:name=".BootReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
+
+        <!-- DUMP: only the ADB shell can send these -->
+        <receiver
+            android:name=".AdbReceiver"
+            android:exported="true"
+            android:permission="android.permission.DUMP">
+            <intent-filter>
+                <action android:name="om.luban.screen.GET" />
+                <action android:name="om.luban.screen.SET" />
+                <action android:name="om.luban.screen.UPDATE" />
+            </intent-filter>
+        </receiver>
+
+        <provider
+            android:name=".ConfigProvider"
+            android:authorities="om.luban.screen.config"
+            android:exported="true"
+            android:readPermission="om.luban.screen.READ_CONFIG" />
+    </application>
+</manifest>

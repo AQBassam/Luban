@@ -1,0 +1,21 @@
+plugins {
+    id 'com.android.application' version '8.5.2' apply false
+}
+
+// One version for both apps and the screen bundle: CI passes its run number.
+ext.lubanVersion = (System.getenv('GITHUB_RUN_NUMBER') ?: '1') as int
+
+// Release signing from the environment (CI secrets). Without it the build uses the debug key and CI does not publish.
+ext.releaseSigning = { android ->
+    def ks = System.getenv('LUBAN_KEYSTORE')
+    if (ks) {
+        android.signingConfigs.create('release') {
+            storeFile file(ks)
+            storeType 'PKCS12'
+            storePassword System.getenv('LUBAN_KEYSTORE_PASSWORD')
+            keyAlias 'luban'
+            keyPassword System.getenv('LUBAN_KEYSTORE_PASSWORD')
+        }
+    }
+    android.buildTypes.release.signingConfig = android.signingConfigs.findByName('release') ?: android.signingConfigs.debug
+}

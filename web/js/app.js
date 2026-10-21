@@ -421,7 +421,7 @@
     img.src = photoUrl(ph.f);
   }
 
-  // ---------- night dimming, burn-in shift, the launcher card
+  // ---------- night dimming, burn-in shift
   function applyNight() {
     ensureTimes();
     const now = minutesNow(), t = state.times;
@@ -434,17 +434,6 @@
     document.documentElement.style.setProperty('--shift-x', s[0] + 'px');
     document.documentElement.style.setProperty('--shift-y', s[1] + 'px');
   }
-  function publishCard() {
-    if (!window.LubanBridge || !window.LubanBridge.card) return;
-    ensureTimes();
-    const l = local();
-    window.LubanBridge.card(JSON.stringify({
-      day: dayKey(l), tz: P.tz, city: S.lang === 'ar' ? P.ar : P.en, lang: S.lang, digits: S.digits, clock24: S.clock24,
-      prayers: KEYS.filter(k => k !== 'sunrise').map(k => ({ k, name: prayerName(k, l.wd === 'Fri'), at: Math.round(state.times[k]) })),
-      tomorrowFajr: Math.round(state.tomorrow.fajr), weather: state.weather, hijri: hijriToday().text,
-    }));
-  }
-
   function drawCrenel() {
     // the stepped merlons of an Omani fort wall (Nizwa, Bahla, Jabrin): a thin wall line, stepped teeth above it
     let d = 'M0 12 L0 10', x = 0;
@@ -469,7 +458,7 @@
     document.body.classList.add('ready');
 
     setInterval(tickClock, 1000);
-    setInterval(() => { tickDates(); renderPrayers(); renderChips(); applyNight(); publishCard(); }, 20000);
+    setInterval(() => { tickDates(); renderPrayers(); renderChips(); applyNight(); }, 20000);
     setInterval(() => { state.page++; if (['shows', 'prayers', 'matches'].includes(S.panel)) renderCard(S.panel === 'shows'); }, 20000);
     setInterval(applyPhoto, 60000);
     setInterval(shift, 180000);
@@ -477,7 +466,6 @@
     loadMarkets(); setInterval(loadMarkets, 15 * 60000);
     loadMatches(); setInterval(loadMatches, 10 * 60000);
     if (S.panel === 'shows') { loadShows(); setInterval(loadShows, 6 * 3600e3); }
-    setTimeout(publishCard, 3000);
     window.addEventListener('hashchange', () => location.reload());
   }
 

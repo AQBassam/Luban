@@ -23,7 +23,9 @@ select,input[type=text],input[type=number],input[type=url]{width:100%;font:inher
 .row{display:flex;gap:10px}.row>*{flex:1}
 .check{display:flex;align-items:center;gap:10px;margin:8px 0;font-size:15px;min-height:36px}
 .check input{width:22px;height:22px;accent-color:var(--luban)}
-.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:8px}
+.grid>*{min-width:0}
+.check span{overflow-wrap:anywhere;min-width:0}
 .grid label{margin:0}
 .times{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:10px;font-size:14px}
 .times div{background:var(--luban-bg);border-radius:10px;padding:8px;text-align:center}
