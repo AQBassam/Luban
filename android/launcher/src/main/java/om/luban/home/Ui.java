@@ -61,8 +61,13 @@ final class Ui {
         v.setFocusable(true);
         v.setFocusableInTouchMode(false);
         v.setBackground(bg);
+        // the ring is drawn over the content: an app's banner fills its tile and would hide a ring in the background
+        GradientDrawable ring = new GradientDrawable();
+        ring.setColor(0);
+        ring.setCornerRadius(bg.getCornerRadius());
+        ring.setStroke(dp(c, 3), LUBAN);
         v.setOnFocusChangeListener((view, has) -> {
-            bg.setStroke(dp(c, has ? 3 : 1), has ? LUBAN : LINE);
+            view.setForeground(has ? ring : null);
             view.animate().scaleX(has ? 1.07f : 1f).scaleY(has ? 1.07f : 1f).translationZ(has ? dp(c, 8) : 0).setDuration(140).start();
         });
     }

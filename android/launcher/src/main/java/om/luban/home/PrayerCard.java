@@ -39,10 +39,10 @@ final class PrayerCard {
         view.setGravity(Gravity.CENTER_VERTICAL);
         view.setBackground(Ui.glass(c, 22));
         int p = Ui.dp(c, 20);
-        view.setPadding(p, Ui.dp(c, 14), p, Ui.dp(c, 14));
+        view.setPadding(p, Ui.dp(c, 10), p, Ui.dp(c, 10));
 
         dial = new Dial(c);
-        LinearLayout.LayoutParams dl = new LinearLayout.LayoutParams(Ui.dp(c, 104), Ui.dp(c, 104));
+        LinearLayout.LayoutParams dl = new LinearLayout.LayoutParams(Ui.dp(c, 80), Ui.dp(c, 80));
         dl.setMarginEnd(Ui.dp(c, 20));
         view.addView(dial, dl);
 

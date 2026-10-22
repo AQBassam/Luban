@@ -21,6 +21,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.provider.Settings;
+import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.View;
@@ -28,6 +29,7 @@ import android.widget.FrameLayout;
 import android.widget.HorizontalScrollView;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.ScrollView;
 import android.widget.TextView;
 
 import java.util.ArrayList;
@@ -149,11 +151,17 @@ public class HomeActivity extends Activity {
             new int[] {0xF206192A, 0xB306192A, 0x6606192A, 0xA606192A}));
         root.addView(scrim, new FrameLayout.LayoutParams(-1, -1));
 
+        // everything fits 960x540dp (a 1080p or 720p TV); the scroll is a safety net for larger system fonts, and
+        // fillViewport keeps the spacer working when it is not needed
+        ScrollView scroll = new ScrollView(this);
+        scroll.setFillViewport(true);
+        scroll.setVerticalScrollBarEnabled(false);
+        root.addView(scroll, new FrameLayout.LayoutParams(-1, -1));
         LinearLayout col = new LinearLayout(this);
         col.setOrientation(LinearLayout.VERTICAL);
         int pad = Ui.dp(this, 44);
-        col.setPadding(pad, Ui.dp(this, 32), pad, Ui.dp(this, 28));
-        root.addView(col, new FrameLayout.LayoutParams(-1, -1));
+        col.setPadding(pad, Ui.dp(this, 24), pad, Ui.dp(this, 20));
+        scroll.addView(col, new FrameLayout.LayoutParams(-1, -2));
 
         // top: clock and dates, buttons on the other side
         LinearLayout top = new LinearLayout(this);
@@ -167,7 +175,7 @@ public class HomeActivity extends Activity {
         clockLine.setOrientation(LinearLayout.HORIZONTAL);
         clockLine.setGravity(Gravity.BOTTOM);
         clockLine.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
-        clock = Ui.text(this, "", 64, Ui.medium(), Ui.INK);
+        clock = Ui.text(this, "", 56, Ui.medium(), Ui.INK);
         ampm = Ui.text(this, "", 20, Ui.medium(), Ui.LUBAN);
         ampm.setPadding(Ui.dp(this, 10), 0, 0, Ui.dp(this, 12));
         clockLine.addView(clock);
@@ -176,10 +184,14 @@ public class HomeActivity extends Activity {
         View rule = new View(this);   // a short resin rule under the clock
         rule.setBackgroundColor(Ui.LUBAN);
         LinearLayout.LayoutParams bl = new LinearLayout.LayoutParams(Ui.dp(this, 56), Ui.dp(this, 2));
-        bl.setMargins(0, Ui.dp(this, 10), 0, Ui.dp(this, 12));
+        bl.setMargins(0, Ui.dp(this, 6), 0, Ui.dp(this, 8));
         time.addView(rule, bl);
+        // one line always: a long date steps its font down to 12 instead of breaking (and leaving "هـ" alone below)
         dates = Ui.text(this, "", 17, Ui.regular(), Ui.INK2);
-        time.addView(dates);
+        dates.setMaxLines(1);
+        dates.setAutoSizeTextTypeUniformWithConfiguration(12, 17, 1, TypedValue.COMPLEX_UNIT_SP);
+        int dh = (int) Math.ceil(TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, 17, getResources().getDisplayMetrics()) * 1.4f);
+        time.addView(dates, new LinearLayout.LayoutParams(-1, dh));
         top.addView(time, new LinearLayout.LayoutParams(0, -2, 1f));
 
         LinearLayout buttons = new LinearLayout(this);
@@ -195,7 +207,7 @@ public class HomeActivity extends Activity {
         col.addView(new View(this), new LinearLayout.LayoutParams(-1, 0, 1f));
         card = new PrayerCard(this);
         LinearLayout.LayoutParams cl = new LinearLayout.LayoutParams(-2, -2);
-        cl.setMargins(0, 0, 0, Ui.dp(this, 22));
+        cl.setMargins(0, 0, 0, Ui.dp(this, 12));
         col.addView(card.view, cl);
 
         col.addView(section("المفضلة · Favourites"));
@@ -206,8 +218,8 @@ public class HomeActivity extends Activity {
     }
 
     private TextView section(String s) {
-        TextView t = Ui.text(this, s, 15, Ui.bold(), Ui.LUBAN_SOFT);
-        t.setPadding(Ui.dp(this, 4), Ui.dp(this, 6), 0, Ui.dp(this, 10));
+        TextView t = Ui.text(this, s, 14, Ui.bold(), Ui.LUBAN_SOFT);
+        t.setPadding(Ui.dp(this, 4), Ui.dp(this, 2), 0, Ui.dp(this, 6));
         return t;
     }
 
@@ -216,7 +228,7 @@ public class HomeActivity extends Activity {
         sv.setHorizontalScrollBarEnabled(false);
         sv.setClipToPadding(false);
         sv.setClipChildren(false);
-        int p = Ui.dp(this, 10);
+        int p = Ui.dp(this, 8);   // room for the 7% lift of a focused tile
         sv.setPadding(p, p, p, p);
         LinearLayout r = new LinearLayout(this);
         r.setOrientation(LinearLayout.HORIZONTAL);
@@ -271,14 +283,14 @@ public class HomeActivity extends Activity {
             t.addView(img, new FrameLayout.LayoutParams(-1, -1));
         } else {
             img.setScaleType(ImageView.ScaleType.FIT_CENTER);
-            FrameLayout.LayoutParams ip = new FrameLayout.LayoutParams(Ui.dp(this, 52), Ui.dp(this, 52), Gravity.CENTER_HORIZONTAL | Gravity.TOP);
-            ip.topMargin = Ui.dp(this, 16);
+            FrameLayout.LayoutParams ip = new FrameLayout.LayoutParams(Ui.dp(this, 44), Ui.dp(this, 44), Gravity.CENTER_HORIZONTAL | Gravity.TOP);
+            ip.topMargin = Ui.dp(this, 12);
             t.addView(img, ip);
             TextView label = Ui.text(this, a.label, 13, Ui.medium(), Ui.INK);
             label.setSingleLine(true);
             label.setGravity(Gravity.CENTER);
             FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(-1, -2, Gravity.BOTTOM);
-            lp.setMargins(Ui.dp(this, 8), 0, Ui.dp(this, 8), Ui.dp(this, 12));
+            lp.setMargins(Ui.dp(this, 8), 0, Ui.dp(this, 8), Ui.dp(this, 8));
             t.addView(label, lp);
         }
         t.setContentDescription(a.label);
@@ -288,7 +300,7 @@ public class HomeActivity extends Activity {
             if (code == KeyEvent.KEYCODE_MENU && e.getAction() == KeyEvent.ACTION_UP) { menu(a); return true; }
             return false;
         });
-        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(Ui.dp(this, favourite ? 208 : 176), Ui.dp(this, favourite ? 117 : 99));
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(Ui.dp(this, favourite ? 192 : 160), Ui.dp(this, favourite ? 108 : 90));
         lp.setMarginEnd(Ui.dp(this, 16));
         t.setLayoutParams(lp);
         return t;
