@@ -6,6 +6,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.graphics.Rect;
 import android.graphics.drawable.GradientDrawable;
 import android.icu.text.SimpleDateFormat;
 import android.icu.util.IslamicCalendar;
@@ -125,7 +126,7 @@ public class HomeActivity extends Activity {
     @Override
     protected void onNewIntent(Intent i) {
         super.onNewIntent(i);
-        if (favRow != null && favRow.getChildCount() > 0) favRow.getChildAt(0).requestFocus();
+        if (favRow != null && favRow.getChildCount() > 0) { favRow.getChildAt(0).requestFocus(); showFocused(); }
     }
 
     /** Called by AdbReceiver after the favourites changed from ADB. */
@@ -163,7 +164,8 @@ public class HomeActivity extends Activity {
         ampm.setPadding(Ui.dp(this, 8), 0, 0, Ui.dp(this, 10));
         clockLine.addView(clock);
         clockLine.addView(ampm);
-        time.addView(clockLine);
+        // its own width only: the column's full width would push a left-to-right line to the far side
+        time.addView(clockLine, new LinearLayout.LayoutParams(-2, -2));
         // one line always: a long date steps its font down to 11 instead of breaking (and leaving "هـ" alone below)
         dates = Ui.text(this, "", 15, Ui.regular(), Ui.INK2);
         dates.setMaxLines(1);
@@ -235,9 +237,23 @@ public class HomeActivity extends Activity {
         List<String> fav = Favourites.get(this, apps);
         for (String p : fav) for (Apps.App a : apps) if (a.pkg.equals(p)) favRow.addView(dockTile(Tiles.app(this, a, apps, TILE_H, a.pkg, this::favouritesEdited)));
         favRow.addView(dockTile(Tiles.allApps(this, TILE_H)));
+        // the row ends at both ends: Left past the last tile must not jump up to the buttons
+        View first = favRow.getChildAt(0), last = favRow.getChildAt(favRow.getChildCount() - 1);
+        for (View t : new View[] {first, last}) if (t.getId() == View.NO_ID) t.setId(View.generateViewId());
+        first.setNextFocusRightId(first.getId());   // right to left: the first tile is the rightmost
+        last.setNextFocusLeftId(last.getId());
         View again = focusedPkg != null ? favRow.findViewWithTag(focusedPkg) : null;
         if (again != null) again.requestFocus();
-        else if (focused == null || !focused.isAttachedToWindow()) favRow.getChildAt(0).requestFocus();
+        else if (focused == null || !focused.isAttachedToWindow()) first.requestFocus();
+        showFocused();
+    }
+
+    /** Once laid out, scroll the focused tile fully into view (a right-to-left row does not, when it was built unseen). */
+    private void showFocused() {
+        favRow.post(() -> {
+            View f = getCurrentFocus();
+            if (f != null && f.getParent() == favRow) f.requestRectangleOnScreen(new Rect(0, 0, f.getWidth(), f.getHeight()), true);
+        });
     }
 
     private static final int TILE_W = 120, TILE_H = 68;

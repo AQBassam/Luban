@@ -45,6 +45,7 @@ public class AppsActivity extends Activity {
         col.setOrientation(LinearLayout.VERTICAL);
         int side = Ui.dp(this, 48);
         col.setPadding(side, Ui.dp(this, 40), side, Ui.dp(this, 36));
+        col.setClipChildren(false);   // a focused tile at the edge lifts a little past the grid
         scroll.addView(col, new FrameLayout.LayoutParams(-1, -2));
 
         LinearLayout head = new LinearLayout(this);
@@ -52,7 +53,7 @@ public class AppsActivity extends Activity {
         head.setGravity(Gravity.BOTTOM);
         head.addView(Ui.text(this, "كل التطبيقات", 26, Ui.bold(), Ui.INK));
         TextView hint = Ui.text(this, "اضغط مطوّلاً على تطبيق لإضافته إلى المفضلة · Back للعودة", 13, Ui.regular(), Ui.INK3);
-        hint.setPadding(Ui.dp(this, 14), 0, 0, Ui.dp(this, 4));
+        hint.setPaddingRelative(Ui.dp(this, 14), 0, 0, Ui.dp(this, 4));   // the gap on the title's side, in either direction
         head.addView(hint);
         LinearLayout.LayoutParams hl = new LinearLayout.LayoutParams(-1, -2);
         hl.bottomMargin = Ui.dp(this, 18);
