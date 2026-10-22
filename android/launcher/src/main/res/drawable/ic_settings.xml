@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- a hub with eight spokes: settings -->
+<!-- a gear with eight teeth: settings -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp" android:height="24dp" android:viewportWidth="24" android:viewportHeight="24">
-    <path android:fillColor="#00000000" android:strokeColor="#FFFFFFFF" android:strokeWidth="1.6"
-        android:strokeLineCap="round" android:strokeLineJoin="round"
-        android:pathData="M15,12a3,3 0,1 1,-6 0a3,3 0,1 1,6 0z M12,2v3 M12,19v3 M2,12h3 M19,12h3 M4.9,4.9l2.1,2.1 M17,17l2.1,2.1 M4.9,19.1L7,17 M17,7l2.1,-2.1" />
+    <path android:fillColor="#00000000" android:strokeColor="#FFFFFFFF" android:strokeWidth="1.5"
+        android:strokeLineJoin="round"
+        android:pathData="M19.26,9.77 L19.49,10.69 L21.92,10.75 L21.92,13.25 L19.49,13.31 L18.72,15.56 L18.22,16.37 L19.90,18.13 L18.13,19.90 L16.37,18.22 L14.23,19.26 L13.31,19.49 L13.25,21.92 L10.75,21.92 L10.69,19.49 L8.44,18.72 L7.63,18.22 L5.87,19.90 L4.10,18.13 L5.78,16.37 L4.74,14.23 L4.51,13.31 L2.08,13.25 L2.08,10.75 L4.51,10.69 L5.28,8.44 L5.78,7.63 L4.10,5.87 L5.87,4.10 L7.63,5.78 L9.77,4.74 L10.69,4.51 L10.75,2.08 L13.25,2.08 L13.31,4.51 L15.56,5.28 L16.37,5.78 L18.13,4.10 L19.90,5.87 L18.22,7.63z M15,12a3,3 0,1 1,-6 0a3,3 0,1 1,6 0z" />
 </vector>

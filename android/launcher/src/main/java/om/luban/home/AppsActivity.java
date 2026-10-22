@@ -51,7 +51,7 @@ public class AppsActivity extends Activity {
         LinearLayout head = new LinearLayout(this);
         head.setOrientation(LinearLayout.HORIZONTAL);
         head.setGravity(Gravity.BOTTOM);
-        head.addView(Ui.text(this, "كل التطبيقات", 26, Ui.bold(), Ui.INK));
+        head.addView(Ui.text(this, "جميع التطبيقات", 26, Ui.bold(), Ui.INK));
         TextView hint = Ui.text(this, "اضغط مطوّلاً على تطبيق لإضافته إلى المفضلة · Back للعودة", 13, Ui.regular(), Ui.INK3);
         hint.setPaddingRelative(Ui.dp(this, 14), 0, 0, Ui.dp(this, 4));   // the gap on the title's side, in either direction
         head.addView(hint);

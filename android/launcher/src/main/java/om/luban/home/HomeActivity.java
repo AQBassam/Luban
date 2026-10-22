@@ -26,6 +26,7 @@ import android.view.Gravity;
 import android.view.View;
 import android.widget.FrameLayout;
 import android.widget.HorizontalScrollView;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -34,9 +35,9 @@ import java.util.Date;
 import java.util.List;
 
 /**
- * The home screen, a dock: clock, dates and the next prayer; a status line and buttons for inputs, the screensaver and
- * settings; one row of favourites ending in a tile for every app (AppsActivity). Each part lives in its own class; this
- * one only lays them out and keeps them current.
+ * The home screen, a dock: a greeting, the clock, the dates and the next prayer; named buttons for the network, inputs,
+ * the screensaver and settings, with the photo's caption; one row of favourites ending in a tile for every app
+ * (AppsActivity). Each part lives in its own class; this one only lays them out and keeps them current.
  */
 public class HomeActivity extends Activity {
     private static java.lang.ref.WeakReference<HomeActivity> live = new java.lang.ref.WeakReference<>(null);
@@ -44,7 +45,9 @@ public class HomeActivity extends Activity {
     private Wallpaper wallpaper;
     private View scrim;
     private PrayerCard card;
-    private TextView clock, ampm, dates, status;
+    private TextView greeting, clock, ampm, dates, caption, networkLabel, inputsLabel, screensaverLabel, settingsLabel;
+    private ImageView networkIcon;
+    private LinearLayout clockLine;
     private LinearLayout favRow;
     private List<Apps.App> apps = new ArrayList<>();
     private boolean ar = true, arabicDigits = false, clock24 = false;
@@ -86,6 +89,7 @@ public class HomeActivity extends Activity {
         listen(time, tf);
         card.reload();
         readLanguage();
+        updateLabels();
         updateClock();
         updateNetwork();
         android.content.pm.ChangedPackages changed = getPackageManager().getChangedPackages(Math.max(0, packagesSeq));
@@ -149,19 +153,22 @@ public class HomeActivity extends Activity {
             new int[] {0xF206192A, 0xB306192A, 0x6606192A, 0xA606192A}));
         root.addView(scrim, new FrameLayout.LayoutParams(-1, -1));
 
-        // a dock (960x540dp, any 1080p or 720p TV): the time at the top, a quiet status line and three buttons opposite,
-        // one row of favourites at the bottom whose last tile opens every app; the middle is left to the sea chart
+        // a dock (960x540dp, any 1080p or 720p TV): the time at the top, the buttons opposite, one row of favourites at
+        // the bottom whose last tile opens every app; the middle is left to the sea chart or the photo
         int side = Ui.dp(this, 48), top = Ui.dp(this, 40);
 
         LinearLayout time = new LinearLayout(this);
         time.setOrientation(LinearLayout.VERTICAL);
-        LinearLayout clockLine = new LinearLayout(this);
+        greeting = Ui.text(this, "", 16, Ui.medium(), Ui.LUBAN_SOFT);   // good morning / good evening
+        time.addView(greeting, new LinearLayout.LayoutParams(-2, -2));
+        // the clock, then صباحًا / مساءً after it in reading order (to its left in Arabic, AM/PM to its right in English)
+        clockLine = new LinearLayout(this);
         clockLine.setOrientation(LinearLayout.HORIZONTAL);
         clockLine.setGravity(Gravity.BOTTOM);
-        clockLine.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
         clock = Ui.text(this, "", 64, Ui.medium(), Ui.INK);
-        ampm = Ui.text(this, "", 20, Ui.medium(), Ui.LUBAN);
-        ampm.setPadding(Ui.dp(this, 8), 0, 0, Ui.dp(this, 10));
+        clock.setTextDirection(View.TEXT_DIRECTION_LTR);
+        ampm = Ui.text(this, "", 18, Ui.medium(), Ui.LUBAN);
+        ampm.setPaddingRelative(Ui.dp(this, 10), 0, 0, Ui.dp(this, 12));
         clockLine.addView(clock);
         clockLine.addView(ampm);
         // its own width only: the column's full width would push a left-to-right line to the far side
@@ -183,18 +190,26 @@ public class HomeActivity extends Activity {
         tl.topMargin = top;
         root.addView(time, tl);
 
+        // four buttons, each named under its icon: network, inputs, screensaver, settings; the photo's caption below them
         LinearLayout end = new LinearLayout(this);
-        end.setOrientation(LinearLayout.HORIZONTAL);
-        end.setGravity(Gravity.CENTER_VERTICAL);
-        status = Ui.text(this, "", 13, Ui.regular(), Ui.INK3);   // city · network
-        end.addView(status);
-        end.addView(button(R.drawable.ic_inputs, "المداخل · Inputs", v -> inputs()));
-        end.addView(button(R.drawable.ic_moon, "شاشة التوقف · Screensaver", v -> screensaver()));
-        end.addView(button(R.drawable.ic_settings, "الإعدادات · Settings", v -> open(new Intent(Settings.ACTION_SETTINGS), null)));
+        end.setOrientation(LinearLayout.VERTICAL);
+        end.setGravity(Gravity.END);
+        LinearLayout buttons = new LinearLayout(this);
+        buttons.setOrientation(LinearLayout.HORIZONTAL);
+        networkIcon = Tiles.roundButton(this, R.drawable.ic_offline, "", v -> open(new Intent(Settings.ACTION_WIFI_SETTINGS), new Intent(Settings.ACTION_SETTINGS)));
+        networkLabel = named(buttons, networkIcon);
+        inputsLabel = named(buttons, Tiles.roundButton(this, R.drawable.ic_inputs, "", v -> inputs()));
+        screensaverLabel = named(buttons, Tiles.roundButton(this, R.drawable.ic_moon, "", v -> screensaver()));
+        settingsLabel = named(buttons, Tiles.roundButton(this, R.drawable.ic_settings, "", v -> open(new Intent(Settings.ACTION_SETTINGS), null)));
+        end.addView(buttons);
+        caption = Ui.text(this, "", 12, Ui.regular(), Ui.INK3);   // the photo: place · photographer, licence
+        caption.setPadding(0, Ui.dp(this, 10), 0, 0);
+        end.addView(caption);
         FrameLayout.LayoutParams el = new FrameLayout.LayoutParams(-2, -2, Gravity.TOP | Gravity.END);
         el.setMarginEnd(side);
         el.topMargin = top;
         root.addView(end, el);
+        wallpaper.onChange = this::updateCaption;
 
         LinearLayout dock = new LinearLayout(this);
         dock.setOrientation(LinearLayout.VERTICAL);
@@ -218,6 +233,7 @@ public class HomeActivity extends Activity {
         favRow.setOrientation(LinearLayout.HORIZONTAL);
         favRow.setClipChildren(false);
         favRow.setPaddingRelative(p, 0, p, 0);   // inside the scrolled row, so both ends keep it
+        favRow.setClipToPadding(false);          // ...and the lift may draw into it
         sv.addView(favRow);
         dock.addView(sv, new LinearLayout.LayoutParams(-1, -2));
         FrameLayout.LayoutParams kl = new FrameLayout.LayoutParams(-1, -2, Gravity.BOTTOM);
@@ -226,13 +242,34 @@ public class HomeActivity extends Activity {
         return root;
     }
 
-    private View button(int icon, String label, View.OnClickListener l) {
-        View b = Tiles.roundButton(this, icon, label, l);
-        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(Ui.dp(this, 40), Ui.dp(this, 40));
-        lp.setMarginStart(Ui.dp(this, 10));
-        b.setLayoutParams(lp);
-        return b;
+    /** A round button with its name under it, added to the row; returns the name, which follows the language. */
+    private TextView named(LinearLayout row, ImageView b) {
+        LinearLayout item = new LinearLayout(this);
+        item.setOrientation(LinearLayout.VERTICAL);
+        item.setGravity(Gravity.CENTER_HORIZONTAL);
+        item.setClipChildren(false);
+        item.addView(b, new LinearLayout.LayoutParams(Ui.dp(this, 40), Ui.dp(this, 40)));
+        TextView name = Ui.text(this, "", 11, Ui.medium(), Ui.INK2);
+        name.setPadding(0, Ui.dp(this, 5), 0, 0);
+        item.addView(name);
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(Ui.dp(this, 72), -2);
+        row.addView(item, lp);
+        return name;
     }
+
+    /** The buttons' names, and what they say to a screen reader, in the screensaver's language. */
+    private void updateLabels() {
+        name(inputsLabel, ar ? "المداخل" : "Inputs");
+        name(screensaverLabel, ar ? "شاشة التوقف" : "Screensaver");
+        name(settingsLabel, ar ? "الإعدادات" : "Settings");
+    }
+
+    private static void name(TextView label, String s) {
+        label.setText(s);
+        ((LinearLayout) label.getParent()).getChildAt(0).setContentDescription(s);   // the button above it
+    }
+
+    private void updateCaption() { caption.setText(wallpaper.caption(ar)); }
 
     // ---------------------------------------------------------------- app rows
 
@@ -295,29 +332,37 @@ public class HomeActivity extends Activity {
         int h = now.get(java.util.Calendar.HOUR_OF_DAY), m = now.get(java.util.Calendar.MINUTE);
         String hh = clock24 ? (h < 10 ? "0" : "") + h : String.valueOf(h % 12 == 0 ? 12 : h % 12);
         clock.setText(Ui.digits(hh + ":" + (m < 10 ? "0" : "") + m, arabicDigits));
-        ampm.setText(clock24 ? "" : h < 12 ? (ar ? "ص" : "AM") : (ar ? "م" : "PM"));
+        ampm.setText(clock24 ? "" : h < 12 ? (ar ? "صباحًا" : "AM") : (ar ? "مساءً" : "PM"));
+        clockLine.setLayoutDirection(ar ? View.LAYOUT_DIRECTION_RTL : View.LAYOUT_DIRECTION_LTR);
+        greeting.setText(h < 12 ? (ar ? "صباح الخير" : "Good morning") : (ar ? "مساء الخير" : "Good evening"));
+        // the day, the Hijri date, then the Gregorian: الخميس 11 جمادى الأولى 1448 هـ · 22 أكتوبر 2026 م
         String nu = arabicDigits ? "arab" : "latn";
         ULocale greg = new ULocale((ar ? "ar_OM" : "en_GB") + "@numbers=" + nu);
         ULocale hij = new ULocale((ar ? "ar_OM" : "en_GB") + "@calendar=islamic-umalqura;numbers=" + nu);
-        String g = new SimpleDateFormat("EEEE d MMMM y", greg).format(new Date());
+        Date today = new Date();
+        String day = new SimpleDateFormat("EEEE", greg).format(today), g = new SimpleDateFormat("d MMMM y", greg).format(today);
         SimpleDateFormat hf = new SimpleDateFormat("d MMMM y", hij);
         IslamicCalendar ic = new IslamicCalendar(hij);
         ic.setCalculationType(IslamicCalendar.CalculationType.ISLAMIC_UMALQURA);
         hf.setCalendar(ic);
-        dates.setText(g + "  •  " + hf.format(new Date(System.currentTimeMillis() + hijriOffset * 86_400_000L)) + (ar ? " هـ" : " AH"));
+        String hijri = hf.format(new Date(System.currentTimeMillis() + hijriOffset * 86_400_000L));
+        dates.setText(ar ? day + " " + hijri + " هـ  ·  " + g + " م" : day + " " + hijri + " AH  ·  " + g);
     }
 
+    /** The network button: its icon and name follow the connection (wired, Wi-Fi, or none). */
     private void updateNetwork() {
         String s = ar ? "غير متصل" : "Offline";
+        int icon = R.drawable.ic_offline;
         ConnectivityManager cm = getSystemService(ConnectivityManager.class);
         NetworkCapabilities nc = cm == null ? null : cm.getNetworkCapabilities(cm.getActiveNetwork());
         if (nc != null) {
-            if (nc.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)) s = ar ? "سلكي" : "Ethernet";
-            else if (nc.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)) s = ar ? "واي فاي" : "Wi-Fi";
-            else s = ar ? "متصل" : "Online";
+            if (nc.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)) { s = ar ? "سلكي" : "Ethernet"; icon = R.drawable.ic_ethernet; }
+            else if (nc.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)) { s = ar ? "واي فاي" : "Wi-Fi"; icon = R.drawable.ic_wifi; }
+            else { s = ar ? "متصل" : "Online"; icon = R.drawable.ic_ethernet; }
         }
-        String city = card.city(ar);
-        status.setText(city.isEmpty() ? s : city + " · " + s);
+        networkIcon.setImageResource(icon);
+        name(networkLabel, s);
+        updateCaption();
     }
 
     private void inputs() {

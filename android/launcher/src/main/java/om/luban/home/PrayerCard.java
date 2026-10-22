@@ -52,10 +52,6 @@ final class PrayerCard {
 
     /** The owner chose Omani photos behind the home screen instead of the sea chart. */
     boolean photos() { return cfg != null && "photos".equals(cfg.optString("bg")); }
-
-    /** The city chosen in the screensaver's settings, or "" before it can be read. */
-    String city(boolean ar) { return cfg == null ? "" : cfg.optString(ar ? "cityAr" : "cityEn"); }
-
     /** Re-read the settings (on resume). */
     void reload() {
         cfg = null;

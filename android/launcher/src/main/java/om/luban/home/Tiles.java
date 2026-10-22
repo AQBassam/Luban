@@ -74,11 +74,16 @@ final class Tiles {
         grid.setImageTintList(ColorStateList.valueOf(Ui.LUBAN_SOFT));
         int s = Ui.dp(c, heightDp * 0.27f);
         in.addView(grid, new LinearLayout.LayoutParams(s, s));
-        TextView label = Ui.text(c, "كل التطبيقات", 13, Ui.medium(), Ui.LUBAN_SOFT);
-        label.setPadding(0, Ui.dp(c, 4), 0, 0);
-        in.addView(label);
+        // the tile's whole width, centred, one line: a font with wide letters steps down instead of being cut
+        TextView label = Ui.text(c, "جميع التطبيقات", 13, Ui.medium(), Ui.LUBAN_SOFT);
+        label.setGravity(Gravity.CENTER);
+        label.setMaxLines(1);
+        label.setAutoSizeTextTypeUniformWithConfiguration(9, 13, 1, android.util.TypedValue.COMPLEX_UNIT_SP);
+        LinearLayout.LayoutParams ll = new LinearLayout.LayoutParams(-1, Ui.dp(c, 22));
+        ll.setMargins(Ui.dp(c, 6), Ui.dp(c, 4), Ui.dp(c, 6), 0);
+        in.addView(label, ll);
         t.addView(in, new FrameLayout.LayoutParams(-1, -1));
-        t.setContentDescription("كل التطبيقات · All apps");
+        t.setContentDescription("جميع التطبيقات · All apps");
         t.setOnClickListener(v -> c.startActivity(new Intent(c, AppsActivity.class)));
         return t;
     }
@@ -109,7 +114,7 @@ final class Tiles {
             .show();
     }
 
-    /** A ring that lifts and lights up on focus, for the three buttons at the top. */
+    /** A ring that lifts and lights up on focus, for the buttons at the top. */
     static ImageView roundButton(Activity c, int icon, String label, View.OnClickListener l) {
         ImageView b = new ImageView(c);
         b.setImageResource(icon);
