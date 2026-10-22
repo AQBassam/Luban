@@ -70,7 +70,7 @@ public class SettingsActivity extends Activity {
         root.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
         root.setBackgroundColor(BG);
         root.setGravity(Gravity.CENTER_VERTICAL);
-        root.setPadding(dp(64), dp(40), dp(64), dp(40));
+        root.setPadding(dp(64), dp(24), dp(64), dp(24));   // the words and three two-line buttons fit 540dp
 
         LinearLayout text = new LinearLayout(this);
         text.setOrientation(LinearLayout.VERTICAL);
@@ -78,7 +78,7 @@ public class SettingsActivity extends Activity {
 
         View mark = new View(this);
         mark.setBackground(new LubanMark());
-        LinearLayout.LayoutParams fl = new LinearLayout.LayoutParams(dp(72), dp(72));
+        LinearLayout.LayoutParams fl = new LinearLayout.LayoutParams(dp(56), dp(56));
         fl.gravity = Gravity.START;
         text.addView(mark, fl);
 
@@ -92,7 +92,7 @@ public class SettingsActivity extends Activity {
 
         LinearLayout buttons = new LinearLayout(this);
         buttons.setOrientation(LinearLayout.HORIZONTAL);
-        buttons.setPadding(0, dp(28), 0, 0);
+        buttons.setPadding(0, dp(18), 0, 0);
         text.addView(buttons);
         Button preview = button("معاينة\nPreview", v -> startActivity(new Intent(this, PreviewActivity.class)));
         buttons.addView(preview);
@@ -189,7 +189,7 @@ public class SettingsActivity extends Activity {
             normal.setStroke(dp(3), has ? LUBAN : 0x33F7F4EE);
             v.animate().scaleX(has ? 1.06f : 1f).scaleY(has ? 1.06f : 1f).setDuration(150).start();
         });
-        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0, dp(76), 1f);
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0, dp(68), 1f);
         lp.setMarginEnd(dp(14));
         b.setLayoutParams(lp);
         return b;
