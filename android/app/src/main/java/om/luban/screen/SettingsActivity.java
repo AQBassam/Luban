@@ -121,11 +121,19 @@ public class SettingsActivity extends Activity {
         return root;
     }
 
+    @Override
+    protected void onNewIntent(Intent i) {
+        super.onNewIntent(i);
+        setIntent(i);   // opened again from the home screen's tasks button: the next onStart links to the tasks
+    }
+
     private void showLink(String link) {
         if (link == null) {
             url.setText("لا توجد شبكة: صِل التلفزيون بالواي فاي · No network");
             return;
         }
+        // from the home screen's «مهام البيت» button: the phone page opens at the household tasks
+        if ("tasks".equals(getIntent().getStringExtra("om.luban.screen.extra.SECTION"))) link += "#tasks";
         url.setText(link);
         qr.setImageBitmap(qrBitmap(link, dp(300)));
     }

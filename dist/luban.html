@@ -43,9 +43,10 @@ body.ltr #bg{background:radial-gradient(ellipse 75% 100% at 72% 52%,var(--sea) 0
 body.photos #bg .ph{display:block;background-size:cover;background-position:center;opacity:0;transition:opacity 2.5s ease;
   animation:drift 90s ease-in-out infinite alternate}
 body.photos #bg .ph.on{opacity:1}
+/* the words sit on the reading side: the veil is deep enough there for a bright photo (sand, a white fort) under them */
 body.photos #bg .veil{display:block;background:
-  linear-gradient(to left,rgba(6,25,42,.45) 0%,rgba(6,25,42,.78) 55%,rgba(6,25,42,.9) 100%)}
-body.photos.ltr #bg .veil{background:linear-gradient(to right,rgba(6,25,42,.45) 0%,rgba(6,25,42,.78) 55%,rgba(6,25,42,.9) 100%)}
+  linear-gradient(to left,rgba(6,25,42,.68) 0%,rgba(6,25,42,.74) 50%,rgba(6,25,42,.88) 100%)}
+body.photos.ltr #bg .veil{background:linear-gradient(to right,rgba(6,25,42,.68) 0%,rgba(6,25,42,.74) 50%,rgba(6,25,42,.88) 100%)}
 @keyframes drift{from{transform:scale(1.04) translate(0,0)}to{transform:scale(1.1) translate(-1.2%,-.8%)}}
 #bg .waves{position:fixed;left:0;right:0;bottom:0;height:30%;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='22'%3E%3Cpath d='M0 11 Q30 4 60 11 T120 11' fill='none' stroke='%238FE0D6' stroke-opacity='.09' stroke-width='1.5'/%3E%3C/svg%3E");background-size:12rem 2.2rem;
   -webkit-mask-image:linear-gradient(to bottom,transparent,#000);mask-image:linear-gradient(to bottom,transparent,#000)}
@@ -331,7 +332,7 @@ body.night .smoke{opacity:.4;animation:none}
  * and every value is checked against what it may be. */
 (function (root) {
   'use strict';
-  const PANELS = ['verse', 'prayers', 'forecast', 'matches', 'shows', 'none'];
+  const PANELS = ['verse', 'prayers', 'forecast', 'matches', 'shows', 'tasks', 'none'];
   const MARKETS = ['gold', 'brent', 'btc', 'spx'];
   const PRAYERS5 = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'];
 
@@ -351,6 +352,7 @@ body.night .smoke{opacity:.4;animation:none}
     homeCard: false,            // the launcher's card
     teams: [],                  // [{id, en, ar}] football-data.org team ids, priority order
     markets: ['gold', 'brent', 'btc', 'spx'],
+    tasks: [],                  // [{t, who, when, done}] household tasks, written on the phone page, kept on this TV only
     shows: { genres: [], langs: [], minRating: 7 },
     omanDays: true,             // National Day countdown, Khareef season
     night: true,                // dim after Isha until before Fajr
@@ -394,6 +396,10 @@ body.night .smoke{opacity:.4;animation:none}
         .map(t => ({ id: String(t.id), en: str(t.en, 60) || '', ar: str(t.ar, 60) || '' }));
     }
     if (Array.isArray(input.markets)) s.markets = [...new Set(input.markets.filter(m => MARKETS.includes(m)))];
+    if (Array.isArray(input.tasks)) {   // up to 20, each a short line of text; who and when are free words ("أحمد", "الخميس")
+      s.tasks = input.tasks.filter(x => isObj(x) && typeof x.t === 'string' && x.t.trim()).slice(0, 20)
+        .map(x => ({ t: x.t.trim().slice(0, 80), who: (str(x.who, 24) || '').trim(), when: (str(x.when, 24) || '').trim(), done: x.done === true }));
+    }
     if (isObj(input.shows)) {
       const sh = input.shows;
       if (Array.isArray(sh.genres)) s.shows.genres = sh.genres.filter(g => typeof g === 'string' && /^[A-Za-z-]{2,20}$/.test(g)).slice(0, 16);
@@ -438,7 +444,7 @@ body.night .smoke{opacity:.4;animation:none}
       day: n => n === 1 ? 'يوم' : n === 2 ? 'يومان' : n <= 10 ? 'أيام' : 'يوماً',
       verse: 'آية اليوم', hadith: 'حديث اليوم', prayersToday: 'مواقيت اليوم', forecast: 'الأيام القادمة',
       matches: 'مباريات فرقك', shows: 'جديد المسلسلات هذا الأسبوع', noData: 'لا تتوفر بيانات الآن',
-      noMatches: 'لا مباريات قريبة', noShows: 'لا جديد هذا الأسبوع', iqama: 'الإقامة',
+      noMatches: 'لا مباريات قريبة', noShows: 'لا جديد هذا الأسبوع', iqama: 'الإقامة', tasks: 'مهام البيت', noTasks: 'لا مهام الآن',
       nationalDayIn: n => `اليوم الوطني العُماني بعد ${n}`, nationalDay: 'كل عام وعُمان بخير — اليوم الوطني',
       khareef: 'موسم خريف ظفار', ramadanDay: n => `رمضان — اليوم ${n}`, ramadanIn: n => `رمضان بعد ${n}`,
       eidFitrIn: n => `عيد الفطر بعد ${n}`, eidAdhaIn: n => `عيد الأضحى بعد ${n}`,
@@ -461,7 +467,7 @@ body.night .smoke{opacity:.4;animation:none}
       min: n => n === 1 ? 'min' : 'min', hr: n => n === 1 ? 'hr' : 'hr', day: n => n === 1 ? 'day' : 'days',
       verse: 'Verse of the day', hadith: 'Hadith of the day', prayersToday: "Today's prayers", forecast: 'Next days',
       matches: 'Your teams', shows: 'New episodes this week', noData: 'No data right now',
-      noMatches: 'No upcoming matches', noShows: 'Nothing new this week', iqama: 'Iqama',
+      noMatches: 'No upcoming matches', noShows: 'Nothing new this week', iqama: 'Iqama', tasks: 'Household tasks', noTasks: 'No tasks now',
       nationalDayIn: n => `Oman National Day in ${n}`, nationalDay: 'Happy National Day, Oman',
       khareef: 'Dhofar Khareef season', ramadanDay: n => `Ramadan — day ${n}`, ramadanIn: n => `Ramadan in ${n}`,
       eidFitrIn: n => `Eid al-Fitr in ${n}`, eidAdhaIn: n => `Eid al-Adha in ${n}`,
@@ -938,8 +944,21 @@ body.night .smoke{opacity:.4;animation:none}
     renderMarkets();
   }
   const shownMarkets = () => S.markets.filter(id => state.markets[id] && MARKETS[id]);
-  /** Prices are a page of the card: the whole card with no panel chosen, else one turn in four (20 s of every 80). */
-  const marketsPage = () => shownMarkets().length > 0 && (S.panel === 'none' || state.page % 4 === 3);
+  const openTasks = () => S.tasks.filter(x => !x.done);
+  /**
+   * Prices and household tasks are extra pages of the card: after 60 s of the chosen panel, 20 s for each of them
+   * (with no panel chosen, they take turns). Tasks chosen as the panel show all the time instead.
+   */
+  function extraPage() {
+    const extra = [];
+    if (shownMarkets().length) extra.push('markets');
+    if (openTasks().length && S.panel !== 'tasks') extra.push('tasks');
+    if (!extra.length) return null;
+    if (S.panel === 'none') return extra[state.page % extra.length];
+    const p = state.page % (3 + extra.length);
+    return p >= 3 ? extra[p - 3] : null;
+  }
+  const marketsPage = () => extraPage() === 'markets';
   function marketsList() {
     const ul = h('ul', 'mks');
     for (const id of shownMarkets()) {
@@ -1063,10 +1082,15 @@ body.night .smoke{opacity:.4;animation:none}
 
   function renderCard(animate) {
     const card = $('card'), body = $('card-body'), title = $('card-title');
-    if (S.panel === 'none' && !marketsPage()) { card.hidden = true; return; }
+    const extra = extraPage();
+    if (S.panel === 'none' && !extra) { card.hidden = true; return; }
     card.hidden = false; clear(body);
     if (animate) { body.classList.remove('fade'); void body.offsetWidth; body.classList.add('fade'); }
-    if (marketsPage()) {
+    if (extra === 'tasks' || (!extra && S.panel === 'tasks')) {
+      title.textContent = T.tasks;
+      const rows = openTasks().map(x => [x.t, [x.who, x.when].filter(Boolean).join(' · ')]);
+      body.append(rows.length ? rowsList(rows, -1) : h('div', 'empty', T.noTasks));
+    } else if (extra === 'markets') {
       title.textContent = T.markets;
       body.append(marketsList());
       // CoinGecko's terms ask for this line wherever its prices show
@@ -1169,11 +1193,11 @@ body.night .smoke{opacity:.4;animation:none}
 
     setInterval(tickClock, 1000);
     setInterval(() => { tickDates(); renderPrayers(); renderChips(); applyNight(); }, 20000);
-    // every 20 s: the next page of episodes, fresh times, and the turn to the prices and back
+    // every 20 s: the next page of episodes, fresh times, and the turn to the prices or the tasks and back
     setInterval(() => {
-      const wasMarkets = marketsPage();
+      const was = extraPage();
       state.page++;
-      const turned = marketsPage() !== wasMarkets;
+      const turned = extraPage() !== was;
       if (turned || ['shows', 'prayers', 'matches'].includes(S.panel)) renderCard(turned || S.panel === 'shows');
     }, 20000);
     setInterval(applyPhoto, 60000);

@@ -3,7 +3,7 @@
  * and every value is checked against what it may be. */
 (function (root) {
   'use strict';
-  const PANELS = ['verse', 'prayers', 'forecast', 'matches', 'shows', 'none'];
+  const PANELS = ['verse', 'prayers', 'forecast', 'matches', 'shows', 'tasks', 'none'];
   const MARKETS = ['gold', 'brent', 'btc', 'spx'];
   const PRAYERS5 = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'];
 
@@ -23,6 +23,7 @@
     homeCard: false,            // the launcher's card
     teams: [],                  // [{id, en, ar}] football-data.org team ids, priority order
     markets: ['gold', 'brent', 'btc', 'spx'],
+    tasks: [],                  // [{t, who, when, done}] household tasks, written on the phone page, kept on this TV only
     shows: { genres: [], langs: [], minRating: 7 },
     omanDays: true,             // National Day countdown, Khareef season
     night: true,                // dim after Isha until before Fajr
@@ -66,6 +67,10 @@
         .map(t => ({ id: String(t.id), en: str(t.en, 60) || '', ar: str(t.ar, 60) || '' }));
     }
     if (Array.isArray(input.markets)) s.markets = [...new Set(input.markets.filter(m => MARKETS.includes(m)))];
+    if (Array.isArray(input.tasks)) {   // up to 20, each a short line of text; who and when are free words ("أحمد", "الخميس")
+      s.tasks = input.tasks.filter(x => isObj(x) && typeof x.t === 'string' && x.t.trim()).slice(0, 20)
+        .map(x => ({ t: x.t.trim().slice(0, 80), who: (str(x.who, 24) || '').trim(), when: (str(x.when, 24) || '').trim(), done: x.done === true }));
+    }
     if (isObj(input.shows)) {
       const sh = input.shows;
       if (Array.isArray(sh.genres)) s.shows.genres = sh.genres.filter(g => typeof g === 'string' && /^[A-Za-z-]{2,20}$/.test(g)).slice(0, 16);

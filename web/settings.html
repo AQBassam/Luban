@@ -86,15 +86,23 @@ button{font:inherit;border:1px solid var(--line);background:var(--bg);color:var(
   <select id="panel">
     <option value="verse" data-t="pVerse">آية أو حديث اليوم</option><option value="prayers" data-t="pPrayers">مواقيت اليوم والإقامة</option>
     <option value="forecast" data-t="pForecast">طقس الأيام القادمة</option><option value="matches" data-t="pMatches">مباريات فرقك</option>
-    <option value="shows" data-t="pShows">جديد المسلسلات</option><option value="none" data-t="pNone">بدون بطاقة</option>
+    <option value="shows" data-t="pShows">جديد المسلسلات</option><option value="tasks" data-t="pTasks">مهام البيت</option><option value="none" data-t="pNone">بدون بطاقة</option>
   </select>
   <label for="bg" data-t="bg">الخلفية</label>
   <select id="bg"><option value="chart" data-t="bgChart">خريطة البحر</option><option value="photos" data-t="bgPhotos">صور من عُمان</option></select>
-  <label class="check"><input type="checkbox" id="omanDays"><span data-t="omanDays">العيد الوطني وموسم الخريف</span></label>
+  <label class="check"><input type="checkbox" id="omanDays"><span data-t="omanDays">اليوم الوطني وموسم الخريف</span></label>
   <label class="check"><input type="checkbox" id="night"><span data-t="night">تخفيف الإضاءة ليلاً</span></label>
   <label class="check"><input type="checkbox" id="homeCard"><span data-t="homeCard">بطاقة المواقيت في الشاشة الرئيسية</span></label>
   <label data-t="markets">الأسواق</label>
   <div class="grid" id="markets"></div>
+</section>
+
+<section id="tasks-section">
+  <h2 data-t="tasks">مهام البيت</h2>
+  <div id="tasks"></div>
+  <input id="tt" type="text" maxlength="80" data-ph="taskText" placeholder="المهمة، مثل: سقي الزرع">
+  <div class="row" style="margin-top:8px"><input id="tw" type="text" maxlength="24" data-ph="taskWho" placeholder="لمن (اختياري)"><input id="tn" type="text" maxlength="24" data-ph="taskWhen" placeholder="متى (اختياري)"><button id="tadd" type="button" style="flex:0 0 auto" data-t="add">إضافة</button></div>
+  <p class="hint" data-t="tasksHint">تظهر على الشاشة لكل من في البيت حتى تعلّمها «تمت» أو تحذفها، وتُحفظ على التلفزيون وحده. اضغط «حفظ» بعد التعديل.</p>
 </section>
 
 <section>

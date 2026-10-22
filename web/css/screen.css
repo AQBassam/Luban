@@ -35,9 +35,10 @@ body.ltr #bg{background:radial-gradient(ellipse 75% 100% at 72% 52%,var(--sea) 0
 body.photos #bg .ph{display:block;background-size:cover;background-position:center;opacity:0;transition:opacity 2.5s ease;
   animation:drift 90s ease-in-out infinite alternate}
 body.photos #bg .ph.on{opacity:1}
+/* the words sit on the reading side: the veil is deep enough there for a bright photo (sand, a white fort) under them */
 body.photos #bg .veil{display:block;background:
-  linear-gradient(to left,rgba(6,25,42,.45) 0%,rgba(6,25,42,.78) 55%,rgba(6,25,42,.9) 100%)}
-body.photos.ltr #bg .veil{background:linear-gradient(to right,rgba(6,25,42,.45) 0%,rgba(6,25,42,.78) 55%,rgba(6,25,42,.9) 100%)}
+  linear-gradient(to left,rgba(6,25,42,.68) 0%,rgba(6,25,42,.74) 50%,rgba(6,25,42,.88) 100%)}
+body.photos.ltr #bg .veil{background:linear-gradient(to right,rgba(6,25,42,.68) 0%,rgba(6,25,42,.74) 50%,rgba(6,25,42,.88) 100%)}
 @keyframes drift{from{transform:scale(1.04) translate(0,0)}to{transform:scale(1.1) translate(-1.2%,-.8%)}}
 #bg .waves{position:fixed;left:0;right:0;bottom:0;height:30%;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='22'%3E%3Cpath d='M0 11 Q30 4 60 11 T120 11' fill='none' stroke='%238FE0D6' stroke-opacity='.09' stroke-width='1.5'/%3E%3C/svg%3E");background-size:12rem 2.2rem;
   -webkit-mask-image:linear-gradient(to bottom,transparent,#000);mask-image:linear-gradient(to bottom,transparent,#000)}

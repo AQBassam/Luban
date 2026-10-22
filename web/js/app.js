@@ -455,8 +455,21 @@
     renderMarkets();
   }
   const shownMarkets = () => S.markets.filter(id => state.markets[id] && MARKETS[id]);
-  /** Prices are a page of the card: the whole card with no panel chosen, else one turn in four (20 s of every 80). */
-  const marketsPage = () => shownMarkets().length > 0 && (S.panel === 'none' || state.page % 4 === 3);
+  const openTasks = () => S.tasks.filter(x => !x.done);
+  /**
+   * Prices and household tasks are extra pages of the card: after 60 s of the chosen panel, 20 s for each of them
+   * (with no panel chosen, they take turns). Tasks chosen as the panel show all the time instead.
+   */
+  function extraPage() {
+    const extra = [];
+    if (shownMarkets().length) extra.push('markets');
+    if (openTasks().length && S.panel !== 'tasks') extra.push('tasks');
+    if (!extra.length) return null;
+    if (S.panel === 'none') return extra[state.page % extra.length];
+    const p = state.page % (3 + extra.length);
+    return p >= 3 ? extra[p - 3] : null;
+  }
+  const marketsPage = () => extraPage() === 'markets';
   function marketsList() {
     const ul = h('ul', 'mks');
     for (const id of shownMarkets()) {
@@ -580,10 +593,15 @@
 
   function renderCard(animate) {
     const card = $('card'), body = $('card-body'), title = $('card-title');
-    if (S.panel === 'none' && !marketsPage()) { card.hidden = true; return; }
+    const extra = extraPage();
+    if (S.panel === 'none' && !extra) { card.hidden = true; return; }
     card.hidden = false; clear(body);
     if (animate) { body.classList.remove('fade'); void body.offsetWidth; body.classList.add('fade'); }
-    if (marketsPage()) {
+    if (extra === 'tasks' || (!extra && S.panel === 'tasks')) {
+      title.textContent = T.tasks;
+      const rows = openTasks().map(x => [x.t, [x.who, x.when].filter(Boolean).join(' · ')]);
+      body.append(rows.length ? rowsList(rows, -1) : h('div', 'empty', T.noTasks));
+    } else if (extra === 'markets') {
       title.textContent = T.markets;
       body.append(marketsList());
       // CoinGecko's terms ask for this line wherever its prices show
@@ -686,11 +704,11 @@
 
     setInterval(tickClock, 1000);
     setInterval(() => { tickDates(); renderPrayers(); renderChips(); applyNight(); }, 20000);
-    // every 20 s: the next page of episodes, fresh times, and the turn to the prices and back
+    // every 20 s: the next page of episodes, fresh times, and the turn to the prices or the tasks and back
     setInterval(() => {
-      const wasMarkets = marketsPage();
+      const was = extraPage();
       state.page++;
-      const turned = marketsPage() !== wasMarkets;
+      const turned = extraPage() !== was;
       if (turned || ['shows', 'prayers', 'matches'].includes(S.panel)) renderCard(turned || S.panel === 'shows');
     }, 20000);
     setInterval(applyPhoto, 60000);

@@ -16,14 +16,16 @@
     tz: 'Time zone (IANA)', lang: 'Language', digits: 'Digits', clock24: '24-hour clock', prayer: 'Prayer', method: 'Calculation method', asr: 'Asr',
     asrStd: 'Standard (shadow ×1)', asrHan: 'Hanafi (shadow ×2)', offsets: 'Adjust in minutes (to match the local calendar)', iqama: 'Iqama, minutes after adhan',
     hijri: 'Hijri date adjustment', screen: 'Screen', panel: 'Card beside the clock', pVerse: 'Verse or hadith of the day', pPrayers: "Today's prayers and iqama",
-    pForecast: 'Weather, next days', pMatches: 'Your teams', pShows: 'New episodes', pNone: 'No card', omanDays: 'Oman National Day and Khareef season',
+    pForecast: 'Weather, next days', pMatches: 'Your teams', pShows: 'New episodes', pTasks: 'Household tasks', pNone: 'No card', omanDays: 'Oman National Day and Khareef season',
+    tasks: 'Household tasks', taskText: 'The task, e.g. water the plants', taskWho: 'For whom (optional)', taskWhen: 'When (optional)', add: 'Add',
+    tasksHint: 'Everyone at home sees them on the screen until you mark them done or delete them; they are kept on the TV only. Press Save after editing.', done: 'Done',
     night: 'Dim at night', sources: 'Data sources', bg: 'Background', bgChart: 'The sea chart', bgPhotos: 'Photos of Oman', homeCard: 'Prayer card on the home screen', markets: 'Markets', teams: 'Your teams', search: 'Search',
     teamsHint: 'Up to 10 teams from the major European and Brazilian leagues, the Champions League, the World Cup and the Euros (football-data.org). Edit the Arabic name as you like it shown.', shows: 'TV shows', genres: 'Genres (empty = all)', minRating: 'Minimum rating',
     advanced: 'Advanced', api: 'Data server (optional)', channel: 'Update channel', stable: 'Stable', canary: 'Canary (gets updates first)', save: 'Save',
     saved: 'Saved. The screen updates now.', failed: 'Not saved: ', custom: 'Other place…', default: 'Country default', teamSearch: 'Search in English: Real Madrid, Liverpool, Flamengo…',
     gold: 'Gold, global reference price (OMR/g)', brent: 'Brent oil', btc: 'Bitcoin', spx: 'S&P 500', noHits: 'No team found',
   };
-  const AR = { custom: 'مكان آخر…', default: 'حسب البلد', saved: 'حُفظت. الشاشة تتحدث الآن.', failed: 'لم تُحفظ: ', gold: 'الذهب، سعر عالمي استرشادي (ر.ع/غ)', brent: 'نفط برنت', btc: 'بيتكوين', spx: 'S&P 500', noHits: 'لا نتائج' };
+  const AR = { done: 'تمت', custom: 'مكان آخر…', default: 'حسب البلد', saved: 'حُفظت. الشاشة تتحدث الآن.', failed: 'لم تُحفظ: ', gold: 'الذهب، سعر عالمي استرشادي (ر.ع/غ)', brent: 'نفط برنت', btc: 'بيتكوين', spx: 'S&P 500', noHits: 'لا نتائج' };
   let S = sanitize(null, METHODS), lang = 'ar';
   const t = k => lang === 'en' ? (EN[k] || k) : (AR[k] || (document.querySelector(`[data-t="${k}"]`) || {}).dataset?.ar || k);
 
@@ -91,6 +93,30 @@
       row.append(h('span', { dir: 'ltr' }, tm.en), ar, up, del); box.append(row);
     });
   }
+  /** Household tasks: tick one done (it leaves the screen), edit its words, or delete it. Saved with everything else. */
+  function renderTasks() {
+    const box = $('tasks'); box.textContent = '';
+    S.tasks.forEach((tk, i) => {
+      const row = h('div', { className: 'team' });
+      const done = h('input', { type: 'checkbox', checked: tk.done, title: t('done') });
+      done.addEventListener('change', () => { S.tasks[i].done = done.checked; text.style.opacity = done.checked ? '.5' : ''; });
+      const text = h('input', { type: 'text', value: tk.t, maxLength: 80 });
+      if (tk.done) text.style.opacity = '.5';
+      text.addEventListener('input', () => { S.tasks[i].t = text.value; });
+      const del = h('button', { type: 'button', title: '×' }, '×'); del.onclick = () => { S.tasks.splice(i, 1); renderTasks(); };
+      row.append(done, text);
+      if (tk.who || tk.when) row.append(h('span', { className: 'hint' }, [tk.who, tk.when].filter(Boolean).join(' · ')));
+      row.append(del); box.append(row);
+    });
+  }
+  function addTask() {
+    const text = $('tt').value.trim();
+    if (!text || S.tasks.length >= 20) return;
+    S.tasks.push({ t: text, who: $('tw').value.trim(), when: $('tn').value.trim(), done: false });
+    $('tt').value = ''; $('tw').value = ''; $('tn').value = '';
+    renderTasks();
+  }
+
   async function searchTeams() {
     const q = $('tq').value.trim(), box = $('hits'); box.textContent = '';
     if (q.length < 2) return;
@@ -138,7 +164,7 @@
     checks('markets', ['gold', 'brent', 'btc', 'spx'], S.markets, t);
     checks('genres', GENRES, S.shows.genres);
     $('minRating').value = String(S.shows.minRating); $('api').value = S.api; $('channel').value = S.channel;
-    renderTeams(); preview();
+    renderTeams(); renderTasks(); preview();
   }
 
   async function save() {
@@ -159,7 +185,10 @@
     ['city', 'method', 'asr', 'hijri', 'c-lat', 'c-lon', 'c-tz'].forEach(id => $(id).addEventListener('input', preview));
     $('lang').addEventListener('change', () => { S = collect(); fill(); });
     $('tgo').onclick = searchTeams; $('tq').addEventListener('keydown', e => { if (e.key === 'Enter') searchTeams(); });
+    $('tadd').onclick = addTask; $('tt').addEventListener('keydown', e => { if (e.key === 'Enter') addTask(); });
     $('save').onclick = save;
+    // the home screen's «مهام البيت» button opens the QR code with #tasks: land on the tasks
+    if (location.hash === '#tasks') $('tasks-section').scrollIntoView();
   }
   start();
 })();

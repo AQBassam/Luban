@@ -50,7 +50,7 @@ public class HomeActivity extends Activity {
     private Wallpaper wallpaper;
     private View scrim;
     private PrayerCard card;
-    private TextView greeting, clock, ampm, dates, caption, networkLabel, inputsLabel, screensaverLabel, settingsLabel;
+    private TextView greeting, clock, ampm, dates, caption, tasksLabel, networkLabel, inputsLabel, screensaverLabel, settingsLabel;
     private ImageView networkIcon;
     private LinearLayout clockLine;
     private LinearLayout favRow;
@@ -155,7 +155,7 @@ public class HomeActivity extends Activity {
         // over the photos (when the owner chose them): the deep sea, so the words stay readable
         scrim = new View(this);
         scrim.setBackground(new GradientDrawable(GradientDrawable.Orientation.BOTTOM_TOP,
-            new int[] {0xF206192A, 0xB306192A, 0x6606192A, 0xA606192A}));
+            new int[] {0xF206192A, 0xBF06192A, 0x8C06192A, 0xBF06192A}));   // deeper behind the words at the top
         root.addView(scrim, new FrameLayout.LayoutParams(-1, -1));
 
         // a dock (960x540dp, any 1080p or 720p TV): the time at the top, the buttons opposite, one row of favourites at
@@ -195,12 +195,13 @@ public class HomeActivity extends Activity {
         tl.topMargin = top;
         root.addView(time, tl);
 
-        // four pills, an icon then its name: network, inputs, screensaver, settings; the photo's caption below them
+        // five pills, an icon then its name: household tasks, network, inputs, screensaver, settings; the photo's caption below
         LinearLayout end = new LinearLayout(this);
         end.setOrientation(LinearLayout.VERTICAL);
         end.setGravity(Gravity.END);
         LinearLayout buttons = new LinearLayout(this);
         buttons.setOrientation(LinearLayout.HORIZONTAL);
+        tasksLabel = pill(buttons, R.drawable.ic_tasks, v -> tasks());
         networkLabel = pill(buttons, R.drawable.ic_offline, v -> open(new Intent(Settings.ACTION_WIFI_SETTINGS), new Intent(Settings.ACTION_SETTINGS)));
         networkIcon = (ImageView) ((LinearLayout) networkLabel.getParent()).getChildAt(0);
         inputsLabel = pill(buttons, R.drawable.ic_inputs, v -> inputs());
@@ -271,6 +272,7 @@ public class HomeActivity extends Activity {
 
     /** The buttons' names, and what they say to a screen reader, in the screensaver's language. */
     private void updateLabels() {
+        name(tasksLabel, ar ? "مهام البيت" : "Tasks");
         name(inputsLabel, ar ? "المداخل" : "Inputs");
         name(screensaverLabel, ar ? "شاشة التوقف" : "Screensaver");
         name(settingsLabel, ar ? "الإعدادات" : "Settings");
@@ -398,6 +400,12 @@ public class HomeActivity extends Activity {
             .setTitle(ar ? "المداخل" : "Inputs")
             .setItems(names, (d, w) -> open(new Intent(Intent.ACTION_VIEW, TvContract.buildChannelUriForPassthroughInput(list.get(w).getId())), null))
             .show();
+    }
+
+    /** The screensaver's QR screen, its phone page opening at the household tasks (the page works only while it is open). */
+    private void tasks() {
+        Intent i = new Intent().setClassName("om.luban.screen", "om.luban.screen.SettingsActivity").putExtra("om.luban.screen.extra.SECTION", "tasks");
+        open(i, getPackageManager().getLaunchIntentForPackage("om.luban.screen"));
     }
 
     private void screensaver() {

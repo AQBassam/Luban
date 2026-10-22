@@ -508,7 +508,7 @@ def main(argv=None):
         sub.add_parser(name)
     p = sub.add_parser("settings")
     p.add_argument("--city"); p.add_argument("--lang", choices=["ar", "en"]); p.add_argument("--digits", choices=["latn", "arab"])
-    p.add_argument("--panel", choices=["verse", "prayers", "forecast", "matches", "shows", "none"]); p.add_argument("--method")
+    p.add_argument("--panel", choices=["verse", "prayers", "forecast", "matches", "shows", "tasks", "none"]); p.add_argument("--method")
     p.add_argument("--home-card", choices=["on", "off"]); p.add_argument("--teams", help="id:English name,..."); p.add_argument("--api")
     p = sub.add_parser("favourites")
     p.add_argument("apps", nargs="?", help="com.a,com.b (omit to list)")

@@ -28,6 +28,10 @@ const enc = s => Buffer.from(JSON.stringify(s)).toString('base64').replace(/\+/g
   check('settings: custom place with a bad time zone falls back', c.city === 'muscat' && c.place === null);
   const c2 = sanitize({ city: 'custom', place: { en: 'Zanzibar', lat: -6.16, lon: 39.19, tz: 'Africa/Dar_es_Salaam' } }, P.METHODS);
   check('settings: custom place kept when valid', c2.city === 'custom' && c2.place.tz === 'Africa/Dar_es_Salaam');
+  const many = Array.from({ length: 25 }, (_, i) => ({ t: 'task ' + i }));
+  const tk = sanitize({ tasks: [{ t: '  سقي الزرع  ', who: 'x'.repeat(40), when: 'الخميس', done: true, extra: 1 }, { t: '' }, { t: 5 }, 'x', ...many] }, P.METHODS).tasks;
+  check('settings: tasks trimmed and capped (20, 80 chars, who/when 24), empty and odd ones dropped, unknown keys gone',
+    tk.length === 20 && tk[0].t === 'سقي الزرع' && tk[0].who.length === 24 && tk[0].when === 'الخميس' && tk[0].done === true && !('extra' in tk[0]) && tk[1].done === false, tk.slice(0, 2));
 }
 
 // ---------- prayer engine against published times
@@ -184,6 +188,18 @@ const text = (page, sel) => page.$eval(sel, e => e.textContent);
   await page.close();
 }
 {
+  // household tasks: the whole card when chosen (done ones left out), else a turn of their own after the chosen panel
+  const tasks = [{ t: 'سقي الزرع', who: 'أحمد', when: 'اليوم', done: false }, { t: 'إخراج القمامة', who: '', when: '', done: true }];
+  const own = await open({ panel: 'tasks', tasks }), turn = await open({ panel: 'verse', tasks });
+  const a = await text(own, '#card');
+  check('tasks: the card lists open tasks with who and when, not the done ones', a.includes('مهام البيت') && a.includes('سقي الزرع') && a.includes('أحمد · اليوم') && !a.includes('القمامة'), a);
+  const before = await text(turn, '#card-title');
+  await turn.clock.runFor(60000);   // three turns of 20 s: then the tasks' turn
+  const after = await text(turn, '#card-title');
+  check('tasks: with a verse chosen, the card turns to the tasks after 60 s', before !== 'مهام البيت' && after === 'مهام البيت', [before, after]);
+  await own.close(); await turn.close();
+}
+{
   // as the TV showed it: the server's short names, both found in teams-ar.json
   const page = await open({ panel: 'matches', teams: [{ id: '66', en: 'Man United', ar: '' }] });
   await page.evaluate(() => {
@@ -269,6 +285,11 @@ for (const vp of [{ width: 1920, height: 1080 }, { width: 1280, height: 720 }]) 
   check('phone: live prayer preview', times.length === 6 && times.every(t => /^\d\d:\d\d$/.test(t)), times);
   const wide = await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth);
   check('phone: no sideways scrolling at 390px', wide);
+  await page.fill('#tt', 'سقي الزرع'); await page.fill('#tw', 'أحمد'); await page.click('#tadd');
+  await page.fill('#tt', 'إخراج القمامة'); await page.press('#tt', 'Enter');
+  const rows = await page.$$eval('#tasks .team', r => r.map(x => x.textContent));
+  check('phone: household tasks are added (button or Enter), who shown beside them', rows.length === 2 && rows[0].includes('أحمد') && !(await page.inputValue('#tt')), rows);
+  check('phone: still no sideways scrolling with tasks', await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth));
   await page.selectOption('#lang', 'en');
   check('phone: switches to English', (await page.textContent('#save')) === 'Save');
   await page.close();
