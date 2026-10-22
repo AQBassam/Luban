@@ -201,15 +201,23 @@ public class HomeActivity extends Activity {
         TextView label = Ui.text(this, "المفضلة · Favourites", 13, Ui.bold(), Ui.LUBAN_SOFT);
         label.setPadding(Ui.dp(this, 8), 0, Ui.dp(this, 8), Ui.dp(this, 2));
         dock.addView(label);
-        HorizontalScrollView sv = new HorizontalScrollView(this);
+        int p = Ui.dp(this, 8);   // room for the 7% lift of a focused tile
+        HorizontalScrollView sv = new HorizontalScrollView(this) {
+            // scroll a focused tile in with its lift too, so a tile at either end of the row is never cut at the edge
+            @Override protected int computeScrollDeltaToGetChildRectOnScreen(Rect r) {
+                Rect wide = new Rect(r);
+                wide.inset(-p, 0);
+                return super.computeScrollDeltaToGetChildRectOnScreen(wide);
+            }
+        };
         sv.setHorizontalScrollBarEnabled(false);
         sv.setClipToPadding(false);
         sv.setClipChildren(false);
-        int p = Ui.dp(this, 8);   // room for the 7% lift of a focused tile
-        sv.setPadding(p, p, p, p);
+        sv.setPadding(0, p, 0, p);
         favRow = new LinearLayout(this);
         favRow.setOrientation(LinearLayout.HORIZONTAL);
         favRow.setClipChildren(false);
+        favRow.setPaddingRelative(p, 0, p, 0);   // inside the scrolled row, so both ends keep it
         sv.addView(favRow);
         dock.addView(sv, new LinearLayout.LayoutParams(-1, -2));
         FrameLayout.LayoutParams kl = new FrameLayout.LayoutParams(-1, -2, Gravity.BOTTOM);
