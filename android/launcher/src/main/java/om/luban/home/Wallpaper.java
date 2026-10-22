@@ -3,6 +3,7 @@ package om.luban.home;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.net.Uri;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.SystemClock;
@@ -14,8 +15,12 @@ import org.json.JSONObject;
 
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
+import java.util.TimeZone;
 
-/** When the owner chose photos (phone settings → Background): Omani photos behind the home screen, a new one every 15 minutes, crossfaded. Decoded off the main thread. */
+/**
+ * When the owner chose photos (phone settings → Background): Omani photos behind the home screen, the screensaver's four of
+ * the day, a new one every 15 minutes, crossfaded. Decoded off the main thread.
+ */
 final class Wallpaper {
     private static final long EVERY_MS = 15 * 60 * 1000L;
     private final Context c;
@@ -87,21 +92,46 @@ final class Wallpaper {
     private void next() {
         main.removeCallbacks(next);
         main.postDelayed(next, EVERY_MS);
-        if (names.length == 0) return;
-        index = (index + 1) % names.length;
+        if (names.length == 0 && credits.length() == 0) return;
+        index = (index + 1) & 3;
         c.getSharedPreferences("home", Context.MODE_PRIVATE).edit().putInt("wallpaper", index).apply();
         shownAt = SystemClock.elapsedRealtime();
-        final String name = names[index];
+        final String name = today(index), spare = names.length == 0 ? null : names[index % names.length];
         new Thread(() -> {
-            Bitmap bm = null;
-            try (InputStream in = c.getAssets().open("wallpapers/" + name)) {
-                BitmapFactory.Options o = new BitmapFactory.Options();
-                o.inPreferredConfig = Bitmap.Config.RGB_565;
-                bm = BitmapFactory.decodeStream(in, null, o);
-            } catch (Exception ignored) { }
+            String shown = name;
+            Bitmap bm = decode(name);
+            if (bm == null && spare != null) { shown = spare; bm = decode(spare); }   // not downloaded yet: one this APK carries
             final Bitmap b = bm;
-            main.post(() -> show(b, name));
+            final String s = shown;
+            main.post(() -> show(b, s));
         }).start();
+    }
+
+    /**
+     * One of today's four photos, the screensaver's own (app.js applyPhoto: day × 4 + turn, over content/photos.json): those
+     * not in this APK are then ones the screensaver has already downloaded, so a new day brings new photos at no extra cost.
+     */
+    private String today(int turn) {
+        int n = credits.length();
+        if (n == 0) return names[turn % names.length];
+        long now = System.currentTimeMillis(), day = Math.floorDiv(now + TimeZone.getDefault().getOffset(now), 86_400_000L);
+        JSONObject p = credits.optJSONObject((int) ((day * 4 + turn) % n));
+        return p == null ? names[turn % Math.max(1, names.length)] : p.optString("f");
+    }
+
+    /** From this APK if it carries the photo, else the screensaver's copy (ConfigProvider, signature permission). */
+    private Bitmap decode(String name) {
+        BitmapFactory.Options o = new BitmapFactory.Options();
+        o.inPreferredConfig = Bitmap.Config.RGB_565;
+        try (InputStream in = c.getAssets().open("wallpapers/" + name)) {
+            return BitmapFactory.decodeStream(in, null, o);
+        } catch (Exception notBundled) {
+            try (InputStream in = c.getContentResolver().openInputStream(Uri.parse("content://om.luban.screen.config/photos/" + name))) {
+                return in == null ? null : BitmapFactory.decodeStream(in, null, o);
+            } catch (Exception e) {
+                return null;
+            }
+        }
     }
 
     private void show(Bitmap bm, String name) {

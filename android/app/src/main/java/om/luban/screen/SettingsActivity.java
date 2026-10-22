@@ -172,10 +172,13 @@ public class SettingsActivity extends Activity {
         b.setText(s);
         b.setAllCaps(false);
         b.setTypeface(bold);
-        b.setTextSize(17);
         b.setTextColor(INK);
         b.setOnClickListener(l);
-        b.setPadding(dp(22), dp(10), dp(22), dp(10));
+        b.setPadding(dp(14), dp(10), dp(14), dp(10));
+        // three share the row beside the QR code: each one line, its words stepping down (to 11) rather than cut off
+        b.setMinWidth(0); b.setMinimumWidth(0);
+        b.setMaxLines(1);
+        b.setAutoSizeTextTypeUniformWithConfiguration(11, 17, 1, android.util.TypedValue.COMPLEX_UNIT_SP);
         GradientDrawable normal = new GradientDrawable();
         normal.setColor(CARD);
         normal.setCornerRadius(dp(14));
@@ -185,8 +188,8 @@ public class SettingsActivity extends Activity {
             normal.setStroke(dp(3), has ? LUBAN : 0x33F7F4EE);
             v.animate().scaleX(has ? 1.06f : 1f).scaleY(has ? 1.06f : 1f).setDuration(150).start();
         });
-        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        lp.setMarginEnd(dp(16));
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0, dp(56), 1f);
+        lp.setMarginEnd(dp(14));
         b.setLayoutParams(lp);
         return b;
     }

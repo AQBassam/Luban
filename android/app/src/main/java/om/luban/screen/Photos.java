@@ -34,6 +34,11 @@ final class Photos {
         }
     }
 
+    /** The downloaded copy of a photo not in the APK (fetched once if need be), or null: what ConfigProvider hands out. */
+    static File file(Context c, String name) throws IOException {
+        return validName(name) ? cached(c, name) : null;
+    }
+
     private static File cached(Context c, String name) throws IOException {
         File dir = new File(c.getFilesDir(), "photos"), f = new File(dir, name);
         Object lock = LOCKS.computeIfAbsent(name, k -> new Object());

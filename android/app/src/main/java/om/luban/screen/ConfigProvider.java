@@ -5,15 +5,35 @@ import android.content.ContentValues;
 import android.database.Cursor;
 import android.database.MatrixCursor;
 import android.net.Uri;
+import android.os.ParcelFileDescriptor;
 
 import org.json.JSONObject;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.util.List;
+
 /**
  * Read-only, for the home screen app only (signature permission: the same signing key). One row, one column "json":
- * what the home screen's prayer card needs, with the city already resolved.
+ * what the home screen's prayer card needs, with the city already resolved. And photos/<name>: a background photo the
+ * home screen does not carry, from the screensaver's downloaded copies, so both show all of them without the APK growing.
  */
 public class ConfigProvider extends ContentProvider {
     @Override public boolean onCreate() { return true; }
+
+    @Override
+    public ParcelFileDescriptor openFile(Uri uri, String mode) throws FileNotFoundException {
+        List<String> seg = uri.getPathSegments();
+        if (!"r".equals(mode) || seg.size() != 2 || !"photos".equals(seg.get(0))) throw new FileNotFoundException("photos/<name> only");
+        try {
+            File f = Photos.file(getContext(), seg.get(1));
+            if (f != null) return ParcelFileDescriptor.open(f, ParcelFileDescriptor.MODE_READ_ONLY);
+        } catch (IOException ignored) {
+            // no network yet: the home screen keeps the photo it has
+        }
+        throw new FileNotFoundException(seg.get(1));
+    }
 
     @Override
     public Cursor query(Uri uri, String[] projection, String selection, String[] args, String sort) {
