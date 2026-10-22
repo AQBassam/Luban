@@ -94,13 +94,13 @@ public class SettingsActivity extends Activity {
         buttons.setOrientation(LinearLayout.HORIZONTAL);
         buttons.setPadding(0, dp(28), 0, 0);
         text.addView(buttons);
-        Button preview = button("معاينة · Preview", v -> startActivity(new Intent(this, PreviewActivity.class)));
+        Button preview = button("معاينة\nPreview", v -> startActivity(new Intent(this, PreviewActivity.class)));
         buttons.addView(preview);
-        buttons.addView(button("تحديث · Update", v -> {
+        buttons.addView(button("تحديث\nUpdate", v -> {
             status.setText("…");
             new Thread(() -> { String s = Updates.check(getApplicationContext(), true); runOnUiThread(() -> refreshStatus(s)); }).start();
         }));
-        buttons.addView(button("شاشة التوقف · Screensaver", v -> {
+        buttons.addView(button("شاشة التوقف\nScreensaver", v -> {
             try { startActivity(new Intent(Settings.ACTION_DREAM_SETTINGS)); }
             catch (ActivityNotFoundException e) { startActivity(new Intent(Settings.ACTION_SETTINGS)); }
         }));
@@ -175,9 +175,10 @@ public class SettingsActivity extends Activity {
         b.setTextColor(INK);
         b.setOnClickListener(l);
         b.setPadding(dp(14), dp(10), dp(14), dp(10));
-        // three share the row beside the QR code: each one line, its words stepping down (to 11) rather than cut off
+        // three share the row beside the QR code: Arabic over English, the words stepping down (to 11) rather than cut off
         b.setMinWidth(0); b.setMinimumWidth(0);
-        b.setMaxLines(1);
+        b.setMaxLines(2);
+        b.setLineSpacing(0, 0.95f);
         b.setAutoSizeTextTypeUniformWithConfiguration(11, 17, 1, android.util.TypedValue.COMPLEX_UNIT_SP);
         GradientDrawable normal = new GradientDrawable();
         normal.setColor(CARD);
@@ -188,7 +189,7 @@ public class SettingsActivity extends Activity {
             normal.setStroke(dp(3), has ? LUBAN : 0x33F7F4EE);
             v.animate().scaleX(has ? 1.06f : 1f).scaleY(has ? 1.06f : 1f).setDuration(150).start();
         });
-        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0, dp(56), 1f);
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0, dp(76), 1f);
         lp.setMarginEnd(dp(14));
         b.setLayoutParams(lp);
         return b;
