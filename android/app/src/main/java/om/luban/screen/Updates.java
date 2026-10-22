@@ -70,6 +70,9 @@ final class Updates {
             return "updated to " + m.version;
         } catch (SecurityException e) {
             return "refused: " + e.getMessage();
+        } catch (Net.HttpError e) {
+            // 404: nothing published on this channel yet (stable exists only after a canary has run for 48 hours)
+            return e.code == 404 ? "no update published on the " + channel(c) + " channel yet" : "update server answered HTTP " + e.code;
         } catch (Exception e) {
             return "no connection";
         }

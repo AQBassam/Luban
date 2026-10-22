@@ -28,6 +28,12 @@ final class Net {
         }
     }
 
+    /** The server answered, with something other than 200: not the same as no connection. */
+    static final class HttpError extends IOException {
+        final int code;
+        HttpError(int code) { super("HTTP " + code); this.code = code; }
+    }
+
     static byte[] get(String url, int maxBytes) throws IOException {
         URL u = new URL(url);
         if (!"https".equals(u.getProtocol())) throw new IOException("https only");
@@ -38,7 +44,7 @@ final class Net {
         con.setRequestProperty("User-Agent", "Luban/" + BuildConfig.VERSION_NAME);
         try {
             int code = con.getResponseCode();
-            if (code != 200) throw new IOException("HTTP " + code);
+            if (code != 200) throw new HttpError(code);
             if (!"https".equals(con.getURL().getProtocol())) throw new IOException("redirected off https");
             try (InputStream in = con.getInputStream()) {
                 ByteArrayOutputStream out = new ByteArrayOutputStream();
