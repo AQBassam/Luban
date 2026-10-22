@@ -57,6 +57,11 @@ body.ltr #info{margin-left:0;margin-right:4rem}
 body.ltr #place .wx svg{margin-left:0;margin-right:1rem}
 #place .wx .t{margin-left:1rem;color:var(--ink)}
 body.ltr #place .wx .t{margin-left:0;margin-right:1rem}
+/* humidity, wind, air and UV in one quiet line; the weather's source beside it, as its licence asks */
+#place .wxd{margin-top:.6rem;font-size:1.8rem;color:var(--ink-2)}
+#place .wxd .sep{color:var(--resin);margin:0 1rem}
+#place .wxd .by{color:var(--ink-3);font-size:1.4rem;margin-right:1.4rem}
+body.ltr #place .wxd .by{margin-right:0;margin-left:1.4rem}
 #chips{display:flex;flex-wrap:wrap;justify-content:flex-end;max-width:60%;padding-top:.6rem}
 .chip{font-size:2rem;font-weight:500;padding:.6rem 1.8rem;margin:0 1rem 1rem 0;border-radius:99rem;
   border:1px solid var(--line);color:var(--ink-2);white-space:nowrap;background:rgba(6,25,42,.5)}
@@ -68,12 +73,15 @@ body.ltr .chip{margin:0 0 1rem 1rem}
 body.ltr #clock{justify-content:flex-start}
 #clock .colon{margin:0 .4rem;position:relative;top:-1.6rem}
 #ampm{font-size:5.6rem;color:var(--resin);margin-left:1.6rem}
+/* صباحًا / مساءً after the time in reading order: to its left in Arabic */
+body:not(.ltr) #ampm{-webkit-box-ordinal-group:0;order:-1;margin-left:0;margin-right:2rem}
 #ampm:empty{display:none}
 #dates{margin-top:3.4rem;font-size:3.2rem;color:var(--ink-2)}
 #dates .dot{display:inline-block;width:.8rem;height:.8rem;border-radius:50%;background:var(--resin);margin:0 1.6rem;vertical-align:.5rem}
 #hijri{color:var(--resin-soft)}
 
-#card{flex:1;min-height:0;margin-top:3.4rem;padding:2.8rem 3.4rem;border-radius:1.2rem;overflow:hidden;
+/* as tall as what it holds (two matches make a small card), shrinking only when a long text needs the room */
+#card{flex:0 1 auto;min-height:0;margin-top:3.4rem;padding:2.8rem 3.4rem;border-radius:1.2rem;overflow:hidden;
   background:rgba(6,25,42,.62);border:1px solid var(--line)}
 .card-hd{font-size:2.2rem;font-weight:500;color:var(--resin);margin-bottom:1.6rem}
 #card-body{font-size:2.4rem;line-height:1.55}
@@ -91,39 +99,39 @@ body.ltr .rows .a{margin-left:0;margin-right:2rem}
 .rows li.now .a,.rows li.now .b{color:var(--foam)}
 .empty{color:var(--ink-3)}
 
-#foot{display:flex;justify-content:space-between;align-items:flex-end;margin-top:2.6rem;font-size:2rem;color:var(--ink-2)}
-#markets{display:flex}
-.mk{display:flex;flex-direction:column;align-items:flex-end;min-width:9rem;margin-left:2.8rem}
-body.ltr .mk{align-items:flex-start;margin-left:0;margin-right:2.8rem}
-.mk .n{font-size:1.6rem;color:var(--ink-3)}
-.mk .v{font-weight:600;color:var(--ink);margin:.2rem 0}
-.mk .d{font-size:1.6rem}
+/* prices: a page of the card, large enough to read across the room */
+.mks{list-style:none}
+.mk{display:flex;justify-content:space-between;align-items:baseline;padding:1rem 0;border-bottom:1px solid var(--line)}
+.mk:last-child{border-bottom:0}
+.mk .n{font-size:2.4rem;color:var(--ink-2);margin-left:2rem}
+body.ltr .mk .n{margin-left:0;margin-right:2rem}
+.mk .q{white-space:nowrap}
+.mk .v{font-size:3.6rem;font-weight:600;color:var(--ink)}
+.mk .d{font-size:2.2rem;margin-right:1.6rem}
+body.ltr .mk .d{margin-right:0;margin-left:1.6rem}
 .mk .d.up{color:var(--foam)}.mk .d.down{color:#FF9A85}
 .mk.stale .v{color:var(--ink-3)}
-#match{display:flex;align-items:center}
-#match span{margin:0 .7rem}
-#match .vs{color:var(--resin)}
-#match .live{color:#FF9A85;font-weight:600}
 #credit{position:fixed;bottom:2rem;left:7.2rem;font-size:1.4rem;color:var(--ink-3)}
 body.ltr #credit{left:auto;right:7.2rem}
 #credit .cr{margin-left:2.4rem}
 body.ltr #credit .cr{margin-left:0;margin-right:2.4rem}
 
 /* the dial */
-#dialbox{flex:none;width:80rem;display:flex;align-items:center;justify-content:center}
-#dial{position:relative;width:76rem;height:76rem}
+/* the dial: smaller than the screen allows, so the sea around it stays empty (the smoke keeps 30:42 of 76, as app.js places it) */
+#dialbox{flex:none;width:66rem;display:flex;align-items:center;justify-content:center}
+#dial{position:relative;width:62rem;height:62rem}
 #dial-svg{position:absolute;top:0;left:0;width:100%;height:100%;overflow:visible}
-.pr{position:absolute;width:16rem;margin-left:-8rem;margin-top:-4rem;text-align:center;line-height:1.15}
-.pr .t{font-size:3.6rem;font-weight:500}
-.pr .n{font-size:2.6rem;color:var(--ink-2)}
+.pr{position:absolute;width:14rem;margin-left:-7rem;margin-top:-3.5rem;text-align:center;line-height:1.15}
+.pr .t{font-size:3.2rem;font-weight:500}
+.pr .n{font-size:2.3rem;color:var(--ink-2)}
 .pr.sunrise .t{color:var(--ink-2);font-weight:400}
-.pr.next .t{color:var(--foam);font-weight:600;font-size:4rem}
+.pr.next .t{color:var(--foam);font-weight:600;font-size:3.6rem}
 .pr.next .n{color:var(--foam)}
-#next{position:absolute;top:50%;left:50%;width:36rem;margin:-6.4rem 0 0 -18rem;text-align:center}
-#next .nn{font-size:4.8rem;font-weight:600;color:var(--foam);line-height:1.1}
-#next .nt{font-size:3rem;font-weight:500;margin-top:.4rem}
-#next .nl{font-size:2.6rem;color:var(--ink-2);margin-top:.6rem}
-.smoke{position:absolute;width:30rem;height:42rem;pointer-events:none;mix-blend-mode:screen}
+#next{position:absolute;top:50%;left:50%;width:30rem;margin:-5.6rem 0 0 -15rem;text-align:center}
+#next .nn{font-size:4.2rem;font-weight:600;color:var(--foam);line-height:1.1}
+#next .nt{font-size:2.7rem;font-weight:500;margin-top:.4rem}
+#next .nl{font-size:2.3rem;color:var(--ink-2);margin-top:.6rem}
+.smoke{position:absolute;width:24.47rem;height:34.26rem;pointer-events:none;mix-blend-mode:screen}
 #smoke-a{animation:breathe 9s ease-in-out infinite alternate}
 #smoke-b{animation:breathe 9s ease-in-out -4.5s infinite alternate-reverse}
 @keyframes breathe{from{opacity:.25;transform:translateY(0)}to{opacity:1;transform:translateY(-1.2rem)}}

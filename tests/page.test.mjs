@@ -76,7 +76,12 @@ const text = (page, sel) => page.$eval(sel, e => e.textContent);
   const bar = await page.$$eval('#prayers .pr .t', els => els.map(e => e.textContent));
   check('screen: six prayer tiles', bar.length === 6, bar);
   check('screen: Dhuhr is next and highlighted', (await page.$eval('#prayers .pr.next .n', e => e.textContent)) === 'الظهر');
-  check('screen: National Day countdown on 21 October', (await text(page, '#chips')).includes('العيد الوطني') && (await text(page, '#chips')).includes('30'));
+  check('screen: National Day countdown on 21 October', (await text(page, '#chips')).includes('اليوم الوطني') && (await text(page, '#chips')).includes('30'));
+  const dates = await text(page, '#dates');
+  check('dates: the day, then the Hijri date, then the Gregorian with م', dates.startsWith('الأربعاء') && dates.indexOf('هـ') < dates.indexOf('أكتوبر') && dates.trim().endsWith('م'), dates);
+  check('clock: صباحًا to the left of the time in Arabic', (await text(page, '#ampm')) === 'صباحًا' &&
+    await page.evaluate(() => document.getElementById('ampm').getBoundingClientRect().right <= document.getElementById('hh').getBoundingClientRect().left));
+  check('screen: no source names along the bottom without a photo', (await text(page, '#credit')) === '');
   check('screen: Western digits by default', /\d/.test(await text(page, '#hh')));
   check('dial: the centre names the next prayer and counts down in words', (await text(page, '#next-name')) === 'الظهر' && (await text(page, '#next-left')).startsWith('بعد ساعتين و'), await text(page, '#next-left'));
   check('dial: a lit grain of frankincense marks now, its smoke drawn', await page.evaluate(() => !!document.querySelector('#dial-svg circle[fill="url(#glow)"]') && document.getElementById('smoke-a').toDataURL().length > 2000));
@@ -116,6 +121,14 @@ const text = (page, sel) => page.$eval(sel, e => e.textContent);
   await page.close();
 }
 {
+  // the countdown moves on: after National Day to Ramadan, through Ramadan to Eid al-Fitr
+  const before = await open({ city: 'muscat' }, '2027-01-20T08:00:00Z'), during = await open({ city: 'muscat' }, '2027-02-20T08:00:00Z');
+  const a = await text(before, '#chips'), b = await text(during, '#chips');
+  check('chips: in January the countdown is to Ramadan, not National Day', a.includes('رمضان بعد') && !a.includes('اليوم الوطني'), a);
+  check('chips: in Ramadan, the day of Ramadan and the days to Eid al-Fitr', b.includes('رمضان — اليوم') && b.includes('عيد الفطر بعد'), b);
+  await before.close(); await during.close();
+}
+{
   const s = await open({ city: 'salalah' }, '2026-07-15T08:00:00Z'), m = await open({ city: 'muscat' }, '2026-07-15T08:00:00Z');
   check('screen: Khareef season shown in Salalah in July', (await text(s, '#chips')).includes('خريف'));
   check('screen: … and not in Muscat', !(await text(m, '#chips')).includes('خريف'));
@@ -135,26 +148,27 @@ const text = (page, sel) => page.$eval(sel, e => e.textContent);
     window.LubanScreen._state.matches = { 1: { next: [{ idEvent: '9', idHomeTeam: '1', strHomeTeam: 'X', idAwayTeam: '2', strAwayTeam: ev, strTimestamp: new Date(now + 3600e3).toISOString() }], last: [] } };
   }, evil);
   await page.clock.runFor(21000);
-  check('screen: team names are text, never HTML', (await page.$$('#card img, #match img')).length === 0 && !(await page.evaluate(() => window.pwned)));
+  check('screen: team names are text, never HTML', (await page.$$('#card img')).length === 0 && !(await page.evaluate(() => window.pwned)));
   await page.close();
 }
 {
-  // sources are named on screen, and a price that stopped updating says when it is from
-  const page = await open({ markets: ['gold', 'btc'] });
+  // prices are a page of the card; each source named where its terms ask; a price that stopped updating says when it is from
+  const page = await open({ panel: 'none', markets: ['gold', 'btc'] });
   await page.evaluate(() => {
     const st = window.LubanScreen._state;
-    st.weather = { t: 31, code: 0, day: true, dust: false };
+    st.weather = { t: 31, code: 0, day: true, dust: false, rh: 60, ws: 14, wd: 315, aqi: 40, uv: 7 };
     st.markets = { gold: { price: 4000, change: 0.5, at: Date.now() - 5 * 3600e3 }, btc: { price: 100000, change: -1, at: Date.now() } };
     window.LubanScreen._render.weather(); window.LubanScreen._render.markets();
   });
-  const credit = await text(page, '#credit'), mk = await text(page, '#markets');
-  check('credits: weather and prices name their sources', credit.includes('Open-Meteo') && credit.includes('Yahoo Finance') && credit.includes('CoinGecko'), credit);
-  check('markets: gold is labelled a global price; a 5-hour-old price says "as of"', mk.includes('سعر عالمي') && mk.includes('حتى') &&
-    (await page.$$('#markets .mk.stale')).length === 1, mk);
+  const wxd = await text(page, '#wxd'), mk = await text(page, '#card');
+  check('weather: humidity, wind, air and UV in one line, Open-Meteo beside them', wxd.includes('الرطوبة 60%') && wxd.includes('شمالية غربية 14') &&
+    wxd.includes('جيدة') && wxd.includes('مرتفعة') && wxd.includes('Open-Meteo'), wxd);
+  check('markets: a page of the card, gold labelled a global price, a 5-hour-old price says "as of", CoinGecko named',
+    mk.includes('سعر عالمي') && mk.includes('حتى') && mk.includes('Powered by CoinGecko') && (await page.$$('#card .mk.stale')).length === 1, mk);
   await page.close();
 }
 {
-  // a football-data.org result as the server passes it on: short names, Arabic from teams-ar.json, the source named
+  // a football-data.org result as the server passes it on: short names, Arabic from teams-ar.json; a small card for one match
   const page = await open({ panel: 'matches', teams: [{ id: '86', en: 'Real Madrid', ar: 'ريال مدريد' }] });
   await page.evaluate(() => {
     const t = new Date(Date.now() - 3 * 3600e3).toISOString().replace(/\.\d+Z$/, 'Z');
@@ -162,8 +176,9 @@ const text = (page, sel) => page.$eval(sel, e => e.textContent);
       intHomeScore: 1, intAwayScore: 2, strTimestamp: t, strStatus: 'FT', strLeague: 'Primera Division' }], next: [] } };
   });
   await page.clock.runFor(21000);
-  const card = await text(page, '#card');
-  check('matches: a football-data result reads in Arabic, with its source', card.includes('برشلونة') && card.includes('ريال مدريد') && card.includes('1 - 2') && card.includes('football-data.org'), card);
+  const card = await text(page, '#card'), tall = await page.$eval('#card', e => e.offsetHeight);
+  check('matches: a football-data result reads in Arabic', card.includes('برشلونة') && card.includes('ريال مدريد') && card.includes('1 - 2'), card);
+  check('matches: the card is as tall as its one match, with no source line', tall < 260 && !card.includes('football-data'), tall);
   await page.close();
 }
 for (const lang of ['ar', 'en']) {
@@ -183,15 +198,16 @@ for (const lang of ['ar', 'en']) {
   });
   const order = lang === 'ar' ? x.every((v, i) => i === 0 || v < x[i - 1]) : x.every((v, i) => i === 0 || v > x[i - 1]);
   check(`matches (${lang}): home, its score, the other score, away — in reading order`, order, x);
+  if (lang === 'ar') check('matches: one team without an Arabic name, so both as the source names them', !(await text(page, '#card')).includes('مانشستر'));
   await page.close();
 }
 for (const vp of [{ width: 1920, height: 1080 }, { width: 1280, height: 720 }]) {
   const page = await open({ panel: 'verse', markets: ['gold', 'brent', 'btc', 'spx'] }, null, vp);
   const overflow = await page.evaluate(() => {
-    // worst case: the markets row under the card, one of them stale (an extra line)
-    const now = Date.now(), st = window.LubanScreen._state;
-    st.markets = { gold: { price: 4000, change: 1, at: now - 5 * 3600e3 }, brent: { price: 66, change: 1, at: now }, btc: { price: 1e5, change: 1, at: now }, spx: { price: 6000, change: 1, at: now } };
-    window.LubanScreen._render.markets();
+    // worst case: the weather's whole second line above the clock
+    const st = window.LubanScreen._state;
+    st.weather = { t: 31, code: 0, day: true, dust: false, rh: 60, ws: 14, wd: 315, aqi: 40, uv: 7 };
+    window.LubanScreen._render.weather();
     const D = window.LUBAN_DATA, card = document.getElementById('card'), body = document.getElementById('card-body'), bad = [];
     const items = D.verses.map(v => ({ cls: 'quote', t: v.text })).concat(D.hadith.map(h => ({ cls: 'quote hadith', t: h.text })));
     for (const it of items) {

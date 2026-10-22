@@ -18,22 +18,19 @@
       <div id="place">
         <div class="city" id="city"></div>
         <div class="wx" id="wx"></div>
+        <div class="wxd" id="wxd"></div>
       </div>
       <div id="chips"></div>
     </header>
 
     <div id="clock"><span id="hh"></span><span class="colon">:</span><span id="mm"></span><span id="ampm"></span></div>
-    <div id="dates"><span id="greg"></span><span class="dot"></span><span id="hijri"></span></div>
+    <div id="dates"><span id="wday"></span> <span id="hijri"></span><span class="dot"></span><span id="greg"></span></div>
 
+    <!-- the card holds the chosen panel; with prices chosen it turns to them now and then -->
     <aside id="card" hidden>
       <div class="card-hd" id="card-title"></div>
       <div id="card-body"></div>
     </aside>
-
-    <footer id="foot">
-      <div id="markets"></div>
-      <div id="match"></div>
-    </footer>
   </section>
 
   <!-- The navigators' star compass as a 24-hour dial: noon at the top, the prayers as bearings on the rim,

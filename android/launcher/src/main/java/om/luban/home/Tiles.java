@@ -9,7 +9,6 @@ import android.net.Uri;
 import android.provider.Settings;
 import android.view.Gravity;
 import android.view.KeyEvent;
-import android.view.View;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -112,18 +111,5 @@ final class Tiles {
             .setTitle(a.label)
             .setItems(items.toArray(new String[0]), (d, which) -> { actions.get(which).run(); changed.run(); })
             .show();
-    }
-
-    /** A ring that lifts and lights up on focus, for the buttons at the top. */
-    static ImageView roundButton(Activity c, int icon, String label, View.OnClickListener l) {
-        ImageView b = new ImageView(c);
-        b.setImageResource(icon);
-        b.setImageTintList(ColorStateList.valueOf(Ui.INK));
-        int p = Ui.dp(c, 11);
-        b.setPadding(p, p, p, p);
-        Ui.focusable(b, Ui.glass(c, 20));
-        b.setContentDescription(label);
-        b.setOnClickListener(l);
-        return b;
     }
 }

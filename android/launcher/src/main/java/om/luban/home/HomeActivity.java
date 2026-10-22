@@ -6,6 +6,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.res.ColorStateList;
 import android.graphics.Rect;
 import android.graphics.drawable.GradientDrawable;
 import android.icu.text.SimpleDateFormat;
@@ -21,6 +22,10 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.provider.Settings;
+import android.text.SpannableStringBuilder;
+import android.text.Spanned;
+import android.text.style.ForegroundColorSpan;
+import android.text.style.RelativeSizeSpan;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
@@ -190,17 +195,17 @@ public class HomeActivity extends Activity {
         tl.topMargin = top;
         root.addView(time, tl);
 
-        // four buttons, each named under its icon: network, inputs, screensaver, settings; the photo's caption below them
+        // four pills, an icon then its name: network, inputs, screensaver, settings; the photo's caption below them
         LinearLayout end = new LinearLayout(this);
         end.setOrientation(LinearLayout.VERTICAL);
         end.setGravity(Gravity.END);
         LinearLayout buttons = new LinearLayout(this);
         buttons.setOrientation(LinearLayout.HORIZONTAL);
-        networkIcon = Tiles.roundButton(this, R.drawable.ic_offline, "", v -> open(new Intent(Settings.ACTION_WIFI_SETTINGS), new Intent(Settings.ACTION_SETTINGS)));
-        networkLabel = named(buttons, networkIcon);
-        inputsLabel = named(buttons, Tiles.roundButton(this, R.drawable.ic_inputs, "", v -> inputs()));
-        screensaverLabel = named(buttons, Tiles.roundButton(this, R.drawable.ic_moon, "", v -> screensaver()));
-        settingsLabel = named(buttons, Tiles.roundButton(this, R.drawable.ic_settings, "", v -> open(new Intent(Settings.ACTION_SETTINGS), null)));
+        networkLabel = pill(buttons, R.drawable.ic_offline, v -> open(new Intent(Settings.ACTION_WIFI_SETTINGS), new Intent(Settings.ACTION_SETTINGS)));
+        networkIcon = (ImageView) ((LinearLayout) networkLabel.getParent()).getChildAt(0);
+        inputsLabel = pill(buttons, R.drawable.ic_inputs, v -> inputs());
+        screensaverLabel = pill(buttons, R.drawable.ic_moon, v -> screensaver());
+        settingsLabel = pill(buttons, R.drawable.ic_settings, v -> open(new Intent(Settings.ACTION_SETTINGS), null));
         end.addView(buttons);
         caption = Ui.text(this, "", 12, Ui.regular(), Ui.INK3);   // the photo: place · photographer, licence
         caption.setPadding(0, Ui.dp(this, 10), 0, 0);
@@ -242,18 +247,25 @@ public class HomeActivity extends Activity {
         return root;
     }
 
-    /** A round button with its name under it, added to the row; returns the name, which follows the language. */
-    private TextView named(LinearLayout row, ImageView b) {
-        LinearLayout item = new LinearLayout(this);
-        item.setOrientation(LinearLayout.VERTICAL);
-        item.setGravity(Gravity.CENTER_HORIZONTAL);
-        item.setClipChildren(false);
-        item.addView(b, new LinearLayout.LayoutParams(Ui.dp(this, 40), Ui.dp(this, 40)));
-        TextView name = Ui.text(this, "", 11, Ui.medium(), Ui.INK2);
-        name.setPadding(0, Ui.dp(this, 5), 0, 0);
-        item.addView(name);
-        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(Ui.dp(this, 72), -2);
-        row.addView(item, lp);
+    /** A glass pill, its icon then its name, added to the row; returns the name, which follows the language. */
+    private TextView pill(LinearLayout row, int icon, View.OnClickListener l) {
+        LinearLayout p = new LinearLayout(this);
+        p.setOrientation(LinearLayout.HORIZONTAL);
+        p.setGravity(Gravity.CENTER_VERTICAL);
+        p.setPaddingRelative(Ui.dp(this, 14), 0, Ui.dp(this, 16), 0);
+        Ui.focusable(p, Ui.glass(this, 99));
+        p.setOnClickListener(l);
+        ImageView i = new ImageView(this);
+        i.setImageResource(icon);
+        i.setImageTintList(ColorStateList.valueOf(Ui.INK));
+        LinearLayout.LayoutParams il = new LinearLayout.LayoutParams(Ui.dp(this, 18), Ui.dp(this, 18));
+        il.setMarginEnd(Ui.dp(this, 8));
+        p.addView(i, il);
+        TextView name = Ui.text(this, "", 14, Ui.medium(), Ui.INK);
+        p.addView(name);
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-2, Ui.dp(this, 40));
+        lp.setMarginStart(Ui.dp(this, 10));
+        row.addView(p, lp);
         return name;
     }
 
@@ -266,7 +278,7 @@ public class HomeActivity extends Activity {
 
     private static void name(TextView label, String s) {
         label.setText(s);
-        ((LinearLayout) label.getParent()).getChildAt(0).setContentDescription(s);   // the button above it
+        ((View) label.getParent()).setContentDescription(s);   // the pill it sits in
     }
 
     private void updateCaption() { caption.setText(wallpaper.caption(ar)); }
@@ -346,7 +358,14 @@ public class HomeActivity extends Activity {
         ic.setCalculationType(IslamicCalendar.CalculationType.ISLAMIC_UMALQURA);
         hf.setCalendar(ic);
         String hijri = hf.format(new Date(System.currentTimeMillis() + hijriOffset * 86_400_000L));
-        dates.setText(ar ? day + " " + hijri + " هـ  ·  " + g + " م" : day + " " + hijri + " AH  ·  " + g);
+        // a resin bullet between the two dates, as on the screensaver
+        SpannableStringBuilder d = new SpannableStringBuilder(day + " " + hijri + (ar ? " هـ" : " AH") + "  ");
+        int dot = d.length();
+        d.append("•");
+        d.setSpan(new ForegroundColorSpan(Ui.LUBAN), dot, dot + 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        d.setSpan(new RelativeSizeSpan(1.3f), dot, dot + 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        d.append("  ").append(g).append(ar ? " م" : "");
+        dates.setText(d);
     }
 
     /** The network button: its icon and name follow the connection (wired, Wi-Fi, or none). */

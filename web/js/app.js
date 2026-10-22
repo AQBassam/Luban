@@ -90,7 +90,8 @@
     const loc = (S.lang === 'ar' ? 'ar-OM' : 'en-GB') + '-u-nu-' + S.digits;
     CAL = {
       parts: new Intl.DateTimeFormat('en-US', { timeZone: P.tz, hour12: false, year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: 'numeric', second: 'numeric', weekday: 'short' }),
-      greg: new Intl.DateTimeFormat(loc + '-ca-gregory', { timeZone: P.tz, weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }),
+      weekday: new Intl.DateTimeFormat(loc + '-ca-gregory', { timeZone: P.tz, weekday: 'long' }),
+      greg: new Intl.DateTimeFormat(loc + '-ca-gregory', { timeZone: P.tz, day: 'numeric', month: 'long', year: 'numeric' }),
       hijri: new Intl.DateTimeFormat(loc + '-ca-islamic-umalqura', { timeZone: P.tz, day: 'numeric', month: 'long', year: 'numeric' }),
       hijriNum: new Intl.DateTimeFormat('en-US-u-ca-islamic-umalqura-nu-latn', { timeZone: P.tz, day: 'numeric', month: 'numeric', year: 'numeric' }),
       wd: new Intl.DateTimeFormat(loc, { timeZone: P.tz, weekday: 'short' }),
@@ -107,7 +108,7 @@
     const hh = S.clock24 ? l.h : (l.h % 12 === 0 ? 12 : l.h % 12);
     $('hh').textContent = dg(S.clock24 ? pad(hh) : hh);
     $('mm').textContent = dg(pad(l.mi));
-    $('ampm').textContent = S.clock24 ? '' : (l.h < 12 ? T.am : T.pm);
+    $('ampm').textContent = S.clock24 ? '' : (l.h < 12 ? T.clockAm : T.clockPm);
   }
 
   /** Umm al-Qura from the table in content/umalqura.json (month starts, 1440–1480 AH), for WebViews whose ICU lacks it. */
@@ -132,9 +133,12 @@
     return { y: t.y, m: t.m, d: t.d, text: `${dg(t.d)} ${HIJRI_MONTHS[S.lang][t.m - 1]} ${dg(t.y)}${S.lang === 'ar' ? ' هـ' : ' AH'}` };
   }
 
+  /** The day, the Hijri date, then the Gregorian: الخميس 11 جمادى الأولى 1448 هـ • 22 أكتوبر 2026 م */
   function tickDates() {
-    $('greg').textContent = CAL.greg.format(new Date());
+    const now = new Date();
+    $('wday').textContent = CAL.weekday.format(now);
     $('hijri').textContent = hijriToday().text;
+    $('greg').textContent = CAL.greg.format(now) + (T.ce ? ' ' + T.ce : '');
   }
 
   // ---------- prayers
@@ -311,8 +315,38 @@
     }
   }
 
-  // ---------- chips: National Day, Khareef, Ramadan and Eid, Friday
+  // ---------- chips: the next occasion, Khareef, Ramadan and Eid, Friday
   function daysBetween(a, b) { return Math.round((Date.UTC(b.y, b.m - 1, b.d) - Date.UTC(a.y, a.m - 1, a.d)) / 86400000); }
+  /** The Gregorian day of a Hijri date, from the Umm al-Qura table, moved by the owner's ±2 days like the date shown. */
+  function fromHijri(hy, hm, hd) {
+    const r = DATA.umalqura.find(x => x[0] === hy && x[1] === hm);
+    if (!r) return null;
+    const d = new Date((r[2] + hd - 1 - S.hijriOffset) * 86400000);
+    return { y: d.getUTCFullYear(), m: d.getUTCMonth() + 1, d: d.getUTCDate() };
+  }
+  /**
+   * One countdown, to whichever comes first of National Day (from 45 days before), Ramadan (from 30 days), Eid al-Fitr
+   * (through Ramadan) and Eid al-Adha (from 1 Dhu al-Hijjah). Oman follows the moon sighting, which can differ from the
+   * table by a day: the Hijri adjustment in the settings moves these too.
+   */
+  function nextOccasion(l, hj) {
+    const all = [];
+    if (S.omanDays) {
+      // Royal Decree 15/2025: National Day on 20 November (and the 21st off)
+      const past = l.m === 12 || (l.m === 11 && l.d > 20);
+      all.push({ at: { y: l.y + (past ? 1 : 0), m: 11, d: 20 }, within: 45, text: T.nationalDayIn, cls: 'nat' });
+    }
+    all.push({ at: fromHijri(hj.y + (hj.m >= 9 ? 1 : 0), 9, 1), within: 30, text: T.ramadanIn, cls: 'luban' });
+    all.push({ at: fromHijri(hj.y + (hj.m >= 10 ? 1 : 0), 10, 1), within: 30, text: T.eidFitrIn, cls: 'luban' });
+    all.push({ at: fromHijri(hj.y + (hj.m === 12 && hj.d >= 10 ? 1 : 0), 12, 10), within: 10, text: T.eidAdhaIn, cls: 'luban' });
+    let best = null;
+    for (const o of all) {
+      if (!o.at) continue;
+      o.until = daysBetween(l, o.at);
+      if (o.until > 0 && o.until <= o.within && (!best || o.until < best.until)) best = o;
+    }
+    return best;
+  }
   function renderChips() {
     const box = clear($('chips')), l = local(), hj = hijriToday();
     const chip = (text, cls) => {
@@ -321,17 +355,14 @@
       box.append(c);
     };
     if (S.omanDays) {
-      // Royal Decree 15/2025: National Day on 20 and 21 November
-      const nd = { y: l.y, m: 11, d: 20 };
-      const until = daysBetween(l, nd);
       if (l.m === 11 && (l.d === 20 || l.d === 21)) chip(T.nationalDay, 'nat');
-      else if (until > 0 && until <= 45) chip(T.nationalDayIn(`${dg(until)} ${T.day(until)}`), 'nat');
       // Dhofar's monsoon season, 21 June to 21 September
       const md = l.m * 100 + l.d;
       if (P.gov === 'dhofar' && md >= 621 && md <= 921) chip(T.khareef, 'luban');
     }
+    const next = nextOccasion(l, hj);
+    if (next) chip(next.text(`${dg(next.until)} ${T.day(next.until)}`), next.cls);
     if (hj.m === 9) chip(T.ramadanDay(dg(hj.d)), 'luban');
-    else if (hj.m === 8 && hj.d >= 15) { const n = 30 - hj.d; if (n > 0) chip(T.ramadanIn(`${dg(n)} ${T.day(n)}`), 'luban'); }
     if (hj.m === 10 && hj.d <= 3) chip(T.eidFitr, 'luban');
     if (hj.m === 12 && hj.d === 9) chip(T.arafah, 'luban');
     if (hj.m === 12 && hj.d >= 10 && hj.d <= 13) chip(T.eidAdha, 'luban');
@@ -360,12 +391,15 @@
   async function loadWeather() {
     const q = `latitude=${P.lat}&longitude=${P.lon}&timezone=${encodeURIComponent(P.tz)}`;
     try {
-      const j = await getJSON(`https://api.open-meteo.com/v1/forecast?${q}&current=temperature_2m,weather_code,is_day&daily=weather_code,temperature_2m_max,temperature_2m_min&forecast_days=6`);
-      state.weather = { t: Math.round(j.current.temperature_2m), code: j.current.weather_code, day: j.current.is_day === 1, dust: false };
+      const j = await getJSON(`https://api.open-meteo.com/v1/forecast?${q}&current=temperature_2m,weather_code,is_day,relative_humidity_2m,wind_speed_10m,wind_direction_10m&daily=weather_code,temperature_2m_max,temperature_2m_min,uv_index_max&forecast_days=6`);
+      const c = j.current;
+      state.weather = { t: Math.round(c.temperature_2m), code: c.weather_code, day: c.is_day === 1, dust: false,
+        rh: c.relative_humidity_2m, ws: c.wind_speed_10m, wd: c.wind_direction_10m, uv: j.daily.uv_index_max ? j.daily.uv_index_max[0] : null, aqi: null };
       state.forecast = j.daily.time.map((d, i) => ({ d, code: j.daily.weather_code[i], hi: Math.round(j.daily.temperature_2m_max[i]), lo: Math.round(j.daily.temperature_2m_min[i]) }));
-      try {   // dust matters in the Gulf: show it when PM10 is high
-        const a = await getJSON(`https://air-quality-api.open-meteo.com/v1/air-quality?${q}&current=pm10,dust`, 8000);
+      try {   // dust matters in the Gulf: show it when PM10 is high; the US AQI says how the air is
+        const a = await getJSON(`https://air-quality-api.open-meteo.com/v1/air-quality?${q}&current=pm10,dust,us_aqi`, 8000);
         state.weather.dust = (a.current.dust || 0) > 150 || (a.current.pm10 || 0) > 250;
+        state.weather.aqi = a.current.us_aqi;
       } catch (e) { /* optional */ }
       store.set('weather:' + P.id, { w: state.weather, f: state.forecast, at: Date.now() });
     } catch (e) {
@@ -375,11 +409,20 @@
     renderWeather();
     if (S.panel === 'forecast') renderCard();
   }
+  const level = (v, steps) => steps.filter(s => v > s).length;   // how many thresholds v is above
   function renderWeather() {
-    const box = clear($('wx')), w = state.weather;
+    const box = clear($('wx')), more = clear($('wxd')), w = state.weather;
     if (!w) return;
     box.append(icon(w.code, w.day, w.dust), h('span', 't', dg(w.t) + '°'), h('span', '', w.dust ? T.dust : (T.weather[w.code] || '')));
-    renderCredit();
+    // humidity · wind · air · UV, each only when the source gave it
+    const parts = [];
+    if (typeof w.rh === 'number') parts.push(`${T.humidity} ${dg(Math.round(w.rh))}%`);
+    if (typeof w.ws === 'number') parts.push(w.ws < 2 ? T.calm : `${T.wind} ${T.winds[Math.round((w.wd || 0) / 45) % 8]} ${dg(Math.round(w.ws))} ${T.kmh}`);
+    if (typeof w.aqi === 'number') parts.push(`${T.air} ${T.airLevels[level(w.aqi, [50, 100, 150, 200])]}`);
+    if (typeof w.uv === 'number') parts.push(`${T.uv} ${T.uvLevels[level(w.uv, [2.99, 5.99, 7.99, 10.99])]}`);
+    parts.forEach((p, i) => { if (i) more.append(h('span', 'sep', '·')); more.append(h('span', '', p)); });
+    // Open-Meteo's licence asks for its name next to where its data shows
+    const by = h('span', 'by'); by.append(h('bdi', '', 'Open-Meteo')); more.append(by);
   }
 
   // ---------- markets: Yahoo through the app's proxy or the server; CoinGecko directly
@@ -410,44 +453,51 @@
     store.set('markets', state.markets);
     renderMarkets();
   }
-  function renderMarkets() {
-    const box = clear($('markets'));
-    for (const id of S.markets) {
-      const q = state.markets[id], m = MARKETS[id];
-      if (!q || !m) continue;
-      const v = m.value(q.price);
-      const el = h('div', 'mk');
-      el.append(h('span', 'n', m.label()), h('span', 'v', dg(v.toLocaleString('en-US', { minimumFractionDigits: m.dp, maximumFractionDigits: m.dp }))));
+  const shownMarkets = () => S.markets.filter(id => state.markets[id] && MARKETS[id]);
+  /** Prices are a page of the card: the whole card with no panel chosen, else one turn in four (20 s of every 80). */
+  const marketsPage = () => shownMarkets().length > 0 && (S.panel === 'none' || state.page % 4 === 3);
+  function marketsList() {
+    const ul = h('ul', 'mks');
+    for (const id of shownMarkets()) {
+      const q = state.markets[id], m = MARKETS[id], v = m.value(q.price);
+      const li = h('li', 'mk'), right = h('span', 'q');
+      right.append(h('span', 'v', dg(v.toLocaleString('en-US', { minimumFractionDigits: m.dp, maximumFractionDigits: m.dp }))));
       if (typeof q.change === 'number') {
         const up = q.change >= 0;
-        el.append(h('span', 'd ' + (up ? 'up' : 'down'), (up ? '▲ ' : '▼ ') + dg(Math.abs(q.change).toFixed(2)) + '%'));
+        right.append(h('span', 'd ' + (up ? 'up' : 'down'), (up ? '▲ ' : '▼ ') + dg(Math.abs(q.change).toFixed(2)) + '%'));
       }
       // older than two hours (the source or the network is down): say when it is from, rather than pass it off as now
       if (!q.at || Date.now() - q.at > 2 * 3600e3) {
-        el.classList.add('stale');
-        if (q.at) { const l = local(new Date(q.at)); el.append(h('span', 'd', `${T.asOf} ${fmtTime(l.h * 60 + l.mi)}`)); }
+        li.classList.add('stale');
+        if (q.at) { const l = local(new Date(q.at)); right.append(h('span', 'd', `${T.asOf} ${fmtTime(l.h * 60 + l.mi)}`)); }
       }
-      box.append(el);
+      li.append(h('span', 'n', m.label()), right);
+      ul.append(li);
     }
-    renderCredit();
-    fitCard();   // the footer grew or shrank: the card's room changed
+    return ul;
   }
+  function renderMarkets() { if (marketsPage()) renderCard(); }
 
   // ---------- matches (football-data.org, through the data server: the free token stays on the server)
   const norm = s => String(s || '').toLowerCase().replace(/\b(al|fc|sc|club|saudi club)\b/g, '').replace(/[^a-z0-9]/g, '');
   const AR_NAMES = Object.keys(DATA.teamsAr).reduce((o, k) => { if (k[0] !== '_') o[norm(k)] = DATA.teamsAr[k]; return o; }, {});
-  const teamAr = (id, en) => { const t = S.teams.find(x => x.id === String(id)); return (t && t.ar) || AR_NAMES[norm(en)] || en || ''; };
-  const teamName = (id, en) => S.lang === 'ar' ? teamAr(id, en) : (en || '');
+  const arName = (id, en) => { const t = S.teams.find(x => x.id === String(id)); return (t && t.ar) || AR_NAMES[norm(en)] || ''; };
+  /** Both teams in Arabic, or, when one has no Arabic name yet, both as the source names them: never one of each. */
+  function teamPair(ev) {
+    const en = [ev.strHomeTeam || '', ev.strAwayTeam || ''];
+    if (S.lang !== 'ar') return en;
+    const ar = [arName(ev.idHomeTeam, en[0]), arName(ev.idAwayTeam, en[1])];
+    return ar[0] && ar[1] ? ar : en;
+  }
   function eventTime(ev) {
     const ts = ev.strTimestamp ? ev.strTimestamp.replace(/\+00:00$/, '') : (ev.dateEvent && ev.strTime ? `${ev.dateEvent}T${ev.strTime}` : null);
     return ts ? new Date(/Z$/.test(ts) ? ts : ts + 'Z') : null;
   }
   async function loadMatches() {
-    if (!S.teams.length) { state.matches = {}; renderMatch(); return; }
+    if (!S.teams.length) { state.matches = {}; if (S.panel === 'matches') renderCard(); return; }
     let data = null;
     if (S.api) { try { data = await getJSON(`${S.api}/v1/matches?teams=${S.teams.map(t => t.id).join(',')}`, 12000); } catch (e) { data = null; } }
     if (data && Object.keys(data).length) { state.matches = data; store.set('matches', data); }
-    renderMatch();
     if (S.panel === 'matches') renderCard();
   }
   /** Events of the followed teams: results from the last 20 hours, then upcoming ones, soonest first. */
@@ -474,18 +524,6 @@
     if (diff === 0) return `${T.today} ${tm}`;
     if (diff === 1) return `${T.tomorrow} ${tm}`;
     return `${CAL.day.format(at)} ${tm}`;
-  }
-  function renderMatch() {
-    const box = clear($('match')), list = matchList();
-    if (!list.length) return;
-    const { ev, at, done, live } = list[0];
-    box.append(h('span', '', teamName(ev.idHomeTeam, ev.strHomeTeam)));
-    if (done || live) box.append(h('span', 'vs', dg(`${ev.intHomeScore} - ${ev.intAwayScore}`)));
-    else box.append(h('span', 'vs', '×'));
-    box.append(h('span', '', teamName(ev.idAwayTeam, ev.strAwayTeam)));
-    box.append(h('span', live ? 'live' : '', live ? T.live : done ? T.ft : whenText(at)));
-    renderCredit();
-    fitCard();
   }
 
   // ---------- new episodes (TVMaze, CORS-friendly)
@@ -541,10 +579,15 @@
 
   function renderCard(animate) {
     const card = $('card'), body = $('card-body'), title = $('card-title');
-    if (S.panel === 'none') { card.hidden = true; return; }
+    if (S.panel === 'none' && !marketsPage()) { card.hidden = true; return; }
     card.hidden = false; clear(body);
     if (animate) { body.classList.remove('fade'); void body.offsetWidth; body.classList.add('fade'); }
-    if (S.panel === 'verse') {
+    if (marketsPage()) {
+      title.textContent = T.markets;
+      body.append(marketsList());
+      // CoinGecko's terms ask for this line wherever its prices show
+      if (shownMarkets().indexOf('btc') >= 0) { const s = h('div', 'src'); s.append(h('bdi', '', 'Powered by CoinGecko')); body.append(s); }
+    } else if (S.panel === 'verse') {
       const q = quoteOfDay(); title.textContent = q.title;
       body.append(h('div', q.cls, S.digits === 'arab' ? q.quote.replace(/\d+/g, dg) : q.quote), h('div', 'src', q.src));
       fitCard();
@@ -565,30 +608,32 @@
       // one line of text: a Latin name next to the score would pull the score into its own direction, so a mark of the
       // reading direction holds each part apart (home first, its score beside it, like the strip under the clock)
       const m = S.lang === 'ar' ? '‏' : '‎';
-      const list = matchList().slice(0, 5).map(({ ev, at, done, live }) => [
-        [teamName(ev.idHomeTeam, ev.strHomeTeam), done || live ? dg(ev.intHomeScore + ' - ' + ev.intAwayScore) : '×',
-          teamName(ev.idAwayTeam, ev.strAwayTeam)].join(m + ' ' + m),
-        live ? T.live : done ? T.ft : whenText(at)]);
-      body.append(list.length ? rowsList(list, -1) : h('div', 'empty', T.noMatches), h('div', 'src', T.matchesSrc));
+      const list = matchList().slice(0, 5).map(({ ev, at, done, live }) => {
+        const [home, away] = teamPair(ev);
+        return [[home, done || live ? dg(ev.intHomeScore + ' - ' + ev.intAwayScore) : '×', away].join(m + ' ' + m),
+          live ? T.live : done ? T.ft : whenText(at)];
+      });
+      body.append(list.length ? rowsList(list, -1) : h('div', 'empty', T.noMatches));
     } else if (S.panel === 'shows') {
       title.textContent = T.shows;
       const per = 5, pages = Math.max(1, Math.ceil(state.shows.length / per)), p = state.page % pages;
       const rows = state.shows.slice(p * per, p * per + per).map(s => [s.name, `S${dg(s.season || 1)}·E${dg(s.number || 1)}  ★${dg((s.rating || 0).toFixed(1))}`]);
       body.append(rows.length ? rowsList(rows, -1) : h('div', 'empty', T.noShows));
+      if (rows.length) { const s = h('div', 'src'); s.append(h('bdi', '', 'TVmaze')); body.append(s); }   // CC BY-SA
     }
+    fitCard();
   }
 
-  /** Every source on screen, named (their terms ask for it): only the ones whose data is showing now. */
+  /**
+   * The photo's author and licence, the one credit along the bottom. The other sources are named where their terms ask:
+   * Open-Meteo beside the weather, CoinGecko under its price, TVmaze under the episodes; football-data.org and Yahoo ask
+   * for none on screen, and every source is listed on the phone page (docs/DATA-SOURCES.md).
+   */
   function renderCredit() {
-    const box = clear($('credit')), parts = [];
-    if (state.weather) parts.push([T.srcWeather, 'Open-Meteo']);
-    const shown = S.markets.filter(id => state.markets[id]);
-    if (shown.length) parts.push([T.srcMarkets, [shown.some(id => MARKETS[id].yahoo) ? 'Yahoo Finance' : '', shown.indexOf('btc') >= 0 ? 'CoinGecko' : ''].filter(Boolean).join(', ')]);
-    if (S.panel === 'shows' && state.shows.length) parts.push([T.srcShows, 'TVmaze']);
-    if (S.teams.length && $('match').firstChild) parts.push([T.srcMatches, 'football-data.org']);
-    if (state.photoCredit && S.bg === 'photos') parts.push([T.photo, state.photoCredit]);
-    // each name in its own <bdi>, so Latin names keep their place inside Arabic text
-    parts.forEach(([label, name], i) => { const sp = h('span', 'cr', label + ': '); sp.append(h('bdi', '', name)); box.append(sp); });
+    const box = clear($('credit'));
+    if (!state.photoCredit || S.bg !== 'photos') return;
+    // the name in its own <bdi>, so a Latin name keeps its place inside Arabic text
+    const sp = h('span', 'cr', T.photo + ': '); sp.append(h('bdi', '', state.photoCredit)); box.append(sp);
   }
 
   // ---------- photos: four a day out of the set, a new one every 20 minutes
@@ -633,14 +678,20 @@
     state.shows = store.get('shows', []);
     const wc = store.get('weather:' + P.id, null);
     if (wc) { state.weather = wc.w; state.forecast = wc.f; }
-    tickClock(); tickDates(); renderPrayers(); renderChips(); renderWeather(); renderMarkets(); renderMatch(); renderCard(); applyPhoto(true); applyNight();
+    tickClock(); tickDates(); renderPrayers(); renderChips(); renderWeather(); renderCard(); applyPhoto(true); applyNight();
     drawRhumbs();
     window.addEventListener('resize', () => { drawRhumbs(); renderPrayers(); });
     document.body.classList.add('ready');
 
     setInterval(tickClock, 1000);
     setInterval(() => { tickDates(); renderPrayers(); renderChips(); applyNight(); }, 20000);
-    setInterval(() => { state.page++; if (['shows', 'prayers', 'matches'].includes(S.panel)) renderCard(S.panel === 'shows'); }, 20000);
+    // every 20 s: the next page of episodes, fresh times, and the turn to the prices and back
+    setInterval(() => {
+      const wasMarkets = marketsPage();
+      state.page++;
+      const turned = marketsPage() !== wasMarkets;
+      if (turned || ['shows', 'prayers', 'matches'].includes(S.panel)) renderCard(turned || S.panel === 'shows');
+    }, 20000);
     setInterval(applyPhoto, 60000);
     setInterval(shift, 180000);
     loadWeather(); setInterval(loadWeather, 30 * 60000);
