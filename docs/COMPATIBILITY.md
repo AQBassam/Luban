@@ -47,10 +47,14 @@ was 1.22).
 | `check` | Read-only, changed nothing. The setup wizard (setupwraith) is present and does not own the network |
 | Install, signature and certificate checks | Works |
 | Screensaver | Works. Dial, ember, El Messiri font, prayer times, Hijri date, weather, markets and the match card render as designed (compared a photo of the TV with an ADB screenshot) |
-| Smoke | Moves, gently: the two layers breathe over 9 s. It is frozen by design while night dimming is on (from 2 h after Isha to 30 min before Fajr), so judge it in daytime or with "Night" switched off |
-| Phone settings page (QR) | Opens and saves settings |
+| Smoke | Works. In daytime with default settings the threads clearly fade almost away and glow again (the two layers breathe over 9 s). It is frozen by design while night dimming is on (from 2 h after Isha to 30 min before Fajr) |
+| Phone settings page (QR) | Opens and saves settings. Team search works: Real Madrid found, with its recent and next matches |
+| Prayer times | Sohar matches the Ministry's calendar app to the minute (Fajr, Dhuhr, Asr, Maghrib, Isha) |
+| Match card | A Latin home name (Como 1907) pulled the score to the wrong side in Arabic; fixed after this test, the strip under the clock was already right |
 | Home screen | **Does not switch.** See below |
-| Ads/telemetry off, animation speed | Not run: `setup` stopped at the home step before them |
+| Ads/telemetry off | Works, run on its own (`debloat`) after the home step failed. 6 of the 17 listed packages are on this TV and were turned off: `feedback`, `partnersetup`, `onetimeinitializer`, `play.games`, `autoinstalls.config.google.gtvpai`, and Google's screensaver `dreamx` |
+| Animation speed | Works: animations at 0.5x, cached-app freezer on |
+| Remote and Input button | Work after the above (Home, navigation, Input) |
 
 **Home screen.** `setup` stopped at step 3 and put everything back, as designed: Luban's home never opened when Home was
 pressed, nothing was disabled. Checked on the TV by hand, each step undone straight away:
@@ -64,6 +68,3 @@ pressed, nothing was disabled. Checked on the TV by hand, each step undone strai
   tried: the next home in line is setupwraith's `RecoveryActivity` (priority 1, above Luban's), not Luban's.
 
 On this TV the screensaver is the supported part. Luban's home can still be opened by hand as an app.
-
-Not checked yet: the Input button, ads/telemetry off and the speed tweaks, the smoke in daytime with default settings,
-team search from the phone page, and the prayer times against the Ministry's calendar for Sohar.

@@ -166,6 +166,25 @@ const text = (page, sel) => page.$eval(sel, e => e.textContent);
   check('matches: a football-data result reads in Arabic, with its source', card.includes('برشلونة') && card.includes('ريال مدريد') && card.includes('1 - 2') && card.includes('football-data.org'), card);
   await page.close();
 }
+for (const lang of ['ar', 'en']) {
+  // a Latin home name (no Arabic for it) keeps its place: home, its score beside it, then the away team, in reading order
+  const page = await open({ lang, panel: 'matches', teams: [{ id: '66', en: 'Manchester United', ar: 'مانشستر يونايتد' }] });
+  await page.evaluate(() => {
+    const t = new Date(Date.now() - 3 * 3600e3).toISOString().replace(/\.\d+Z$/, 'Z');
+    window.LubanScreen._state.matches = { 66: { last: [{ idEvent: '5', idHomeTeam: '7001', strHomeTeam: 'Como 1907', idAwayTeam: '66', strAwayTeam: 'Manchester United',
+      intHomeScore: 4, intAwayScore: 1, strTimestamp: t, strStatus: 'FT' }], next: [] } };
+  });
+  await page.clock.runFor(21000);
+  const x = await page.evaluate(() => {
+    const node = document.querySelector('#card .rows li .a').firstChild, s = node.data, sc = s.indexOf('4 - 1');
+    const at = (i, n) => { const r = document.createRange(); r.setStart(node, i); r.setEnd(node, i + n); const b = r.getBoundingClientRect(); return b.left + b.width / 2; };
+    const away = s.indexOf('مانشستر') >= 0 ? s.indexOf('مانشستر') : s.indexOf('Manchester');
+    return [at(s.indexOf('Como'), 4), at(sc, 1), at(sc + 4, 1), at(away, 4)];
+  });
+  const order = lang === 'ar' ? x.every((v, i) => i === 0 || v < x[i - 1]) : x.every((v, i) => i === 0 || v > x[i - 1]);
+  check(`matches (${lang}): home, its score, the other score, away — in reading order`, order, x);
+  await page.close();
+}
 for (const vp of [{ width: 1920, height: 1080 }, { width: 1280, height: 720 }]) {
   const page = await open({ panel: 'verse', markets: ['gold', 'brent', 'btc', 'spx'] }, null, vp);
   const overflow = await page.evaluate(() => {

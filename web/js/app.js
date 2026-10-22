@@ -562,8 +562,12 @@
       body.append(rows.length ? rowsList(rows, -1) : h('div', 'empty', T.noData));
     } else if (S.panel === 'matches') {
       title.textContent = T.matches;
+      // one line of text: a Latin name next to the score would pull the score into its own direction, so a mark of the
+      // reading direction holds each part apart (home first, its score beside it, like the strip under the clock)
+      const m = S.lang === 'ar' ? '‏' : '‎';
       const list = matchList().slice(0, 5).map(({ ev, at, done, live }) => [
-        `${teamName(ev.idHomeTeam, ev.strHomeTeam)} ${done || live ? dg(ev.intHomeScore + ' - ' + ev.intAwayScore) : '×'} ${teamName(ev.idAwayTeam, ev.strAwayTeam)}`,
+        [teamName(ev.idHomeTeam, ev.strHomeTeam), done || live ? dg(ev.intHomeScore + ' - ' + ev.intAwayScore) : '×',
+          teamName(ev.idAwayTeam, ev.strAwayTeam)].join(m + ' ' + m),
         live ? T.live : done ? T.ft : whenText(at)]);
       body.append(list.length ? rowsList(list, -1) : h('div', 'empty', T.noMatches), h('div', 'src', T.matchesSrc));
     } else if (S.panel === 'shows') {
