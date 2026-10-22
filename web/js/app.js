@@ -419,7 +419,8 @@
     if (typeof w.rh === 'number') parts.push(`${T.humidity} ${dg(Math.round(w.rh))}%`);
     if (typeof w.ws === 'number') parts.push(w.ws < 2 ? T.calm : `${T.wind} ${T.winds[Math.round((w.wd || 0) / 45) % 8]} ${dg(Math.round(w.ws))} ${T.kmh}`);
     if (typeof w.aqi === 'number') parts.push(`${T.air} ${T.airLevels[level(w.aqi, [50, 100, 150, 200])]}`);
-    if (typeof w.uv === 'number') parts.push(`${T.uv} ${T.uvLevels[level(w.uv, [2.99, 5.99, 7.99, 10.99])]}`);
+    // the UV index is the day's highest: it says nothing after dark
+    if (typeof w.uv === 'number' && w.day) parts.push(`${T.uv} ${T.uvLevels[level(w.uv, [2.99, 5.99, 7.99, 10.99])]}`);
     parts.forEach((p, i) => { if (i) more.append(h('span', 'sep', '·')); more.append(h('span', '', p)); });
     // Open-Meteo's licence asks for its name next to where its data shows
     const by = h('span', 'by'); by.append(h('bdi', '', 'Open-Meteo')); more.append(by);

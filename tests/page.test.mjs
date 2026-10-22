@@ -163,6 +163,8 @@ const text = (page, sel) => page.$eval(sel, e => e.textContent);
   const wxd = await text(page, '#wxd'), mk = await text(page, '#card');
   check('weather: humidity, wind, air and UV in one line, Open-Meteo beside them', wxd.includes('الرطوبة 60%') && wxd.includes('شمالية غربية 14') &&
     wxd.includes('جيدة') && wxd.includes('مرتفعة') && wxd.includes('Open-Meteo'), wxd);
+  const night = await page.evaluate(() => { const st = window.LubanScreen._state; st.weather.day = false; window.LubanScreen._render.weather(); return document.getElementById('wxd').textContent; });
+  check('weather: no UV after dark (it is the day\'s highest)', !night.includes('الأشعة') && night.includes('الرطوبة'), night);
   check('markets: a page of the card, gold labelled a global price, a 5-hour-old price says "as of", CoinGecko named',
     mk.includes('سعر عالمي') && mk.includes('حتى') && mk.includes('Powered by CoinGecko') && (await page.$$('#card .mk.stale')).length === 1, mk);
   await page.close();
@@ -181,12 +183,24 @@ const text = (page, sel) => page.$eval(sel, e => e.textContent);
   check('matches: the card is as tall as its one match, with no source line', tall < 260 && !card.includes('football-data'), tall);
   await page.close();
 }
+{
+  // as the TV showed it: the server's short names, both found in teams-ar.json
+  const page = await open({ panel: 'matches', teams: [{ id: '66', en: 'Man United', ar: '' }] });
+  await page.evaluate(() => {
+    const n = new Date(Date.now() + 70 * 3600e3).toISOString().replace(/\.\d+Z$/, 'Z');
+    window.LubanScreen._state.matches = { 66: { last: [], next: [{ idEvent: '7', idHomeTeam: '1044', strHomeTeam: 'Bournemouth', idAwayTeam: '66', strAwayTeam: 'Man United', strTimestamp: n }] } };
+  });
+  await page.clock.runFor(21000);
+  const card = await text(page, '#card');
+  check('matches: Bournemouth × Man United both in Arabic', card.includes('بورنموث') && card.includes('مانشستر يونايتد') && !/[A-Za-z]{4}/.test(card.replace(/مباريات فرقك/, '')), card);
+  await page.close();
+}
 for (const lang of ['ar', 'en']) {
-  // a Latin home name (no Arabic for it) keeps its place: home, its score beside it, then the away team, in reading order
+  // a Latin home name (a team with no Arabic name) keeps its place: home, its score beside it, then the away team, in reading order
   const page = await open({ lang, panel: 'matches', teams: [{ id: '66', en: 'Manchester United', ar: 'مانشستر يونايتد' }] });
   await page.evaluate(() => {
     const t = new Date(Date.now() - 3 * 3600e3).toISOString().replace(/\.\d+Z$/, 'Z');
-    window.LubanScreen._state.matches = { 66: { last: [{ idEvent: '5', idHomeTeam: '7001', strHomeTeam: 'Como 1907', idAwayTeam: '66', strAwayTeam: 'Manchester United',
+    window.LubanScreen._state.matches = { 66: { last: [{ idEvent: '5', idHomeTeam: '7001', strHomeTeam: 'Neverland 1907', idAwayTeam: '66', strAwayTeam: 'Manchester United',
       intHomeScore: 4, intAwayScore: 1, strTimestamp: t, strStatus: 'FT' }], next: [] } };
   });
   await page.clock.runFor(21000);
@@ -194,7 +208,7 @@ for (const lang of ['ar', 'en']) {
     const node = document.querySelector('#card .rows li .a').firstChild, s = node.data, sc = s.indexOf('4 - 1');
     const at = (i, n) => { const r = document.createRange(); r.setStart(node, i); r.setEnd(node, i + n); const b = r.getBoundingClientRect(); return b.left + b.width / 2; };
     const away = s.indexOf('مانشستر') >= 0 ? s.indexOf('مانشستر') : s.indexOf('Manchester');
-    return [at(s.indexOf('Como'), 4), at(sc, 1), at(sc + 4, 1), at(away, 4)];
+    return [at(s.indexOf('Neverland'), 4), at(sc, 1), at(sc + 4, 1), at(away, 4)];
   });
   const order = lang === 'ar' ? x.every((v, i) => i === 0 || v < x[i - 1]) : x.every((v, i) => i === 0 || v > x[i - 1]);
   check(`matches (${lang}): home, its score, the other score, away — in reading order`, order, x);
