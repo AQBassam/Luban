@@ -6,7 +6,6 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
 import android.icu.text.SimpleDateFormat;
 import android.icu.util.IslamicCalendar;
@@ -23,13 +22,10 @@ import android.os.Looper;
 import android.provider.Settings;
 import android.util.TypedValue;
 import android.view.Gravity;
-import android.view.KeyEvent;
 import android.view.View;
 import android.widget.FrameLayout;
 import android.widget.HorizontalScrollView;
-import android.widget.ImageView;
 import android.widget.LinearLayout;
-import android.widget.ScrollView;
 import android.widget.TextView;
 
 import java.util.ArrayList;
@@ -37,8 +33,9 @@ import java.util.Date;
 import java.util.List;
 
 /**
- * The home screen: clock and dates, the prayer card, favourites, all apps, and buttons for inputs, network and settings.
- * Each part lives in its own class; this one only lays them out and keeps them current.
+ * The home screen, a dock: clock, dates and the next prayer; a status line and buttons for inputs, the screensaver and
+ * settings; one row of favourites ending in a tile for every app (AppsActivity). Each part lives in its own class; this
+ * one only lays them out and keeps them current.
  */
 public class HomeActivity extends Activity {
     private static java.lang.ref.WeakReference<HomeActivity> live = new java.lang.ref.WeakReference<>(null);
@@ -46,8 +43,8 @@ public class HomeActivity extends Activity {
     private Wallpaper wallpaper;
     private View scrim;
     private PrayerCard card;
-    private TextView clock, ampm, dates, network;
-    private LinearLayout favRow, allRow;
+    private TextView clock, ampm, dates, status;
+    private LinearLayout favRow;
     private List<Apps.App> apps = new ArrayList<>();
     private boolean ar = true, arabicDigits = false, clock24 = false;
     private int hijriOffset = 0;
@@ -151,23 +148,9 @@ public class HomeActivity extends Activity {
             new int[] {0xF206192A, 0xB306192A, 0x6606192A, 0xA606192A}));
         root.addView(scrim, new FrameLayout.LayoutParams(-1, -1));
 
-        // everything fits 960x540dp (a 1080p or 720p TV); the scroll is a safety net for larger system fonts, and
-        // fillViewport keeps the spacer working when it is not needed
-        ScrollView scroll = new ScrollView(this);
-        scroll.setFillViewport(true);
-        scroll.setVerticalScrollBarEnabled(false);
-        root.addView(scroll, new FrameLayout.LayoutParams(-1, -1));
-        LinearLayout col = new LinearLayout(this);
-        col.setOrientation(LinearLayout.VERTICAL);
-        int pad = Ui.dp(this, 44);
-        col.setPadding(pad, Ui.dp(this, 24), pad, Ui.dp(this, 20));
-        scroll.addView(col, new FrameLayout.LayoutParams(-1, -2));
-
-        // top: clock and dates, buttons on the other side
-        LinearLayout top = new LinearLayout(this);
-        top.setOrientation(LinearLayout.HORIZONTAL);
-        top.setGravity(Gravity.TOP);
-        col.addView(top, new LinearLayout.LayoutParams(-1, -2));
+        // a dock (960x540dp, any 1080p or 720p TV): the time at the top, a quiet status line and three buttons opposite,
+        // one row of favourites at the bottom whose last tile opens every app; the middle is left to the sea chart
+        int side = Ui.dp(this, 48), top = Ui.dp(this, 40);
 
         LinearLayout time = new LinearLayout(this);
         time.setOrientation(LinearLayout.VERTICAL);
@@ -175,79 +158,70 @@ public class HomeActivity extends Activity {
         clockLine.setOrientation(LinearLayout.HORIZONTAL);
         clockLine.setGravity(Gravity.BOTTOM);
         clockLine.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
-        clock = Ui.text(this, "", 56, Ui.medium(), Ui.INK);
+        clock = Ui.text(this, "", 64, Ui.medium(), Ui.INK);
         ampm = Ui.text(this, "", 20, Ui.medium(), Ui.LUBAN);
-        ampm.setPadding(Ui.dp(this, 10), 0, 0, Ui.dp(this, 12));
+        ampm.setPadding(Ui.dp(this, 8), 0, 0, Ui.dp(this, 10));
         clockLine.addView(clock);
         clockLine.addView(ampm);
         time.addView(clockLine);
-        View rule = new View(this);   // a short resin rule under the clock
-        rule.setBackgroundColor(Ui.LUBAN);
-        LinearLayout.LayoutParams bl = new LinearLayout.LayoutParams(Ui.dp(this, 56), Ui.dp(this, 2));
-        bl.setMargins(0, Ui.dp(this, 6), 0, Ui.dp(this, 8));
-        time.addView(rule, bl);
-        // one line always: a long date steps its font down to 12 instead of breaking (and leaving "هـ" alone below)
-        dates = Ui.text(this, "", 17, Ui.regular(), Ui.INK2);
+        // one line always: a long date steps its font down to 11 instead of breaking (and leaving "هـ" alone below)
+        dates = Ui.text(this, "", 15, Ui.regular(), Ui.INK2);
         dates.setMaxLines(1);
-        dates.setAutoSizeTextTypeUniformWithConfiguration(12, 17, 1, TypedValue.COMPLEX_UNIT_SP);
-        int dh = (int) Math.ceil(TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, 17, getResources().getDisplayMetrics()) * 1.4f);
-        time.addView(dates, new LinearLayout.LayoutParams(-1, dh));
-        top.addView(time, new LinearLayout.LayoutParams(0, -2, 1f));
-
-        LinearLayout buttons = new LinearLayout(this);
-        buttons.setOrientation(LinearLayout.HORIZONTAL);
-        network = pill("", v -> open(new Intent(Settings.ACTION_WIFI_SETTINGS), new Intent(Settings.ACTION_SETTINGS)));
-        buttons.addView(network);
-        buttons.addView(pill("المداخل · Inputs", v -> inputs()));
-        buttons.addView(pill("شاشة التوقف", v -> screensaver()));
-        buttons.addView(pill("الإعدادات", v -> open(new Intent(Settings.ACTION_SETTINGS), null)));
-        top.addView(buttons);
-
-        // spacer, then the prayer card, favourites and all apps at the bottom
-        col.addView(new View(this), new LinearLayout.LayoutParams(-1, 0, 1f));
+        dates.setAutoSizeTextTypeUniformWithConfiguration(11, 15, 1, TypedValue.COMPLEX_UNIT_SP);
+        int dh = (int) Math.ceil(TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, 15, getResources().getDisplayMetrics()) * 1.4f);
+        LinearLayout.LayoutParams dl = new LinearLayout.LayoutParams(Ui.dp(this, 460), dh);
+        dl.topMargin = Ui.dp(this, 6);
+        time.addView(dates, dl);
         card = new PrayerCard(this);
         LinearLayout.LayoutParams cl = new LinearLayout.LayoutParams(-2, -2);
-        cl.setMargins(0, 0, 0, Ui.dp(this, 12));
-        col.addView(card.view, cl);
+        cl.topMargin = Ui.dp(this, 10);
+        time.addView(card.view, cl);
+        FrameLayout.LayoutParams tl = new FrameLayout.LayoutParams(-2, -2, Gravity.TOP | Gravity.START);
+        tl.setMarginStart(side);
+        tl.topMargin = top;
+        root.addView(time, tl);
 
-        col.addView(section("المفضلة · Favourites"));
-        favRow = row(col);
-        col.addView(section("كل التطبيقات · All apps"));
-        allRow = row(col);
-        return root;
-    }
+        LinearLayout end = new LinearLayout(this);
+        end.setOrientation(LinearLayout.HORIZONTAL);
+        end.setGravity(Gravity.CENTER_VERTICAL);
+        status = Ui.text(this, "", 13, Ui.regular(), Ui.INK3);   // city · network
+        end.addView(status);
+        end.addView(button(R.drawable.ic_inputs, "المداخل · Inputs", v -> inputs()));
+        end.addView(button(R.drawable.ic_moon, "شاشة التوقف · Screensaver", v -> screensaver()));
+        end.addView(button(R.drawable.ic_settings, "الإعدادات · Settings", v -> open(new Intent(Settings.ACTION_SETTINGS), null)));
+        FrameLayout.LayoutParams el = new FrameLayout.LayoutParams(-2, -2, Gravity.TOP | Gravity.END);
+        el.setMarginEnd(side);
+        el.topMargin = top;
+        root.addView(end, el);
 
-    private TextView section(String s) {
-        TextView t = Ui.text(this, s, 14, Ui.bold(), Ui.LUBAN_SOFT);
-        t.setPadding(Ui.dp(this, 4), Ui.dp(this, 2), 0, Ui.dp(this, 6));
-        return t;
-    }
-
-    private LinearLayout row(LinearLayout col) {
+        LinearLayout dock = new LinearLayout(this);
+        dock.setOrientation(LinearLayout.VERTICAL);
+        TextView label = Ui.text(this, "المفضلة · Favourites", 13, Ui.bold(), Ui.LUBAN_SOFT);
+        label.setPadding(Ui.dp(this, 8), 0, Ui.dp(this, 8), Ui.dp(this, 2));
+        dock.addView(label);
         HorizontalScrollView sv = new HorizontalScrollView(this);
         sv.setHorizontalScrollBarEnabled(false);
         sv.setClipToPadding(false);
         sv.setClipChildren(false);
         int p = Ui.dp(this, 8);   // room for the 7% lift of a focused tile
         sv.setPadding(p, p, p, p);
-        LinearLayout r = new LinearLayout(this);
-        r.setOrientation(LinearLayout.HORIZONTAL);
-        r.setClipChildren(false);
-        sv.addView(r);
-        col.addView(sv, new LinearLayout.LayoutParams(-1, -2));
-        return r;
+        favRow = new LinearLayout(this);
+        favRow.setOrientation(LinearLayout.HORIZONTAL);
+        favRow.setClipChildren(false);
+        sv.addView(favRow);
+        dock.addView(sv, new LinearLayout.LayoutParams(-1, -2));
+        FrameLayout.LayoutParams kl = new FrameLayout.LayoutParams(-1, -2, Gravity.BOTTOM);
+        kl.setMargins(side - p, 0, side - p, Ui.dp(this, 28));
+        root.addView(dock, kl);
+        return root;
     }
 
-    private TextView pill(String s, View.OnClickListener l) {
-        TextView t = Ui.text(this, s, 15, Ui.medium(), Ui.INK);
-        int h = Ui.dp(this, 16), v = Ui.dp(this, 10);
-        t.setPadding(h, v, h, v);
-        Ui.focusable(t, Ui.glass(this, 99));
-        t.setOnClickListener(l);
-        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-2, -2);
+    private View button(int icon, String label, View.OnClickListener l) {
+        View b = Tiles.roundButton(this, icon, label, l);
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(Ui.dp(this, 40), Ui.dp(this, 40));
         lp.setMarginStart(Ui.dp(this, 10));
-        t.setLayoutParams(lp);
-        return t;
+        b.setLayoutParams(lp);
+        return b;
     }
 
     // ---------------------------------------------------------------- app rows
@@ -258,75 +232,24 @@ public class HomeActivity extends Activity {
         View focused = getCurrentFocus();
         String focusedPkg = focused != null && focused.getTag() instanceof String ? (String) focused.getTag() : null;
         favRow.removeAllViews();
-        allRow.removeAllViews();
         List<String> fav = Favourites.get(this, apps);
-        for (String p : fav) for (Apps.App a : apps) if (a.pkg.equals(p)) favRow.addView(tile(a, true));
-        for (Apps.App a : apps) allRow.addView(tile(a, false));
+        for (String p : fav) for (Apps.App a : apps) if (a.pkg.equals(p)) favRow.addView(dockTile(Tiles.app(this, a, apps, TILE_H, a.pkg, this::favouritesEdited)));
+        favRow.addView(dockTile(Tiles.allApps(this, TILE_H)));
         View again = focusedPkg != null ? favRow.findViewWithTag(focusedPkg) : null;
         if (again != null) again.requestFocus();
-        else if (focused == null || !focused.isAttachedToWindow()) {
-            if (favRow.getChildCount() > 0) favRow.getChildAt(0).requestFocus();
-            else if (allRow.getChildCount() > 0) allRow.getChildAt(0).requestFocus();
-        }
+        else if (focused == null || !focused.isAttachedToWindow()) favRow.getChildAt(0).requestFocus();
     }
 
-    private View tile(Apps.App a, boolean favourite) {
-        FrameLayout t = new FrameLayout(this);
-        t.setTag(favourite ? a.pkg : "all:" + a.pkg);
-        t.setClipToOutline(true);
-        Ui.focusable(t, Ui.glass(this, 14));
-        Drawable art = Apps.art(this, a);
-        ImageView img = new ImageView(this);
-        img.setImageDrawable(art);
-        if (Apps.hasBanner(this, a)) {
-            img.setScaleType(ImageView.ScaleType.CENTER_CROP);
-            t.addView(img, new FrameLayout.LayoutParams(-1, -1));
-        } else {
-            img.setScaleType(ImageView.ScaleType.FIT_CENTER);
-            FrameLayout.LayoutParams ip = new FrameLayout.LayoutParams(Ui.dp(this, 44), Ui.dp(this, 44), Gravity.CENTER_HORIZONTAL | Gravity.TOP);
-            ip.topMargin = Ui.dp(this, 12);
-            t.addView(img, ip);
-            TextView label = Ui.text(this, a.label, 13, Ui.medium(), Ui.INK);
-            label.setSingleLine(true);
-            label.setGravity(Gravity.CENTER);
-            FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(-1, -2, Gravity.BOTTOM);
-            lp.setMargins(Ui.dp(this, 8), 0, Ui.dp(this, 8), Ui.dp(this, 8));
-            t.addView(label, lp);
-        }
-        t.setContentDescription(a.label);
-        t.setOnClickListener(v -> Apps.open(this, a));
-        t.setOnLongClickListener(v -> { menu(a); return true; });
-        t.setOnKeyListener((v, code, e) -> {
-            if (code == KeyEvent.KEYCODE_MENU && e.getAction() == KeyEvent.ACTION_UP) { menu(a); return true; }
-            return false;
-        });
-        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(Ui.dp(this, favourite ? 192 : 160), Ui.dp(this, favourite ? 108 : 90));
-        lp.setMarginEnd(Ui.dp(this, 16));
+    private static final int TILE_W = 120, TILE_H = 68;
+
+    private View dockTile(View t) {
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(Ui.dp(this, TILE_W), Ui.dp(this, TILE_H));
+        lp.setMarginEnd(Ui.dp(this, 14));
         t.setLayoutParams(lp);
         return t;
     }
 
-    /** Hold OK (or press Menu) on an app: add or remove from favourites, move it, or open its info. */
-    private void menu(Apps.App a) {
-        List<String> fav = Favourites.get(this, apps);
-        boolean in = fav.contains(a.pkg);
-        List<String> items = new ArrayList<>();
-        List<Runnable> actions = new ArrayList<>();
-        items.add(in ? "إزالة من المفضلة · Remove from favourites" : "إضافة إلى المفضلة · Add to favourites");
-        actions.add(() -> Favourites.toggle(this, apps, a.pkg));
-        if (in) {
-            items.add("تحريك لليمين · Move right");
-            actions.add(() -> Favourites.move(this, apps, a.pkg, -1));
-            items.add("تحريك لليسار · Move left");
-            actions.add(() -> Favourites.move(this, apps, a.pkg, 1));
-        }
-        items.add("معلومات التطبيق · App info");
-        actions.add(() -> open(new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:" + a.pkg)), null));
-        new AlertDialog.Builder(this, android.R.style.Theme_Material_Dialog_Alert)
-            .setTitle(a.label)
-            .setItems(items.toArray(new String[0]), (d, which) -> { actions.get(which).run(); rowsDirty = true; buildRows(); })
-            .show();
-    }
+    private void favouritesEdited() { rowsDirty = true; buildRows(); }
 
     // ---------------------------------------------------------------- clock, network, inputs
 
@@ -365,11 +288,12 @@ public class HomeActivity extends Activity {
         ConnectivityManager cm = getSystemService(ConnectivityManager.class);
         NetworkCapabilities nc = cm == null ? null : cm.getNetworkCapabilities(cm.getActiveNetwork());
         if (nc != null) {
-            if (nc.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)) s = ar ? "سلكي · Ethernet" : "Ethernet";
-            else if (nc.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)) s = ar ? "واي فاي · Wi-Fi" : "Wi-Fi";
+            if (nc.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)) s = ar ? "سلكي" : "Ethernet";
+            else if (nc.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)) s = ar ? "واي فاي" : "Wi-Fi";
             else s = ar ? "متصل" : "Online";
         }
-        network.setText(s);
+        String city = card.city(ar);
+        status.setText(city.isEmpty() ? s : city + " · " + s);
     }
 
     private void inputs() {

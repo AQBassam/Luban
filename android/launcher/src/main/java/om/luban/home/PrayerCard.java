@@ -16,8 +16,9 @@ import java.util.Calendar;
 import java.util.TimeZone;
 
 /**
- * The prayer card on the home screen: the dial, the next prayer, the time left, and today's five times. Off until it is switched
- * on in the screensaver's phone settings; the city and method come from there (ConfigProvider, signature permission).
+ * The next prayer, one line under the date: a small dial, the prayer and its time, the time left (today's five times stay on
+ * the screensaver). Off until it is switched on in the screensaver's phone settings; the city and method come from there
+ * (ConfigProvider, signature permission).
  */
 final class PrayerCard {
     private static final Uri CONFIG = Uri.parse("content://om.luban.screen.config");
@@ -25,9 +26,8 @@ final class PrayerCard {
     private static final String[] EN = {"Fajr", "Sunrise", "Dhuhr", "Asr", "Maghrib", "Isha"};
     private final Context c;
     final LinearLayout view;
-    private final TextView title, next, left;
+    private final TextView next, left;
     private final Dial dial;
-    private final TextView[] small = new TextView[5];
     private JSONObject cfg;
     private String computedFor = "";
     private double[] today, tomorrow;
@@ -37,43 +37,24 @@ final class PrayerCard {
         view = new LinearLayout(c);
         view.setOrientation(LinearLayout.HORIZONTAL);
         view.setGravity(Gravity.CENTER_VERTICAL);
-        view.setBackground(Ui.glass(c, 22));
-        int p = Ui.dp(c, 20);
-        view.setPadding(p, Ui.dp(c, 10), p, Ui.dp(c, 10));
 
         dial = new Dial(c);
-        LinearLayout.LayoutParams dl = new LinearLayout.LayoutParams(Ui.dp(c, 80), Ui.dp(c, 80));
-        dl.setMarginEnd(Ui.dp(c, 20));
+        LinearLayout.LayoutParams dl = new LinearLayout.LayoutParams(Ui.dp(c, 40), Ui.dp(c, 40));
+        dl.setMarginEnd(Ui.dp(c, 10));
         view.addView(dial, dl);
-
-        LinearLayout main = new LinearLayout(c);
-        main.setOrientation(LinearLayout.VERTICAL);
-        title = Ui.text(c, "", 14, Ui.medium(), Ui.LUBAN_SOFT);
-        next = Ui.text(c, "", 26, Ui.bold(), Ui.FOAM);
+        next = Ui.text(c, "", 18, Ui.bold(), Ui.FOAM);
+        view.addView(next);
         left = Ui.text(c, "", 15, Ui.regular(), Ui.INK2);
-        next.setPadding(0, Ui.dp(c, 6), 0, Ui.dp(c, 4));
-        main.addView(title);
-        main.addView(next);
-        main.addView(left);
-        view.addView(main);
-
-        View sep = new View(c);
-        sep.setBackgroundColor(Ui.LINE);
-        LinearLayout.LayoutParams sl = new LinearLayout.LayoutParams(Ui.dp(c, 1), -1);
-        sl.setMargins(Ui.dp(c, 22), Ui.dp(c, 4), Ui.dp(c, 22), Ui.dp(c, 4));
-        view.addView(sep, sl);
-
-        for (int i = 0; i < 5; i++) {
-            small[i] = Ui.text(c, "", 14, Ui.medium(), Ui.INK2);
-            small[i].setGravity(Gravity.CENTER);
-            small[i].setLineSpacing(Ui.dp(c, 4), 1f);
-            view.addView(small[i], new LinearLayout.LayoutParams(Ui.dp(c, 92), -2));
-        }
+        left.setPadding(Ui.dp(c, 8), 0, 0, 0);
+        view.addView(left);
         view.setVisibility(View.GONE);
     }
 
     /** The owner chose Omani photos behind the home screen instead of the sea chart. */
     boolean photos() { return cfg != null && "photos".equals(cfg.optString("bg")); }
+
+    /** The city chosen in the screensaver's settings, or "" before it can be read. */
+    String city(boolean ar) { return cfg == null ? "" : cfg.optString(ar ? "cityAr" : "cityEn"); }
 
     /** Re-read the settings (on resume). */
     void reload() {
@@ -115,20 +96,10 @@ final class PrayerCard {
         double leftMin = afterIsha ? tomorrow[0] + 1440 - mins : at - mins;
         if (afterIsha) idx = 0;
         String name = idx == 2 && friday ? (ar ? "الجمعة" : "Jumu'ah") : (ar ? AR : EN)[idx];
-        String city = ar ? cfg.optString("cityAr") : cfg.optString("cityEn");
 
-        title.setText((ar ? "الصلاة القادمة · " : "Next prayer · ") + city);
-        next.setText(Ui.digits(name + "  " + fmt(at, ar), arab));
+        next.setText(Ui.digits(name + " " + fmt(at, ar), arab));
         long l = (long) Math.ceil(leftMin), h = l / 60, mm = l % 60;
-        left.setText(Ui.digits(ar ? (h > 0 ? "بعد " + h + " س " + mm + " د" : "بعد " + mm + " دقيقة") : "in " + (h > 0 ? h + "h " : "") + mm + "m", arab));
-        int[] five = {0, 2, 3, 4, 5};
-        for (int i = 0; i < 5; i++) {
-            int k = five[i];
-            String n = k == 2 && friday ? (ar ? "الجمعة" : "Jumu'ah") : (ar ? AR : EN)[k];
-            double shown = afterIsha && k == 0 ? tomorrow[0] : today[k];   // after Isha: tomorrow's Fajr
-            small[i].setText(Ui.digits(n + "\n" + fmt(shown, ar), arab));
-            small[i].setTextColor(k == idx ? Ui.FOAM : Ui.INK2);
-        }
+        left.setText(Ui.digits("· " + (ar ? (h > 0 ? "بعد " + h + " س " + mm + " د" : "بعد " + mm + " دقيقة") : "in " + (h > 0 ? h + "h " : "") + mm + "m"), arab));
         dial.set(order, mins, idx, ar);
     }
 

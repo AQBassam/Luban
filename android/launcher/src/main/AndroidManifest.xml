@@ -53,6 +53,13 @@
             </intent-filter>
         </activity>
 
+        <!-- every app, opened from the last tile of the favourites -->
+        <activity
+            android:name=".AppsActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:configChanges="keyboard|keyboardHidden|navigation|orientation|screenSize|screenLayout|uiMode|density|locale|layoutDirection" />
+
         <receiver
             android:name=".AdbReceiver"
             android:exported="true"
