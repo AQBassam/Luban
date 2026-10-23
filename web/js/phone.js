@@ -19,6 +19,7 @@
     pForecast: 'Weather, next days', pMatches: 'Your teams', pShows: 'New episodes', pTasks: 'Household tasks', pDinner: "Tonight's dinner", pNone: 'No card', omanDays: 'Oman National Day and Khareef season',
     tasks: 'Household tasks', taskText: 'The task, e.g. water the plants', taskWho: 'For whom (optional)', taskWhen: 'When (optional)', add: 'Add',
     tasksHint: 'Everyone at home sees them on the screen until you mark them done or delete them; they are kept on the TV only. Press Save after editing.', done: 'Done',
+    tabBasic: 'Basics', tabScreen: 'Screen', tabHome: 'Home', tabAdvanced: 'Advanced', fine: 'Fine-tune prayer times', fineLink: 'Adjust prayer and iqama minutes…',
     dinnerPlan: 'Dinner plan', dinnerApply: 'Apply the code', dinnerClear: 'Remove the plan', dinnerCode: 'LBN1.…',
     dinnerHint: 'From the Smart Dinner guide (dinner.bassamailab.xyz) → More → «Copy Luban code», then paste it here. The code is one full cycle of the plan and the screen repeats it by itself, so paste again only when the dishes or times change. Press Save after applying.',
     dinnerNone: 'No plan yet', dinnerBad: 'That is not a Luban code from the dinner guide.',
@@ -139,7 +140,7 @@
   function renderDinner() {
     const d = S.dinner;
     $('dinner-state').textContent = !d ? t('dinnerNone')
-      : lang === 'ar' ? `خطة من ${d.n} ليلة، أول عشاء فيها ${d.st}. تعيد الشاشة دورتها وحدها.` : `A ${d.n}-night plan, first dinner ${d.st}. The screen repeats the cycle by itself.`;
+      : lang === 'ar' ? `خطة من ${d.n} ليلة، أول عشاء فيها ⁦${d.st}⁩. تعيد الشاشة دورتها وحدها.` : `A ${d.n}-night plan, first dinner ${d.st}. The screen repeats the cycle by itself.`;
   }
   async function applyDinner() {
     const msg = $('msg'); msg.className = '';
@@ -182,7 +183,6 @@
     const box = $('preview'); box.textContent = '';
     const names = lang === 'ar' ? ['الفجر', 'الشروق', 'الظهر', 'العصر', 'المغرب', 'العشاء'] : ['Fajr', 'Sunrise', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
     PR.forEach((k, i) => { const c = h('div'); c.append(h('span', {}, names[i]), h('b', { dir: 'ltr' }, hhmm(tm[k]))); box.append(c); });
-    $('sub').textContent = `${p[lang]} · ${p.tz} · ${METHODS[p.method].label[lang]}`;
     $('custom').hidden = $('city').value !== 'custom';
   }
 
@@ -208,21 +208,57 @@
       if (!r.ok) throw new Error(await r.text());
       S = sanitize(await r.json(), METHODS); msg.textContent = t('saved'); msg.className = 'ok';
       if (S.lang !== lang) fill();
+      mark();
     } catch (e) { msg.textContent = t('failed') + e.message; msg.className = 'err'; }
     setTimeout(() => { msg.className = ''; }, 4000);
   }
 
+  // ---------- four tabs, a strip of what is set, and a dot on Save when something is not saved yet
+  const TABS = ['basic', 'screen', 'home', 'advanced'];
+  function showTab(id) {
+    TABS.forEach(k => { const on = k === id; $('p-' + k).hidden = !on; $('tab-' + k).setAttribute('aria-selected', on); $('tab-' + k).tabIndex = on ? 0 : -1; });
+    window.scrollTo(0, 0);
+  }
+  /** #tasks and #dinner (from the TV's buttons) land on the Home tab at that section. */
+  function openFromHash() {
+    const k = location.hash.slice(1), home = { tasks: 'tasks-section', dinner: 'dinner-section' };
+    if (home[k]) { showTab('home'); $(home[k]).scrollIntoView(); }
+    else if (TABS.includes(k)) showTab(k);
+  }
+  function strip() {
+    const s = collect(), p = resolvePlace(s, DATA.cities), box = $('strip');
+    const open = s.tasks.filter(x => !x.done).length, ar = lang === 'ar';
+    const panel = $('panel').options[$('panel').selectedIndex];
+    const n = open === 1 ? 'مهمة مفتوحة' : open === 2 ? 'مهمتان مفتوحتان' : open <= 10 ? `${open} مهام مفتوحة` : `${open} مهمة مفتوحة`;
+    const items = [panel ? panel.textContent : '',
+      ar ? (open ? n : 'لا مهام') : (open ? `${open} open task${open > 1 ? 's' : ''}` : 'no tasks'),
+      s.dinner ? (ar ? `عشاء: ${s.dinner.n} ليلة` : `dinner: ${s.dinner.n} nights`) : (ar ? 'لا خطة عشاء' : 'no dinner plan')];
+    box.textContent = ''; items.forEach(x => box.append(h('span', {}, x)));
+  }
+  let saved = '';
+  const mark = () => { saved = JSON.stringify(collect()); $('save').classList.remove('dirty'); };
+  const checkDirty = () => { strip(); $('save').classList.toggle('dirty', JSON.stringify(collect()) !== saved); };
+
   async function start() {
     try { const r = await fetch(BASE + 'settings.json'); S = sanitize(await r.json(), METHODS); } catch (e) { S = sanitize(DEFAULTS, METHODS); }
-    fill();
+    fill(); mark(); strip();
     ['city', 'method', 'asr', 'hijri', 'c-lat', 'c-lon', 'c-tz'].forEach(id => $(id).addEventListener('input', preview));
     $('lang').addEventListener('change', () => { S = collect(); fill(); });
     $('tgo').onclick = searchTeams; $('tq').addEventListener('keydown', e => { if (e.key === 'Enter') searchTeams(); });
     $('tadd').onclick = addTask; $('tt').addEventListener('keydown', e => { if (e.key === 'Enter') addTask(); });
     $('dapply').onclick = applyDinner; $('dclear').onclick = () => { S.dinner = null; renderDinner(); };
     $('save').onclick = save;
-    // the home screen's «مهام البيت» button opens the QR code with #tasks: land on the tasks
-    if (location.hash === '#tasks') $('tasks-section').scrollIntoView();
+    TABS.forEach((k, i) => {
+      $('tab-' + k).onclick = () => { showTab(k); history.replaceState(null, '', '#' + k); };
+      $('tab-' + k).addEventListener('keydown', e => {   // arrows move between the tabs (the page reads right to left in Arabic)
+        const d = { ArrowLeft: lang === 'ar' ? 1 : -1, ArrowRight: lang === 'ar' ? -1 : 1 }[e.key];
+        if (d) { const n = TABS[(i + d + TABS.length) % TABS.length]; showTab(n); $('tab-' + n).focus(); e.preventDefault(); }
+      });
+    });
+    $('tofine').onclick = () => { showTab('advanced'); $('fine').open = true; $('fine').scrollIntoView(); };
+    ['input', 'change', 'click'].forEach(ev => document.addEventListener(ev, () => setTimeout(checkDirty, 0)));
+    // the home screen's «مهام البيت» button opens the QR code with #tasks
+    openFromHash();
   }
   start();
 })();

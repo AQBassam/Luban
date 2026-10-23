@@ -14,10 +14,9 @@
 @media (prefers-color-scheme:dark){:root{--bg:#06192A;--card:#0C2438;--ink:#F1EBDD;--ink-2:#9FB2BF;--line:#1C3A52;--luban:#E2A94F;--luban-bg:#2A2416}}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 Messiri,system-ui,sans-serif;padding:0 16px 120px}
-header{position:sticky;top:0;background:var(--bg);padding:16px 0 10px;z-index:2}
+header{padding:16px 0 4px}
 h1{margin:0;font-size:22px;display:flex;align-items:center;gap:10px}
 .mark{width:30px;height:30px;flex:none}
-.sub{color:var(--ink-2);font-size:14px;margin-top:2px}
 section{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px 16px;margin:12px 0}
 section h2{margin:0 0 10px;font-size:17px;color:var(--luban)}
 label{display:block;margin:10px 0 4px;font-size:14px;color:var(--ink-2)}
@@ -36,6 +35,8 @@ select,input[type=text],input[type=number],input[type=url]{width:100%;font:inher
 .team:last-child{border-bottom:0}
 .team input{flex:1;min-height:38px}
 .team button,.hit button{min-width:44px;min-height:40px}
+.team input[type=checkbox]{flex:none;width:24px;height:24px;min-height:0;accent-color:var(--luban)}
+textarea{width:100%;font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
 button{font:inherit;border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:10px;padding:8px 12px;cursor:pointer}
 .hit{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:6px 0}
 #save{position:fixed;inset-inline:16px;bottom:16px;padding:14px;font-size:17px;font-weight:700;background:var(--luban);color:#1D1407;border:0;border-radius:14px;box-shadow:0 6px 20px rgba(0,0,0,.18)}
@@ -43,11 +44,39 @@ button{font:inherit;border:1px solid var(--line);background:var(--bg);color:var(
 #msg.ok{display:block;background:var(--ok);color:#fff}#msg.err{display:block;background:var(--err);color:#fff}
 .hint{font-size:13px;color:var(--ink-2);margin:6px 0 0}
 .src{margin:0;padding-inline-start:18px;font-size:14px;color:var(--ink-2)}.src li{margin:6px 0}.src a{color:var(--luban)}
+
+.strip{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 10px}
+.strip span{font-size:13px;background:var(--luban-bg);color:var(--ink);border-radius:999px;padding:3px 10px}
+.tabs{position:sticky;top:0;z-index:3;display:flex;gap:4px;background:var(--bg);margin:0 -16px;padding:8px 16px;border-bottom:1px solid var(--line)}
+.tabs button{flex:1;min-width:0;min-height:44px;padding:6px 4px;border:0;background:transparent;border-radius:10px;color:var(--ink-2);font-weight:600;font-size:15px}
+.tabs button[aria-selected=true]{background:var(--luban-bg);color:var(--luban);box-shadow:inset 0 -2px 0 var(--luban)}
+.panel[hidden]{display:none}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chips .check{position:relative;margin:0;min-height:40px;padding:0 14px;border:1px solid var(--line);border-radius:999px;background:var(--bg);cursor:pointer}
+.chips .check input{position:absolute;inset:0;width:100%;height:100%;margin:0;opacity:0;cursor:pointer}
+.chips .check:focus-within{outline:2px solid var(--luban);outline-offset:2px}
+.chips .check:has(input:checked){background:var(--luban-bg);border-color:var(--luban)}
+.chips input:checked+span{color:var(--luban);font-weight:600}
+.chips input:checked+span::before{content:"\2713\00a0"}
+button.link{border:0;background:none;color:var(--luban);padding:8px 0;margin-top:6px;text-decoration:underline;font-weight:600}
+details#fine summary{min-height:44px;display:flex;align-items:center;cursor:pointer;font-size:17px;font-weight:600;color:var(--luban);list-style:none}
+details#fine summary::-webkit-details-marker{display:none}
+details#fine summary::after{content:"\25BE";margin-inline-start:auto;transition:transform .2s}
+details#fine[open] summary::after{transform:rotate(180deg)}
+#save.dirty::after{content:" \25CF";color:#fff}
 </style>
 </head>
 <body>
-<header><h1><svg class="mark" viewBox="-50 -50 100 100" aria-hidden="true"><circle r="38" fill="none" stroke="currentColor" stroke-opacity=".35" stroke-width="3"/><path d="M-26.9 26.9A38 38 0 0 1 26.9 -26.9" fill="none" stroke="#E2A94F" stroke-width="9" stroke-linecap="round"/><circle cx="26.9" cy="-26.9" r="12" fill="#E2A94F" fill-opacity=".35"/><circle cx="26.9" cy="-26.9" r="7" fill="#F7E7C4"/></svg><span data-t="title">إعدادات لُبان</span></h1><div class="sub" id="sub"></div></header>
+<header><h1><svg class="mark" viewBox="-50 -50 100 100" aria-hidden="true"><circle r="38" fill="none" stroke="currentColor" stroke-opacity=".35" stroke-width="3"/><path d="M-26.9 26.9A38 38 0 0 1 26.9 -26.9" fill="none" stroke="#E2A94F" stroke-width="9" stroke-linecap="round"/><circle cx="26.9" cy="-26.9" r="12" fill="#E2A94F" fill-opacity=".35"/><circle cx="26.9" cy="-26.9" r="7" fill="#F7E7C4"/></svg><span data-t="title">إعدادات لُبان</span></h1></header>
 
+<div class="strip" id="strip" aria-live="polite"></div>
+<nav class="tabs" role="tablist">
+  <button type="button" role="tab" id="tab-basic" aria-controls="p-basic" aria-selected="true" data-t="tabBasic">الأساسي</button>
+  <button type="button" role="tab" id="tab-screen" aria-controls="p-screen" aria-selected="false" data-t="tabScreen">الشاشة</button>
+  <button type="button" role="tab" id="tab-home" aria-controls="p-home" aria-selected="false" data-t="tabHome">البيت</button>
+  <button type="button" role="tab" id="tab-advanced" aria-controls="p-advanced" aria-selected="false" data-t="tabAdvanced">متقدم</button>
+</nav>
+<div class="panel" role="tabpanel" id="p-basic" aria-labelledby="tab-basic">
 <section>
   <h2 data-t="place">المكان والوقت</h2>
   <label for="city" data-t="city">المدينة</label>
@@ -72,14 +101,10 @@ button{font:inherit;border:1px solid var(--line);background:var(--bg);color:var(
   <label for="asr" data-t="asr">العصر</label>
   <select id="asr"><option value="standard" data-t="asrStd">الجمهور (ظل المثل)</option><option value="hanafi" data-t="asrHan">الحنفي (ظل المثلين)</option></select>
   <div class="times" id="preview"></div>
-  <label data-t="offsets">تعديل بالدقائق (لمطابقة تقويم وزارة الأوقاف)</label>
-  <div class="grid" id="offsets"></div>
-  <label data-t="iqama">دقائق الإقامة بعد الأذان</label>
-  <div class="grid" id="iqama"></div>
-  <label for="hijri" data-t="hijri">تعديل التاريخ الهجري</label>
-  <select id="hijri"><option value="-2">−2</option><option value="-1">−1</option><option value="0">0</option><option value="1">+1</option><option value="2">+2</option></select>
+  <button id="tofine" type="button" class="link" data-t="fineLink">ضبط دقائق الصلاة والإقامة…</button>
 </section>
-
+</div>
+<div class="panel" role="tabpanel" id="p-screen" aria-labelledby="tab-screen" hidden>
 <section>
   <h2 data-t="screen">الشاشة</h2>
   <label for="panel" data-t="panel">البطاقة بجانب الساعة</label>
@@ -94,9 +119,10 @@ button{font:inherit;border:1px solid var(--line);background:var(--bg);color:var(
   <label class="check"><input type="checkbox" id="night"><span data-t="night">تخفيف الإضاءة ليلاً</span></label>
   <label class="check"><input type="checkbox" id="homeCard"><span data-t="homeCard">بطاقة المواقيت في الشاشة الرئيسية</span></label>
   <label data-t="markets">الأسواق</label>
-  <div class="grid" id="markets"></div>
+  <div class="chips" id="markets"></div>
 </section>
-
+</div>
+<div class="panel" role="tabpanel" id="p-home" aria-labelledby="tab-home" hidden>
 <section id="tasks-section">
   <h2 data-t="tasks">مهام البيت</h2>
   <div id="tasks"></div>
@@ -123,10 +149,21 @@ button{font:inherit;border:1px solid var(--line);background:var(--bg);color:var(
 
 <section>
   <h2 data-t="shows">المسلسلات</h2>
-  <label data-t="genres">الأنواع (فارغ = الكل)</label><div class="grid" id="genres"></div>
+  <label data-t="genres">الأنواع (فارغ = الكل)</label><div class="chips" id="genres"></div>
   <label for="minRating" data-t="minRating">أدنى تقييم</label>
   <select id="minRating"><option>0</option><option>6</option><option>6.5</option><option>7</option><option>7.5</option><option>8</option></select>
 </section>
+</div>
+<div class="panel" role="tabpanel" id="p-advanced" aria-labelledby="tab-advanced" hidden>
+<section><details id="fine">
+  <summary data-t="fine">ضبط دقيق للمواقيت</summary>
+  <label data-t="offsets">تعديل بالدقائق (لمطابقة تقويم وزارة الأوقاف)</label>
+  <div class="grid" id="offsets"></div>
+  <label data-t="iqama">دقائق الإقامة بعد الأذان</label>
+  <div class="grid" id="iqama"></div>
+  <label for="hijri" data-t="hijri">تعديل التاريخ الهجري</label>
+  <select id="hijri"><option value="-2">−2</option><option value="-1">−1</option><option value="0">0</option><option value="1">+1</option><option value="2">+2</option></select>
+</details></section>
 
 <section>
   <h2 data-t="sources">مصادر البيانات</h2>
@@ -146,6 +183,7 @@ button{font:inherit;border:1px solid var(--line);background:var(--bg);color:var(
   <label for="channel" data-t="channel">قناة التحديث</label>
   <select id="channel"><option value="stable" data-t="stable">مستقرة</option><option value="canary" data-t="canary">تجريبية (تصل أولاً)</option></select>
 </section>
+</div>
 
 <div id="msg"></div>
 <button id="save" data-t="save">حفظ</button>
@@ -440,6 +478,7 @@ button{font:inherit;border:1px solid var(--line);background:var(--bg);color:var(
     pForecast: 'Weather, next days', pMatches: 'Your teams', pShows: 'New episodes', pTasks: 'Household tasks', pDinner: "Tonight's dinner", pNone: 'No card', omanDays: 'Oman National Day and Khareef season',
     tasks: 'Household tasks', taskText: 'The task, e.g. water the plants', taskWho: 'For whom (optional)', taskWhen: 'When (optional)', add: 'Add',
     tasksHint: 'Everyone at home sees them on the screen until you mark them done or delete them; they are kept on the TV only. Press Save after editing.', done: 'Done',
+    tabBasic: 'Basics', tabScreen: 'Screen', tabHome: 'Home', tabAdvanced: 'Advanced', fine: 'Fine-tune prayer times', fineLink: 'Adjust prayer and iqama minutes…',
     dinnerPlan: 'Dinner plan', dinnerApply: 'Apply the code', dinnerClear: 'Remove the plan', dinnerCode: 'LBN1.…',
     dinnerHint: 'From the Smart Dinner guide (dinner.bassamailab.xyz) → More → «Copy Luban code», then paste it here. The code is one full cycle of the plan and the screen repeats it by itself, so paste again only when the dishes or times change. Press Save after applying.',
     dinnerNone: 'No plan yet', dinnerBad: 'That is not a Luban code from the dinner guide.',
@@ -560,7 +599,7 @@ button{font:inherit;border:1px solid var(--line);background:var(--bg);color:var(
   function renderDinner() {
     const d = S.dinner;
     $('dinner-state').textContent = !d ? t('dinnerNone')
-      : lang === 'ar' ? `خطة من ${d.n} ليلة، أول عشاء فيها ${d.st}. تعيد الشاشة دورتها وحدها.` : `A ${d.n}-night plan, first dinner ${d.st}. The screen repeats the cycle by itself.`;
+      : lang === 'ar' ? `خطة من ${d.n} ليلة، أول عشاء فيها ⁦${d.st}⁩. تعيد الشاشة دورتها وحدها.` : `A ${d.n}-night plan, first dinner ${d.st}. The screen repeats the cycle by itself.`;
   }
   async function applyDinner() {
     const msg = $('msg'); msg.className = '';
@@ -603,7 +642,6 @@ button{font:inherit;border:1px solid var(--line);background:var(--bg);color:var(
     const box = $('preview'); box.textContent = '';
     const names = lang === 'ar' ? ['الفجر', 'الشروق', 'الظهر', 'العصر', 'المغرب', 'العشاء'] : ['Fajr', 'Sunrise', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
     PR.forEach((k, i) => { const c = h('div'); c.append(h('span', {}, names[i]), h('b', { dir: 'ltr' }, hhmm(tm[k]))); box.append(c); });
-    $('sub').textContent = `${p[lang]} · ${p.tz} · ${METHODS[p.method].label[lang]}`;
     $('custom').hidden = $('city').value !== 'custom';
   }
 
@@ -629,21 +667,57 @@ button{font:inherit;border:1px solid var(--line);background:var(--bg);color:var(
       if (!r.ok) throw new Error(await r.text());
       S = sanitize(await r.json(), METHODS); msg.textContent = t('saved'); msg.className = 'ok';
       if (S.lang !== lang) fill();
+      mark();
     } catch (e) { msg.textContent = t('failed') + e.message; msg.className = 'err'; }
     setTimeout(() => { msg.className = ''; }, 4000);
   }
 
+  // ---------- four tabs, a strip of what is set, and a dot on Save when something is not saved yet
+  const TABS = ['basic', 'screen', 'home', 'advanced'];
+  function showTab(id) {
+    TABS.forEach(k => { const on = k === id; $('p-' + k).hidden = !on; $('tab-' + k).setAttribute('aria-selected', on); $('tab-' + k).tabIndex = on ? 0 : -1; });
+    window.scrollTo(0, 0);
+  }
+  /** #tasks and #dinner (from the TV's buttons) land on the Home tab at that section. */
+  function openFromHash() {
+    const k = location.hash.slice(1), home = { tasks: 'tasks-section', dinner: 'dinner-section' };
+    if (home[k]) { showTab('home'); $(home[k]).scrollIntoView(); }
+    else if (TABS.includes(k)) showTab(k);
+  }
+  function strip() {
+    const s = collect(), p = resolvePlace(s, DATA.cities), box = $('strip');
+    const open = s.tasks.filter(x => !x.done).length, ar = lang === 'ar';
+    const panel = $('panel').options[$('panel').selectedIndex];
+    const n = open === 1 ? 'مهمة مفتوحة' : open === 2 ? 'مهمتان مفتوحتان' : open <= 10 ? `${open} مهام مفتوحة` : `${open} مهمة مفتوحة`;
+    const items = [panel ? panel.textContent : '',
+      ar ? (open ? n : 'لا مهام') : (open ? `${open} open task${open > 1 ? 's' : ''}` : 'no tasks'),
+      s.dinner ? (ar ? `عشاء: ${s.dinner.n} ليلة` : `dinner: ${s.dinner.n} nights`) : (ar ? 'لا خطة عشاء' : 'no dinner plan')];
+    box.textContent = ''; items.forEach(x => box.append(h('span', {}, x)));
+  }
+  let saved = '';
+  const mark = () => { saved = JSON.stringify(collect()); $('save').classList.remove('dirty'); };
+  const checkDirty = () => { strip(); $('save').classList.toggle('dirty', JSON.stringify(collect()) !== saved); };
+
   async function start() {
     try { const r = await fetch(BASE + 'settings.json'); S = sanitize(await r.json(), METHODS); } catch (e) { S = sanitize(DEFAULTS, METHODS); }
-    fill();
+    fill(); mark(); strip();
     ['city', 'method', 'asr', 'hijri', 'c-lat', 'c-lon', 'c-tz'].forEach(id => $(id).addEventListener('input', preview));
     $('lang').addEventListener('change', () => { S = collect(); fill(); });
     $('tgo').onclick = searchTeams; $('tq').addEventListener('keydown', e => { if (e.key === 'Enter') searchTeams(); });
     $('tadd').onclick = addTask; $('tt').addEventListener('keydown', e => { if (e.key === 'Enter') addTask(); });
     $('dapply').onclick = applyDinner; $('dclear').onclick = () => { S.dinner = null; renderDinner(); };
     $('save').onclick = save;
-    // the home screen's «مهام البيت» button opens the QR code with #tasks: land on the tasks
-    if (location.hash === '#tasks') $('tasks-section').scrollIntoView();
+    TABS.forEach((k, i) => {
+      $('tab-' + k).onclick = () => { showTab(k); history.replaceState(null, '', '#' + k); };
+      $('tab-' + k).addEventListener('keydown', e => {   // arrows move between the tabs (the page reads right to left in Arabic)
+        const d = { ArrowLeft: lang === 'ar' ? 1 : -1, ArrowRight: lang === 'ar' ? -1 : 1 }[e.key];
+        if (d) { const n = TABS[(i + d + TABS.length) % TABS.length]; showTab(n); $('tab-' + n).focus(); e.preventDefault(); }
+      });
+    });
+    $('tofine').onclick = () => { showTab('advanced'); $('fine').open = true; $('fine').scrollIntoView(); };
+    ['input', 'change', 'click'].forEach(ev => document.addEventListener(ev, () => setTimeout(checkDirty, 0)));
+    // the home screen's «مهام البيت» button opens the QR code with #tasks
+    openFromHash();
   }
   start();
 })();
