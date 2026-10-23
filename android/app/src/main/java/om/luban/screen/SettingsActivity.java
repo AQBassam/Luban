@@ -93,8 +93,9 @@ public class SettingsActivity extends Activity {
         mark.setBackground(new LubanMark());
         brand.addView(mark, new LinearLayout.LayoutParams(dp(48), dp(48)));
         TextView name = label("لُبان", 42, bold, INK, 0);
-        name.setPaddingRelative(dp(12), 0, 0, 0);
-        brand.addView(name);
+        LinearLayout.LayoutParams nl = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        nl.setMarginStart(dp(24));   // El Messiri's letters reach past their box: a margin, not padding, keeps them off the ring
+        brand.addView(name, nl);
         text.addView(brand);
 
         text.addView(label("امسح الرمز بكاميرا جوالك", 30, bold, INK, 18));
@@ -110,6 +111,7 @@ public class SettingsActivity extends Activity {
         url.setTextAlignment(View.TEXT_ALIGNMENT_TEXT_START);
         url.setBackground(glass(11));
         url.setPadding(dp(14), dp(9), dp(14), dp(9));
+        url.setLineSpacing(0, 1f);
         LinearLayout.LayoutParams ul = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         ul.topMargin = dp(18);
         text.addView(url, ul);
@@ -157,6 +159,7 @@ public class SettingsActivity extends Activity {
         qrCol.addView(frame);
         TextView caption = label("الجوال والتلفزيون على الشبكة نفسها\nPhone and TV on the same network", 14, regular, INK2, 14);
         caption.setGravity(Gravity.CENTER_HORIZONTAL);
+        caption.setLineSpacing(0, 1.05f);
         qrCol.addView(caption);
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         lp.setMarginStart(dp(56));
