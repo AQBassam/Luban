@@ -17,15 +17,20 @@ import android.graphics.drawable.Drawable;
 final class SeaChart extends Drawable {
     private final Paint fill = new Paint(), line = new Paint(Paint.ANTI_ALIAS_FLAG), wave = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Path waves = new Path();
+    private final float fx, fy;   // where the rose is, as fractions of the width and height
 
-    SeaChart() {
+    SeaChart() { this(.28f, .45f); }
+
+    SeaChart(float fx, float fy) {
+        this.fx = fx;
+        this.fy = fy;
         line.setStyle(Paint.Style.STROKE);
         wave.setStyle(Paint.Style.STROKE);
     }
 
     @Override
     protected void onBoundsChange(Rect b) {
-        fill.setShader(new RadialGradient(b.width() * .28f, b.height() * .45f, Math.max(b.width(), b.height()) * .75f,
+        fill.setShader(new RadialGradient(b.width() * fx, b.height() * fy, Math.max(b.width(), b.height()) * .75f,
             Ui.SEA, Ui.DEEP, Shader.TileMode.CLAMP));
         waves.reset();
         float step = b.width() / 16f, amp = b.height() / 160f;
@@ -40,7 +45,7 @@ final class SeaChart extends Drawable {
     public void draw(Canvas c) {
         Rect b = getBounds();
         c.drawRect(b, fill);
-        float cx = b.width() * .28f, cy = b.height() * .45f, len = b.width() + b.height();
+        float cx = b.width() * fx, cy = b.height() * fy, len = b.width() + b.height();
         line.setStrokeWidth(Math.max(1, b.width() / 1600f));
         for (int i = 0; i < 32; i++) {
             double a = i / 32.0 * 2 * Math.PI;

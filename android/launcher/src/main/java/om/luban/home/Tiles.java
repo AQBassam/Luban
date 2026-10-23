@@ -23,9 +23,15 @@ final class Tiles {
 
     /** A tile of the given height; the caller sizes and places it. {@code changed} runs after the favourites change. */
     static FrameLayout app(Activity c, Apps.App a, List<Apps.App> apps, int heightDp, String tag, Runnable changed) {
+        return app(c, a, apps, heightDp, tag, changed, false);
+    }
+
+    /** {@code favourite}: a resin dot in the corner, for the all-apps page (on the home screen every tile is one). */
+    static FrameLayout app(Activity c, Apps.App a, List<Apps.App> apps, int heightDp, String tag, Runnable changed, boolean favourite) {
         FrameLayout t = new FrameLayout(c);
         t.setTag(tag);
         t.setClipToOutline(true);
+        t.setElevation(Ui.dp(c, 3));   // a soft shadow: the tile lies on the chart, not printed on it
         Ui.focusable(t, Ui.glass(c, 12));
         ImageView img = new ImageView(c);
         img.setImageDrawable(Apps.art(c, a));
@@ -45,6 +51,18 @@ final class Tiles {
             FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(-1, -2, Gravity.BOTTOM);
             lp.setMargins(Ui.dp(c, 6), 0, Ui.dp(c, 6), Ui.dp(c, 6));
             t.addView(label, lp);
+        }
+        if (favourite) {
+            GradientDrawable d = new GradientDrawable();
+            d.setShape(GradientDrawable.OVAL);
+            d.setColor(Ui.LUBAN);
+            d.setStroke(Ui.dp(c, 1.5f), Ui.DEEP);
+            android.view.View dot = new android.view.View(c);
+            dot.setBackground(d);
+            int s = Ui.dp(c, 8);
+            FrameLayout.LayoutParams dl = new FrameLayout.LayoutParams(s, s, Gravity.TOP | Gravity.START);
+            dl.setMargins(Ui.dp(c, 6), Ui.dp(c, 6), Ui.dp(c, 6), 0);
+            t.addView(dot, dl);
         }
         t.setContentDescription(a.label);
         t.setOnClickListener(v -> Apps.open(c, a));
