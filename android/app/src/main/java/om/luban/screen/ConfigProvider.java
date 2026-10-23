@@ -52,6 +52,14 @@ public class ConfigProvider extends ContentProvider {
             o.put("iqama", s.optJSONObject("iqama") != null ? s.optJSONObject("iqama") : new JSONObject());
             o.put("bg", "photos".equals(s.optString("bg")) ? "photos" : "chart");
             o.put("hijriOffset", Math.max(-2, Math.min(2, s.optInt("hijriOffset", 0))));
+            // how many household tasks are open, for the badge on the home screen's button; the tasks themselves stay here
+            org.json.JSONArray tasks = s.optJSONArray("tasks");
+            int open = 0;
+            if (tasks != null) for (int i = 0; i < tasks.length(); i++) {
+                JSONObject t = tasks.optJSONObject(i);
+                if (t != null && !t.optBoolean("done", false)) open++;
+            }
+            o.put("openTasks", open);
             c.addRow(new Object[] {o.toString()});
         } catch (Exception ignored) { }
         return c;

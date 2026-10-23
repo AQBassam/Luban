@@ -176,6 +176,7 @@ public class HomeActivity extends Activity {
 
         LinearLayout time = new LinearLayout(this);
         time.setOrientation(LinearLayout.VERTICAL);
+        time.setClipChildren(false);   // the prayer pill's edge stands out past the column (below)
         greeting = Ui.text(this, "", 16, Ui.medium(), Ui.LUBAN_SOFT);   // good morning / good evening
         time.addView(greeting, new LinearLayout.LayoutParams(-2, -2));
         // the clock, then صباحًا / مساءً after it in reading order (to its left in Arabic, AM/PM to its right in English)
@@ -201,10 +202,12 @@ public class HomeActivity extends Activity {
         card = new PrayerCard(this);
         LinearLayout.LayoutParams cl = new LinearLayout.LayoutParams(-2, -2);
         cl.topMargin = Ui.dp(this, 10);
+        // the pill's own padding hangs outside the column, so its dial starts on the line of the words above it
+        cl.setMarginStart(-Ui.dp(this, 8));
         time.addView(card.view, cl);
         FrameLayout.LayoutParams tl = new FrameLayout.LayoutParams(-2, -2, Gravity.TOP | Gravity.START);
         tl.setMarginStart(side);
-        tl.topMargin = top;
+        tl.topMargin = top + Ui.dp(this, 40 + 28);   // under the row of buttons: one line of controls at the top
         root.addView(time, tl);
 
         // five pills, an icon then its name: household tasks (with how many are open), network, inputs, screensaver, settings
@@ -380,12 +383,7 @@ public class HomeActivity extends Activity {
                 arabicDigits = "arab".equals(o.optString("digits"));
                 clock24 = o.optBoolean("clock24", false);
                 hijriOffset = Math.max(-2, Math.min(2, o.optInt("hijriOffset", 0)));
-                org.json.JSONArray tasks = o.optJSONArray("tasks");
-                openTasks = 0;
-                if (tasks != null) for (int i = 0; i < tasks.length(); i++) {
-                    org.json.JSONObject t = tasks.optJSONObject(i);
-                    if (t != null && !t.optBoolean("done", false)) openTasks++;
-                }
+                openTasks = Math.max(0, Math.min(99, o.optInt("openTasks", 0)));   // the count only (ConfigProvider)
             }
         } catch (Exception ignored) { }
     }
@@ -397,11 +395,8 @@ public class HomeActivity extends Activity {
         clock.setText(Ui.digits(hh + ":" + (m < 10 ? "0" : "") + m, arabicDigits));
         ampm.setText(clock24 ? "" : h < 12 ? (ar ? "صباحًا" : "AM") : (ar ? "مساءً" : "PM"));
         clockLine.setLayoutDirection(ar ? View.LAYOUT_DIRECTION_RTL : View.LAYOUT_DIRECTION_LTR);
-        // morning is from Fajr to Dhuhr (at one in the night it is still evening); without prayer times, from 4 to noon
-        double[] fd = card.morning();
-        double mins = fd != null ? card.nowMinutes() : h * 60 + m;
-        boolean morning = fd != null ? mins >= fd[0] && mins < fd[1] : h >= 4 && h < 12;
-        greeting.setText(morning ? (ar ? "صباح الخير" : "Good morning") : (ar ? "مساء الخير" : "Good evening"));
+        // the greeting follows صباحًا / مساءً beside the clock, so the two never disagree
+        greeting.setText(h < 12 ? (ar ? "صباح الخير" : "Good morning") : (ar ? "مساء الخير" : "Good evening"));
         // the day, the Hijri date, then the Gregorian: الخميس 11 جمادى الأولى 1448 هـ · 22 أكتوبر 2026 م
         String nu = arabicDigits ? "arab" : "latn";
         ULocale greg = new ULocale((ar ? "ar_OM" : "en_GB") + "@numbers=" + nu);
