@@ -52,6 +52,9 @@ was 1.22).
 | Prayer times | Sohar matches the Ministry's calendar app to the minute (Fajr, Dhuhr, Asr, Maghrib, Isha) |
 | Match card | A Latin home name (Como 1907) pulled the score to the wrong side in Arabic; fixed after this test, the strip under the clock was already right |
 | Home screen | **Does not switch.** See below |
+| Luban home, opened by hand (22 October, v1.37) | Works: the anchored layout (greeting, clock, dates and prayer top right; five pills top left; one favourites row ending in an "All apps" tile), the all-apps page with six columns, the focus frame is no longer clipped at the row's ends, and focus stops at both ends. Fits 960×540 dp |
+| Household tasks | Work on the TV: the pill opens the phone page at `#tasks`, tasks show as a card page on the screensaver. Tried by writing settings over ADB and restoring them afterwards |
+| Photos | 52 photos from 17 places; the screensaver and the home screen show the same four each day. Home carries eight of them and reads the rest through the screen app's `content://` provider (not yet seen on the TV: the first such day is 24 October) |
 | Ads/telemetry off | Works, run on its own (`debloat`) after the home step failed. 6 of the 17 listed packages are on this TV and were turned off: `feedback`, `partnersetup`, `onetimeinitializer`, `play.games`, `autoinstalls.config.google.gtvpai`, and Google's screensaver `dreamx` |
 | Animation speed | Works: animations at 0.5x, cached-app freezer on |
 | Remote and Input button | Work after the above (Home, navigation, Input) |
@@ -68,3 +71,5 @@ pressed, nothing was disabled. Checked on the TV by hand, each step undone strai
   tried: the next home in line is setupwraith's `RecoveryActivity` (priority 1, above Luban's), not Luban's.
 
 On this TV the screensaver is the supported part. Luban's home can still be opened by hand as an app.
+
+The one route not tried is an accessibility service that catches the Home button, which is what Couchy Launcher recommends for Google TV. It would make Luban the real home on this firmware without disabling `launcherx`; it has not been built.

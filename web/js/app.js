@@ -456,14 +456,57 @@
   }
   const shownMarkets = () => S.markets.filter(id => state.markets[id] && MARKETS[id]);
   const openTasks = () => S.tasks.filter(x => !x.done);
+
+  // ---------- the dinner plan from SmartDinner: one cycle of nights that the screen repeats by itself
+  const DAY_MS = 864e5;
+  /** Today in the plan: tonight's and tomorrow's dinner and the day's tasks by time, or null before the plan starts. */
+  function dinnerToday() {
+    const D = S.dinner;
+    if (!D) return null;
+    const l = local(), s0 = Date.parse(D.st + 'T00:00:00Z');
+    const diff = Math.round((Date.UTC(l.y, l.m - 1, l.d) - s0) / DAY_MS);
+    if (diff < -1) return null;
+    const hm = x => +x.slice(0, 2) * 60 + +x.slice(3);
+    // the tasks name a night's weekday as {n}: it moves from one cycle to the next, so it is filled in here
+    const wd = new Intl.DateTimeFormat('ar', { weekday: 'long', timeZone: 'UTC' });
+    const fill = (txt, cyc) => txt.replace(/\{(\d{1,2})\}/g, (m, n) => wd.format(new Date(s0 + (cyc * D.n + (+n) - 1) * DAY_MS)));
+    const k = diff < 0 ? -1 : diff % D.n, c = diff < 0 ? 0 : Math.floor(diff / D.n);
+    const day = k < 0 ? {} : D.d[k];
+    const next = k < 0 || k === D.n - 1 ? D.p : null;   // the day before a first dinner: the shopping and prep for night 1
+    const parts = [[day, c]];
+    if (next) parts.push([next, k < 0 ? 0 : c + 1]);
+    const tasks = [];
+    for (const [d, cyc] of parts) {
+      if (d.b) tasks.push({ at: hm(D.sh), text: T.shopTrip(d.b), min: 0 });
+      for (const [slot, at] of [['s', D.sh], ['a', D.ask], ['e', D.prep]]) for (const [txt, min] of d[slot] || []) tasks.push({ at: hm(at), text: fill(txt, cyc), min });
+    }
+    tasks.sort((a, b) => a.at - b.at);
+    return { tonight: day.r || null, tomorrow: (next ? next.m : day.m) || null, tasks };
+  }
+  /** The card's pages: tonight and tomorrow, then the day's tasks three at a time. */
+  function dinnerPages() {
+    const d = dinnerToday();
+    if (!d || !(d.tonight || d.tomorrow || d.tasks.length)) return [];
+    const pages = [];
+    if (d.tonight || d.tomorrow) pages.push({ title: T.dinner, rows: [
+      d.tonight && [`${d.tonight[1]} ${d.tonight[0]}`.trim(), `${T.startCooking} ${fmtTime(+d.tonight[2].slice(0, 2) * 60 + +d.tonight[2].slice(3))}`],
+      d.tomorrow && [`${d.tomorrow[1]} ${d.tomorrow[0]}`.trim(), T.tomorrow]].filter(Boolean) });
+    for (let i = 0; i < d.tasks.length; i += 3) pages.push({ title: T.dinnerTasks, tasks: d.tasks.slice(i, i + 3) });
+    return pages;
+  }
   /**
    * Prices and household tasks are extra pages of the card: after 60 s of the chosen panel, 20 s for each of them
    * (with no panel chosen, they take turns). Tasks chosen as the panel show all the time instead.
    */
-  function extraPage() {
+  function extraList() {
     const extra = [];
+    if (S.panel !== 'dinner' && dinnerPages().length) extra.push('dinner');
     if (shownMarkets().length) extra.push('markets');
     if (openTasks().length && S.panel !== 'tasks') extra.push('tasks');
+    return extra;
+  }
+  function extraPage() {
+    const extra = extraList();
     if (!extra.length) return null;
     if (S.panel === 'none') return extra[state.page % extra.length];
     const p = state.page % (3 + extra.length);
@@ -597,7 +640,20 @@
     if (S.panel === 'none' && !extra) { card.hidden = true; return; }
     card.hidden = false; clear(body);
     if (animate) { body.classList.remove('fade'); void body.offsetWidth; body.classList.add('fade'); }
-    if (extra === 'tasks' || (!extra && S.panel === 'tasks')) {
+    if (extra === 'dinner' || (!extra && S.panel === 'dinner')) {
+      // chosen as the panel, the pages follow each other every 20 s; as a turn of the card, each turn shows the next one
+      const pages = dinnerPages();
+      const turn = S.panel === 'dinner' ? state.page : Math.floor(state.page / (S.panel === 'none' ? extraList().length : 3 + extraList().length));
+      const pg = pages[turn % Math.max(1, pages.length)];
+      title.textContent = pg ? pg.title : T.dinner;
+      if (!pg) body.append(h('div', 'empty', T.noDinner));
+      else if (pg.rows) body.append(rowsList(pg.rows, -1));
+      else {
+        const ul = h('ul', 'rows');
+        for (const x of pg.tasks) { const li = h('li', 'tk'); li.append(h('span', 'b', fmtTime(x.at)), h('span', 'a', x.text)); ul.append(li); }
+        body.append(ul);
+      }
+    } else if (extra === 'tasks' || (!extra && S.panel === 'tasks')) {
       title.textContent = T.tasks;
       const rows = openTasks().map(x => [x.t, [x.who, x.when].filter(Boolean).join(' · ')]);
       body.append(rows.length ? rowsList(rows, -1) : h('div', 'empty', T.noTasks));
@@ -709,7 +765,7 @@
       const was = extraPage();
       state.page++;
       const turned = extraPage() !== was;
-      if (turned || ['shows', 'prayers', 'matches'].includes(S.panel)) renderCard(turned || S.panel === 'shows');
+      if (turned || ['shows', 'prayers', 'matches', 'dinner'].includes(S.panel)) renderCard(turned || S.panel === 'shows' || S.panel === 'dinner');
     }, 20000);
     setInterval(applyPhoto, 60000);
     setInterval(shift, 180000);

@@ -1,6 +1,7 @@
 // The screen and the phone settings page in a real browser (Playwright + Chromium), network blocked, clock fixed.
 import { chromium } from 'playwright';
 import { createRequire } from 'module';
+import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -10,6 +11,8 @@ const P = require(path.join(ROOT, 'web/js/prayer.js'));
 const { sanitize } = require(path.join(ROOT, 'web/js/settings.js'));
 let fails = 0;
 const check = (name, ok, extra) => { console.log(`${ok ? 'PASS' : 'FAIL'} ${name}${ok || extra === undefined ? '' : ' — ' + JSON.stringify(extra)}`); if (!ok) fails++; };
+// a real plan from the dinner guide (SmartDinner's share.ts): 15 nights from 2026-10-20, and its code
+const { share: PLAN, code: PLAN_CODE } = JSON.parse(fs.readFileSync(path.join(ROOT, 'tests/dinner-fixture.json'), 'utf8'));
 const enc = s => Buffer.from(JSON.stringify(s)).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 
 // ---------- settings.js: the one gate for every value
@@ -32,6 +35,16 @@ const enc = s => Buffer.from(JSON.stringify(s)).toString('base64').replace(/\+/g
   const tk = sanitize({ tasks: [{ t: '  سقي الزرع  ', who: 'x'.repeat(40), when: 'الخميس', done: true, extra: 1 }, { t: '' }, { t: 5 }, 'x', ...many] }, P.METHODS).tasks;
   check('settings: tasks trimmed and capped (20, 80 chars, who/when 24), empty and odd ones dropped, unknown keys gone',
     tk.length === 20 && tk[0].t === 'سقي الزرع' && tk[0].who.length === 24 && tk[0].when === 'الخميس' && tk[0].done === true && !('extra' in tk[0]) && tk[1].done === false, tk.slice(0, 2));
+}
+
+// ---------- the dinner plan is checked like every other value
+{
+  const d = sanitize({ dinner: PLAN }, P.METHODS).dinner;
+  check('dinner: a plan from the guide passes unchanged', JSON.stringify(d) === JSON.stringify(PLAN));
+  const no = x => sanitize({ dinner: x }, P.METHODS).dinner === null;
+  check('dinner: wrong version, night count, time or date are refused', no({ ...PLAN, v: 2 }) && no({ ...PLAN, n: 14 }) && no({ ...PLAN, dn: '25:00' }) && no({ ...PLAN, st: '2026-13-40' }) && no('x') && no(null));
+  const big = sanitize({ dinner: { ...PLAN, d: PLAN.d.map(x => ({ ...x, r: ['<img src=x>'.repeat(20), '🍲'.repeat(9), '19:30'], a: Array.from({ length: 30 }, () => ['y'.repeat(900), 999]) })) } }, P.METHODS).dinner;
+  check('dinner: titles, tasks and minutes are capped', big.d[0].r[0].length === 80 && big.d[0].r[1].length === 8 && big.d[0].a.length === 12 && big.d[0].a[0][0].length === 400 && big.d[0].a[0][1] === 240);
 }
 
 // ---------- prayer engine against published times
@@ -271,6 +284,32 @@ for (const vp of [{ width: 1920, height: 1080 }, { width: 1280, height: 720 }]) 
   await page.close();
 }
 
+{
+  // the dinner plan: tonight and tomorrow, the day's tasks, and the cycle that starts again by itself
+  const card = async (when, panel = 'dinner') => { const p = await open({ panel, dinner: PLAN }, when); const t = await text(p, '#card'); await p.close(); return t; };
+  const a = await card('2026-10-21T05:10:00Z');   // night 2
+  check('dinner: tonight with the time to start cooking, and tomorrow', a.includes('عشاء الليلة') && a.includes('شوربة العدس الحمراء') && a.includes('ابدأ الطهي') && a.includes('كفتة اللحم') && a.includes('غداً'), a);
+  const b = await card('2026-11-04T05:10:00Z');   // 15 days later: the cycle has begun again
+  check('dinner: after the last night the first dinner returns', b.includes('شاورما الدجاج') && b.includes('شوربة العدس'), b);
+  const c = await card('2026-11-03T05:10:00Z');   // the last night: tomorrow is the next cycle's first
+  check('dinner: on the last night tomorrow is the first dish of the next cycle', c.includes('شاورما الدجاج المنزلية') && c.includes('غداً'), c);
+  const gone = await card('2026-10-17T05:10:00Z');
+  check('dinner: before the plan starts there is nothing to show', gone.includes('لا خطة عشاء'), gone);
+  const turn = await open({ panel: 'verse', dinner: PLAN });
+  const before = await text(turn, '#card-title');
+  await turn.clock.runFor(60000);
+  const after = await text(turn, '#card-title');
+  check('dinner: with a verse chosen, the card turns to the dinner after 60 s', before !== 'عشاء الليلة' && after === 'عشاء الليلة', [before, after]);
+  await turn.close();
+  // the day before the first dinner is the shopping day: tasks by time, the weekday of each night filled in for this cycle
+  const eve = await open({ panel: 'dinner', dinner: PLAN }, '2026-10-19T05:10:00Z');
+  let all = await text(eve, '#card');
+  for (let i = 0; i < 4; i++) { await eve.clock.runFor(20000); all += ' | ' + await text(eve, '#card'); }
+  check('dinner: shopping day lists its tasks, with real weekdays instead of {n}', all.includes('رحلة التسوق') && all.includes('(الخميس)') && !/\{\d+\}/.test(all), all);
+  check('dinner: no script errors', eve.errors.length === 0, eve.errors);
+  await eve.close();
+}
+
 // ---------- the phone settings page
 {
   const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
@@ -290,6 +329,14 @@ for (const vp of [{ width: 1920, height: 1080 }, { width: 1280, height: 720 }]) 
   const rows = await page.$$eval('#tasks .team', r => r.map(x => x.textContent));
   check('phone: household tasks are added (button or Enter), who shown beside them', rows.length === 2 && rows[0].includes('أحمد') && !(await page.inputValue('#tt')), rows);
   check('phone: still no sideways scrolling with tasks', await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth));
+  await page.fill('#dcode', 'LBN1.not-a-plan'); await page.click('#dapply');
+  await page.waitForFunction(() => document.getElementById('msg').textContent.includes('ليس رمز لُبان'));
+  check('phone: a code that is not a plan is refused', (await page.textContent('#msg')).includes('ليس رمز لُبان') && (await page.textContent('#dinner-state')).includes('لا خطة'));
+  await page.fill('#dcode', PLAN_CODE); await page.click('#dapply');
+  await page.waitForFunction(() => document.getElementById('dinner-state').textContent.includes('15 ليلة'));
+  check('phone: the pasted code becomes a plan, with the box cleared', (await page.inputValue('#dcode')) === '' && (await page.textContent('#dinner-state')).includes('2026-10-20'));
+  await page.click('#dclear');
+  check('phone: the plan can be removed', (await page.textContent('#dinner-state')).includes('لا خطة'));
   await page.selectOption('#lang', 'en');
   check('phone: switches to English', (await page.textContent('#save')) === 'Save');
   await page.close();

@@ -4,7 +4,7 @@
 (function () {
   'use strict';
   const { METHODS, compute, hhmm } = window.LubanPrayer;
-  const { sanitize, resolvePlace, DEFAULTS } = window.LubanSettings;
+  const { sanitize, sanitizeDinner, resolvePlace, DEFAULTS } = window.LubanSettings;
   const DATA = window.LUBAN_DATA;
   const $ = id => document.getElementById(id);
   const h = (tag, attrs, text) => { const e = document.createElement(tag); Object.assign(e, attrs || {}); if (text != null) e.textContent = text; return e; };
@@ -16,16 +16,19 @@
     tz: 'Time zone (IANA)', lang: 'Language', digits: 'Digits', clock24: '24-hour clock', prayer: 'Prayer', method: 'Calculation method', asr: 'Asr',
     asrStd: 'Standard (shadow ×1)', asrHan: 'Hanafi (shadow ×2)', offsets: 'Adjust in minutes (to match the local calendar)', iqama: 'Iqama, minutes after adhan',
     hijri: 'Hijri date adjustment', screen: 'Screen', panel: 'Card beside the clock', pVerse: 'Verse or hadith of the day', pPrayers: "Today's prayers and iqama",
-    pForecast: 'Weather, next days', pMatches: 'Your teams', pShows: 'New episodes', pTasks: 'Household tasks', pNone: 'No card', omanDays: 'Oman National Day and Khareef season',
+    pForecast: 'Weather, next days', pMatches: 'Your teams', pShows: 'New episodes', pTasks: 'Household tasks', pDinner: "Tonight's dinner", pNone: 'No card', omanDays: 'Oman National Day and Khareef season',
     tasks: 'Household tasks', taskText: 'The task, e.g. water the plants', taskWho: 'For whom (optional)', taskWhen: 'When (optional)', add: 'Add',
     tasksHint: 'Everyone at home sees them on the screen until you mark them done or delete them; they are kept on the TV only. Press Save after editing.', done: 'Done',
+    dinnerPlan: 'Dinner plan', dinnerApply: 'Apply the code', dinnerClear: 'Remove the plan', dinnerCode: 'LBN1.…',
+    dinnerHint: 'From the Smart Dinner guide (dinner.bassamailab.xyz) → More → «Copy Luban code», then paste it here. The code is one full cycle of the plan and the screen repeats it by itself, so paste again only when the dishes or times change. Press Save after applying.',
+    dinnerNone: 'No plan yet', dinnerBad: 'That is not a Luban code from the dinner guide.',
     night: 'Dim at night', sources: 'Data sources', bg: 'Background', bgChart: 'The sea chart', bgPhotos: 'Photos of Oman', homeCard: 'Prayer card on the home screen', markets: 'Markets', teams: 'Your teams', search: 'Search',
     teamsHint: 'Up to 10 teams from the major European and Brazilian leagues, the Champions League, the World Cup and the Euros (football-data.org). Edit the Arabic name as you like it shown.', shows: 'TV shows', genres: 'Genres (empty = all)', minRating: 'Minimum rating',
     advanced: 'Advanced', api: 'Data server (optional)', channel: 'Update channel', stable: 'Stable', canary: 'Canary (gets updates first)', save: 'Save',
     saved: 'Saved. The screen updates now.', failed: 'Not saved: ', custom: 'Other place…', default: 'Country default', teamSearch: 'Search in English: Real Madrid, Liverpool, Flamengo…',
     gold: 'Gold, global reference price (OMR/g)', brent: 'Brent oil', btc: 'Bitcoin', spx: 'S&P 500', noHits: 'No team found',
   };
-  const AR = { done: 'تمت', custom: 'مكان آخر…', default: 'حسب البلد', saved: 'حُفظت. الشاشة تتحدث الآن.', failed: 'لم تُحفظ: ', gold: 'الذهب، سعر عالمي استرشادي (ر.ع/غ)', brent: 'نفط برنت', btc: 'بيتكوين', spx: 'S&P 500', noHits: 'لا نتائج' };
+  const AR = { dinnerNone: 'لا خطة بعد', dinnerBad: 'هذا ليس رمز لُبان من دليل العشاء.', done: 'تمت', custom: 'مكان آخر…', default: 'حسب البلد', saved: 'حُفظت. الشاشة تتحدث الآن.', failed: 'لم تُحفظ: ', gold: 'الذهب، سعر عالمي استرشادي (ر.ع/غ)', brent: 'نفط برنت', btc: 'بيتكوين', spx: 'S&P 500', noHits: 'لا نتائج' };
   let S = sanitize(null, METHODS), lang = 'ar';
   const t = k => lang === 'en' ? (EN[k] || k) : (AR[k] || (document.querySelector(`[data-t="${k}"]`) || {}).dataset?.ar || k);
 
@@ -117,6 +120,36 @@
     renderTasks();
   }
 
+  /** The dinner guide's code: LBN1. + base64url of the deflated JSON. Unpacked here; the TV only ever sees the checked plan. */
+  async function unpackDinner(code) {
+    const c = code.trim();
+    if (!/^LBN1\.[A-Za-z0-9_-]{8,30000}$/.test(c)) throw new Error('code');
+    const bytes = Uint8Array.from(atob(c.slice(5).replace(/-/g, '+').replace(/_/g, '/')), ch => ch.charCodeAt(0));
+    const reader = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('deflate-raw')).getReader();
+    const parts = []; let size = 0;
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      size += value.length;
+      if (size > 64 * 1024) { reader.cancel(); throw new Error('size'); }
+      parts.push(value);
+    }
+    return JSON.parse(await new Blob(parts).text());
+  }
+  function renderDinner() {
+    const d = S.dinner;
+    $('dinner-state').textContent = !d ? t('dinnerNone')
+      : lang === 'ar' ? `خطة من ${d.n} ليلة، أول عشاء فيها ${d.st}. تعيد الشاشة دورتها وحدها.` : `A ${d.n}-night plan, first dinner ${d.st}. The screen repeats the cycle by itself.`;
+  }
+  async function applyDinner() {
+    const msg = $('msg'); msg.className = '';
+    try {
+      const d = sanitizeDinner(await unpackDinner($('dcode').value));
+      if (!d) throw new Error('plan');
+      S.dinner = d; $('dcode').value = ''; renderDinner();
+    } catch (e) { msg.textContent = t('dinnerBad'); msg.className = 'err'; setTimeout(() => { msg.className = ''; }, 4000); }
+  }
+
   async function searchTeams() {
     const q = $('tq').value.trim(), box = $('hits'); box.textContent = '';
     if (q.length < 2) return;
@@ -164,7 +197,7 @@
     checks('markets', ['gold', 'brent', 'btc', 'spx'], S.markets, t);
     checks('genres', GENRES, S.shows.genres);
     $('minRating').value = String(S.shows.minRating); $('api').value = S.api; $('channel').value = S.channel;
-    renderTeams(); renderTasks(); preview();
+    renderTeams(); renderTasks(); renderDinner(); preview();
   }
 
   async function save() {
@@ -186,6 +219,7 @@
     $('lang').addEventListener('change', () => { S = collect(); fill(); });
     $('tgo').onclick = searchTeams; $('tq').addEventListener('keydown', e => { if (e.key === 'Enter') searchTeams(); });
     $('tadd').onclick = addTask; $('tt').addEventListener('keydown', e => { if (e.key === 'Enter') addTask(); });
+    $('dapply').onclick = applyDinner; $('dclear').onclick = () => { S.dinner = null; renderDinner(); };
     $('save').onclick = save;
     // the home screen's «مهام البيت» button opens the QR code with #tasks: land on the tasks
     if (location.hash === '#tasks') $('tasks-section').scrollIntoView();

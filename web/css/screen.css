@@ -97,6 +97,10 @@ body:not(.ltr) #ampm{-webkit-box-ordinal-group:0;order:-1;margin-left:0;margin-r
 .rows .a{font-weight:500;margin-left:2rem}
 body.ltr .rows .a{margin-left:0;margin-right:2rem}
 .rows .b{color:var(--ink-2);white-space:nowrap}
+.rows li.tk{justify-content:flex-start;align-items:flex-start}
+.rows li.tk .b{flex:0 0 auto;min-width:9.5rem;margin-left:2rem;color:var(--resin)}
+body.ltr .rows li.tk .b{margin-left:0;margin-right:2rem}
+.rows li.tk .a{margin:0;font-size:2.1rem;line-height:1.45;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
 .rows li.now .a,.rows li.now .b{color:var(--foam)}
 .empty{color:var(--ink-3)}
 

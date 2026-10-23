@@ -105,6 +105,10 @@ body:not(.ltr) #ampm{-webkit-box-ordinal-group:0;order:-1;margin-left:0;margin-r
 .rows .a{font-weight:500;margin-left:2rem}
 body.ltr .rows .a{margin-left:0;margin-right:2rem}
 .rows .b{color:var(--ink-2);white-space:nowrap}
+.rows li.tk{justify-content:flex-start;align-items:flex-start}
+.rows li.tk .b{flex:0 0 auto;min-width:9.5rem;margin-left:2rem;color:var(--resin)}
+body.ltr .rows li.tk .b{margin-left:0;margin-right:2rem}
+.rows li.tk .a{margin:0;font-size:2.1rem;line-height:1.45;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
 .rows li.now .a,.rows li.now .b{color:var(--foam)}
 .empty{color:var(--ink-3)}
 
@@ -332,7 +336,7 @@ body.night .smoke{opacity:.4;animation:none}
  * and every value is checked against what it may be. */
 (function (root) {
   'use strict';
-  const PANELS = ['verse', 'prayers', 'forecast', 'matches', 'shows', 'tasks', 'none'];
+  const PANELS = ['verse', 'prayers', 'forecast', 'matches', 'shows', 'tasks', 'dinner', 'none'];
   const MARKETS = ['gold', 'brent', 'btc', 'spx'];
   const PRAYERS5 = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'];
 
@@ -353,6 +357,7 @@ body.night .smoke{opacity:.4;animation:none}
     teams: [],                  // [{id, en, ar}] football-data.org team ids, priority order
     markets: ['gold', 'brent', 'btc', 'spx'],
     tasks: [],                  // [{t, who, when, done}] household tasks, written on the phone page, kept on this TV only
+    dinner: null,               // the dinner plan from SmartDinner (one cycle, which repeats): see sanitizeDinner(). Pasted on the phone page
     shows: { genres: [], langs: [], minRating: 7 },
     omanDays: true,             // National Day countdown, Khareef season
     night: true,                // dim after Isha until before Fajr
@@ -367,6 +372,31 @@ body.night .smoke{opacity:.4;animation:none}
     ? Math.min(hi, Math.max(lo, +x)) : null;
   const pick = (x, list, d) => list.includes(x) ? x : d;
   const validTz = tz => { try { new Intl.DateTimeFormat('en', { timeZone: tz }); return true; } catch (e) { return false; } };
+
+  // The dinner plan SmartDinner shares as a code (the phone page unpacks it): one cycle of nights, repeated by the screen.
+  // Day k has r (tonight: title, emoji, time to start), m (tomorrow), and the tasks s/a/e (shopping day, after lunch,
+  // evening) as [text, minutes]; p is the day before the first dinner. Texts are shown as text, never as markup.
+  const HHMM = /^([01]\d|2[0-3]):[0-5]\d$/;
+  const isoDate = x => typeof x === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(x) && !isNaN(Date.parse(x + 'T00:00:00Z'));
+  const dinnerTasks = a => Array.isArray(a)
+    ? a.filter(x => Array.isArray(x) && typeof x[0] === 'string' && x[0].trim()).slice(0, 12)
+        .map(x => [x[0].trim().slice(0, 400), Math.round(num(x[1], 0, 240) || 0)]) : [];
+  function dinnerDay(x) {
+    const o = {};
+    if (!isObj(x)) return o;
+    if (Array.isArray(x.r) && typeof x.r[0] === 'string' && x.r[0].trim() && HHMM.test(x.r[2])) o.r = [x.r[0].trim().slice(0, 80), str(x.r[1], 8) || '', x.r[2]];
+    if (Array.isArray(x.m) && typeof x.m[0] === 'string' && x.m[0].trim()) o.m = [x.m[0].trim().slice(0, 80), str(x.m[1], 8) || ''];
+    for (const k of ['s', 'a', 'e']) { const t = dinnerTasks(x[k]); if (t.length) o[k] = t; }
+    const b = num(x.b, 1, 10); if (b !== null) o.b = Math.round(b);
+    return o;
+  }
+  function sanitizeDinner(x) {
+    if (!isObj(x) || x.v !== 1) return null;
+    const n = num(x.n, 1, 21);
+    if (n === null || n !== Math.round(n) || !isoDate(x.st) || !Array.isArray(x.d) || x.d.length !== n) return null;
+    if (![x.dn, x.ask, x.prep, x.sh].every(t => typeof t === 'string' && HHMM.test(t))) return null;
+    return { v: 1, n, st: x.st, dn: x.dn, ask: x.ask, prep: x.prep, sh: x.sh, d: x.d.map(dinnerDay), p: dinnerDay(x.p) };
+  }
 
   function sanitize(input, methods) {
     const s = JSON.parse(JSON.stringify(DEFAULTS));
@@ -400,6 +430,7 @@ body.night .smoke{opacity:.4;animation:none}
       s.tasks = input.tasks.filter(x => isObj(x) && typeof x.t === 'string' && x.t.trim()).slice(0, 20)
         .map(x => ({ t: x.t.trim().slice(0, 80), who: (str(x.who, 24) || '').trim(), when: (str(x.when, 24) || '').trim(), done: x.done === true }));
     }
+    s.dinner = sanitizeDinner(input.dinner);
     if (isObj(input.shows)) {
       const sh = input.shows;
       if (Array.isArray(sh.genres)) s.shows.genres = sh.genres.filter(g => typeof g === 'string' && /^[A-Za-z-]{2,20}$/.test(g)).slice(0, 16);
@@ -427,7 +458,7 @@ body.night .smoke{opacity:.4;animation:none}
              method: s.method || country.method || 'mwl' };
   }
 
-  root.LubanSettings = { DEFAULTS, PANELS, MARKETS, sanitize, resolvePlace };
+  root.LubanSettings = { DEFAULTS, PANELS, MARKETS, sanitize, sanitizeDinner, resolvePlace };
   if (typeof module !== 'undefined' && module.exports) module.exports = root.LubanSettings;
 })(typeof window !== 'undefined' ? window : globalThis);
 
@@ -445,6 +476,7 @@ body.night .smoke{opacity:.4;animation:none}
       verse: 'آية اليوم', hadith: 'حديث اليوم', prayersToday: 'مواقيت اليوم', forecast: 'الأيام القادمة',
       matches: 'مباريات فرقك', shows: 'جديد المسلسلات هذا الأسبوع', noData: 'لا تتوفر بيانات الآن',
       noMatches: 'لا مباريات قريبة', noShows: 'لا جديد هذا الأسبوع', iqama: 'الإقامة', tasks: 'مهام البيت', noTasks: 'لا مهام الآن',
+      dinner: 'عشاء الليلة', dinnerTasks: 'مهام العشاء', startCooking: 'ابدأ الطهي', noDinner: 'لا خطة عشاء لهذا اليوم', shopTrip: n => `رحلة التسوق (الدفعة ${n})`,
       nationalDayIn: n => `اليوم الوطني العُماني بعد ${n}`, nationalDay: 'كل عام وعُمان بخير — اليوم الوطني',
       khareef: 'موسم خريف ظفار', ramadanDay: n => `رمضان — اليوم ${n}`, ramadanIn: n => `رمضان بعد ${n}`,
       eidFitrIn: n => `عيد الفطر بعد ${n}`, eidAdhaIn: n => `عيد الأضحى بعد ${n}`,
@@ -468,6 +500,7 @@ body.night .smoke{opacity:.4;animation:none}
       verse: 'Verse of the day', hadith: 'Hadith of the day', prayersToday: "Today's prayers", forecast: 'Next days',
       matches: 'Your teams', shows: 'New episodes this week', noData: 'No data right now',
       noMatches: 'No upcoming matches', noShows: 'Nothing new this week', iqama: 'Iqama', tasks: 'Household tasks', noTasks: 'No tasks now',
+      dinner: "Tonight's dinner", dinnerTasks: 'Dinner tasks', startCooking: 'Start cooking', noDinner: 'No dinner plan for today', shopTrip: n => `Shopping trip (batch ${n})`,
       nationalDayIn: n => `Oman National Day in ${n}`, nationalDay: 'Happy National Day, Oman',
       khareef: 'Dhofar Khareef season', ramadanDay: n => `Ramadan — day ${n}`, ramadanIn: n => `Ramadan in ${n}`,
       eidFitrIn: n => `Eid al-Fitr in ${n}`, eidAdhaIn: n => `Eid al-Adha in ${n}`,
@@ -945,14 +978,57 @@ body.night .smoke{opacity:.4;animation:none}
   }
   const shownMarkets = () => S.markets.filter(id => state.markets[id] && MARKETS[id]);
   const openTasks = () => S.tasks.filter(x => !x.done);
+
+  // ---------- the dinner plan from SmartDinner: one cycle of nights that the screen repeats by itself
+  const DAY_MS = 864e5;
+  /** Today in the plan: tonight's and tomorrow's dinner and the day's tasks by time, or null before the plan starts. */
+  function dinnerToday() {
+    const D = S.dinner;
+    if (!D) return null;
+    const l = local(), s0 = Date.parse(D.st + 'T00:00:00Z');
+    const diff = Math.round((Date.UTC(l.y, l.m - 1, l.d) - s0) / DAY_MS);
+    if (diff < -1) return null;
+    const hm = x => +x.slice(0, 2) * 60 + +x.slice(3);
+    // the tasks name a night's weekday as {n}: it moves from one cycle to the next, so it is filled in here
+    const wd = new Intl.DateTimeFormat('ar', { weekday: 'long', timeZone: 'UTC' });
+    const fill = (txt, cyc) => txt.replace(/\{(\d{1,2})\}/g, (m, n) => wd.format(new Date(s0 + (cyc * D.n + (+n) - 1) * DAY_MS)));
+    const k = diff < 0 ? -1 : diff % D.n, c = diff < 0 ? 0 : Math.floor(diff / D.n);
+    const day = k < 0 ? {} : D.d[k];
+    const next = k < 0 || k === D.n - 1 ? D.p : null;   // the day before a first dinner: the shopping and prep for night 1
+    const parts = [[day, c]];
+    if (next) parts.push([next, k < 0 ? 0 : c + 1]);
+    const tasks = [];
+    for (const [d, cyc] of parts) {
+      if (d.b) tasks.push({ at: hm(D.sh), text: T.shopTrip(d.b), min: 0 });
+      for (const [slot, at] of [['s', D.sh], ['a', D.ask], ['e', D.prep]]) for (const [txt, min] of d[slot] || []) tasks.push({ at: hm(at), text: fill(txt, cyc), min });
+    }
+    tasks.sort((a, b) => a.at - b.at);
+    return { tonight: day.r || null, tomorrow: (next ? next.m : day.m) || null, tasks };
+  }
+  /** The card's pages: tonight and tomorrow, then the day's tasks three at a time. */
+  function dinnerPages() {
+    const d = dinnerToday();
+    if (!d || !(d.tonight || d.tomorrow || d.tasks.length)) return [];
+    const pages = [];
+    if (d.tonight || d.tomorrow) pages.push({ title: T.dinner, rows: [
+      d.tonight && [`${d.tonight[1]} ${d.tonight[0]}`.trim(), `${T.startCooking} ${fmtTime(+d.tonight[2].slice(0, 2) * 60 + +d.tonight[2].slice(3))}`],
+      d.tomorrow && [`${d.tomorrow[1]} ${d.tomorrow[0]}`.trim(), T.tomorrow]].filter(Boolean) });
+    for (let i = 0; i < d.tasks.length; i += 3) pages.push({ title: T.dinnerTasks, tasks: d.tasks.slice(i, i + 3) });
+    return pages;
+  }
   /**
    * Prices and household tasks are extra pages of the card: after 60 s of the chosen panel, 20 s for each of them
    * (with no panel chosen, they take turns). Tasks chosen as the panel show all the time instead.
    */
-  function extraPage() {
+  function extraList() {
     const extra = [];
+    if (S.panel !== 'dinner' && dinnerPages().length) extra.push('dinner');
     if (shownMarkets().length) extra.push('markets');
     if (openTasks().length && S.panel !== 'tasks') extra.push('tasks');
+    return extra;
+  }
+  function extraPage() {
+    const extra = extraList();
     if (!extra.length) return null;
     if (S.panel === 'none') return extra[state.page % extra.length];
     const p = state.page % (3 + extra.length);
@@ -1086,7 +1162,20 @@ body.night .smoke{opacity:.4;animation:none}
     if (S.panel === 'none' && !extra) { card.hidden = true; return; }
     card.hidden = false; clear(body);
     if (animate) { body.classList.remove('fade'); void body.offsetWidth; body.classList.add('fade'); }
-    if (extra === 'tasks' || (!extra && S.panel === 'tasks')) {
+    if (extra === 'dinner' || (!extra && S.panel === 'dinner')) {
+      // chosen as the panel, the pages follow each other every 20 s; as a turn of the card, each turn shows the next one
+      const pages = dinnerPages();
+      const turn = S.panel === 'dinner' ? state.page : Math.floor(state.page / (S.panel === 'none' ? extraList().length : 3 + extraList().length));
+      const pg = pages[turn % Math.max(1, pages.length)];
+      title.textContent = pg ? pg.title : T.dinner;
+      if (!pg) body.append(h('div', 'empty', T.noDinner));
+      else if (pg.rows) body.append(rowsList(pg.rows, -1));
+      else {
+        const ul = h('ul', 'rows');
+        for (const x of pg.tasks) { const li = h('li', 'tk'); li.append(h('span', 'b', fmtTime(x.at)), h('span', 'a', x.text)); ul.append(li); }
+        body.append(ul);
+      }
+    } else if (extra === 'tasks' || (!extra && S.panel === 'tasks')) {
       title.textContent = T.tasks;
       const rows = openTasks().map(x => [x.t, [x.who, x.when].filter(Boolean).join(' · ')]);
       body.append(rows.length ? rowsList(rows, -1) : h('div', 'empty', T.noTasks));
@@ -1198,7 +1287,7 @@ body.night .smoke{opacity:.4;animation:none}
       const was = extraPage();
       state.page++;
       const turned = extraPage() !== was;
-      if (turned || ['shows', 'prayers', 'matches'].includes(S.panel)) renderCard(turned || S.panel === 'shows');
+      if (turned || ['shows', 'prayers', 'matches', 'dinner'].includes(S.panel)) renderCard(turned || S.panel === 'shows' || S.panel === 'dinner');
     }, 20000);
     setInterval(applyPhoto, 60000);
     setInterval(shift, 180000);

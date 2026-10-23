@@ -86,7 +86,7 @@ button{font:inherit;border:1px solid var(--line);background:var(--bg);color:var(
   <select id="panel">
     <option value="verse" data-t="pVerse">آية أو حديث اليوم</option><option value="prayers" data-t="pPrayers">مواقيت اليوم والإقامة</option>
     <option value="forecast" data-t="pForecast">طقس الأيام القادمة</option><option value="matches" data-t="pMatches">مباريات فرقك</option>
-    <option value="shows" data-t="pShows">جديد المسلسلات</option><option value="tasks" data-t="pTasks">مهام البيت</option><option value="none" data-t="pNone">بدون بطاقة</option>
+    <option value="shows" data-t="pShows">جديد المسلسلات</option><option value="tasks" data-t="pTasks">مهام البيت</option><option value="dinner" data-t="pDinner">عشاء الليلة</option><option value="none" data-t="pNone">بدون بطاقة</option>
   </select>
   <label for="bg" data-t="bg">الخلفية</label>
   <select id="bg"><option value="chart" data-t="bgChart">خريطة البحر</option><option value="photos" data-t="bgPhotos">صور من عُمان</option></select>
@@ -103,6 +103,14 @@ button{font:inherit;border:1px solid var(--line);background:var(--bg);color:var(
   <input id="tt" type="text" maxlength="80" data-ph="taskText" placeholder="المهمة، مثل: سقي الزرع">
   <div class="row" style="margin-top:8px"><input id="tw" type="text" maxlength="24" data-ph="taskWho" placeholder="لمن (اختياري)"><input id="tn" type="text" maxlength="24" data-ph="taskWhen" placeholder="متى (اختياري)"><button id="tadd" type="button" style="flex:0 0 auto" data-t="add">إضافة</button></div>
   <p class="hint" data-t="tasksHint">تظهر على الشاشة لكل من في البيت حتى تعلّمها «تمت» أو تحذفها، وتُحفظ على التلفزيون وحده. اضغط «حفظ» بعد التعديل.</p>
+</section>
+
+<section id="dinner-section">
+  <h2 data-t="dinnerPlan">خطة العشاء</h2>
+  <div id="dinner-state" class="hint"></div>
+  <textarea id="dcode" rows="3" dir="ltr" data-ph="dinnerCode" placeholder="LBN1.…" spellcheck="false"></textarea>
+  <div class="row" style="margin-top:8px"><button id="dapply" type="button" data-t="dinnerApply">تطبيق الرمز</button><button id="dclear" type="button" data-t="dinnerClear">إزالة الخطة</button></div>
+  <p class="hint" data-t="dinnerHint">من «دليل العشاء» (dinner.bassamailab.xyz) ← المزيد ← «نسخ رمز لُبان»، ثم الصقه هنا. الرمز دورة كاملة من الخطة، والشاشة تعيدها وحدها كلما اكتملت، فلا تلصقه ثانيةً إلا إن غيّرت الوجبات أو المواعيد. اضغط «حفظ» بعد التطبيق.</p>
 </section>
 
 <section>

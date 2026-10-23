@@ -86,7 +86,7 @@ button{font:inherit;border:1px solid var(--line);background:var(--bg);color:var(
   <select id="panel">
     <option value="verse" data-t="pVerse">آية أو حديث اليوم</option><option value="prayers" data-t="pPrayers">مواقيت اليوم والإقامة</option>
     <option value="forecast" data-t="pForecast">طقس الأيام القادمة</option><option value="matches" data-t="pMatches">مباريات فرقك</option>
-    <option value="shows" data-t="pShows">جديد المسلسلات</option><option value="tasks" data-t="pTasks">مهام البيت</option><option value="none" data-t="pNone">بدون بطاقة</option>
+    <option value="shows" data-t="pShows">جديد المسلسلات</option><option value="tasks" data-t="pTasks">مهام البيت</option><option value="dinner" data-t="pDinner">عشاء الليلة</option><option value="none" data-t="pNone">بدون بطاقة</option>
   </select>
   <label for="bg" data-t="bg">الخلفية</label>
   <select id="bg"><option value="chart" data-t="bgChart">خريطة البحر</option><option value="photos" data-t="bgPhotos">صور من عُمان</option></select>
@@ -103,6 +103,14 @@ button{font:inherit;border:1px solid var(--line);background:var(--bg);color:var(
   <input id="tt" type="text" maxlength="80" data-ph="taskText" placeholder="المهمة، مثل: سقي الزرع">
   <div class="row" style="margin-top:8px"><input id="tw" type="text" maxlength="24" data-ph="taskWho" placeholder="لمن (اختياري)"><input id="tn" type="text" maxlength="24" data-ph="taskWhen" placeholder="متى (اختياري)"><button id="tadd" type="button" style="flex:0 0 auto" data-t="add">إضافة</button></div>
   <p class="hint" data-t="tasksHint">تظهر على الشاشة لكل من في البيت حتى تعلّمها «تمت» أو تحذفها، وتُحفظ على التلفزيون وحده. اضغط «حفظ» بعد التعديل.</p>
+</section>
+
+<section id="dinner-section">
+  <h2 data-t="dinnerPlan">خطة العشاء</h2>
+  <div id="dinner-state" class="hint"></div>
+  <textarea id="dcode" rows="3" dir="ltr" data-ph="dinnerCode" placeholder="LBN1.…" spellcheck="false"></textarea>
+  <div class="row" style="margin-top:8px"><button id="dapply" type="button" data-t="dinnerApply">تطبيق الرمز</button><button id="dclear" type="button" data-t="dinnerClear">إزالة الخطة</button></div>
+  <p class="hint" data-t="dinnerHint">من «دليل العشاء» (dinner.bassamailab.xyz) ← المزيد ← «نسخ رمز لُبان»، ثم الصقه هنا. الرمز دورة كاملة من الخطة، والشاشة تعيدها وحدها كلما اكتملت، فلا تلصقه ثانيةً إلا إن غيّرت الوجبات أو المواعيد. اضغط «حفظ» بعد التطبيق.</p>
 </section>
 
 <section>
@@ -286,7 +294,7 @@ button{font:inherit;border:1px solid var(--line);background:var(--bg);color:var(
  * and every value is checked against what it may be. */
 (function (root) {
   'use strict';
-  const PANELS = ['verse', 'prayers', 'forecast', 'matches', 'shows', 'tasks', 'none'];
+  const PANELS = ['verse', 'prayers', 'forecast', 'matches', 'shows', 'tasks', 'dinner', 'none'];
   const MARKETS = ['gold', 'brent', 'btc', 'spx'];
   const PRAYERS5 = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'];
 
@@ -307,6 +315,7 @@ button{font:inherit;border:1px solid var(--line);background:var(--bg);color:var(
     teams: [],                  // [{id, en, ar}] football-data.org team ids, priority order
     markets: ['gold', 'brent', 'btc', 'spx'],
     tasks: [],                  // [{t, who, when, done}] household tasks, written on the phone page, kept on this TV only
+    dinner: null,               // the dinner plan from SmartDinner (one cycle, which repeats): see sanitizeDinner(). Pasted on the phone page
     shows: { genres: [], langs: [], minRating: 7 },
     omanDays: true,             // National Day countdown, Khareef season
     night: true,                // dim after Isha until before Fajr
@@ -321,6 +330,31 @@ button{font:inherit;border:1px solid var(--line);background:var(--bg);color:var(
     ? Math.min(hi, Math.max(lo, +x)) : null;
   const pick = (x, list, d) => list.includes(x) ? x : d;
   const validTz = tz => { try { new Intl.DateTimeFormat('en', { timeZone: tz }); return true; } catch (e) { return false; } };
+
+  // The dinner plan SmartDinner shares as a code (the phone page unpacks it): one cycle of nights, repeated by the screen.
+  // Day k has r (tonight: title, emoji, time to start), m (tomorrow), and the tasks s/a/e (shopping day, after lunch,
+  // evening) as [text, minutes]; p is the day before the first dinner. Texts are shown as text, never as markup.
+  const HHMM = /^([01]\d|2[0-3]):[0-5]\d$/;
+  const isoDate = x => typeof x === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(x) && !isNaN(Date.parse(x + 'T00:00:00Z'));
+  const dinnerTasks = a => Array.isArray(a)
+    ? a.filter(x => Array.isArray(x) && typeof x[0] === 'string' && x[0].trim()).slice(0, 12)
+        .map(x => [x[0].trim().slice(0, 400), Math.round(num(x[1], 0, 240) || 0)]) : [];
+  function dinnerDay(x) {
+    const o = {};
+    if (!isObj(x)) return o;
+    if (Array.isArray(x.r) && typeof x.r[0] === 'string' && x.r[0].trim() && HHMM.test(x.r[2])) o.r = [x.r[0].trim().slice(0, 80), str(x.r[1], 8) || '', x.r[2]];
+    if (Array.isArray(x.m) && typeof x.m[0] === 'string' && x.m[0].trim()) o.m = [x.m[0].trim().slice(0, 80), str(x.m[1], 8) || ''];
+    for (const k of ['s', 'a', 'e']) { const t = dinnerTasks(x[k]); if (t.length) o[k] = t; }
+    const b = num(x.b, 1, 10); if (b !== null) o.b = Math.round(b);
+    return o;
+  }
+  function sanitizeDinner(x) {
+    if (!isObj(x) || x.v !== 1) return null;
+    const n = num(x.n, 1, 21);
+    if (n === null || n !== Math.round(n) || !isoDate(x.st) || !Array.isArray(x.d) || x.d.length !== n) return null;
+    if (![x.dn, x.ask, x.prep, x.sh].every(t => typeof t === 'string' && HHMM.test(t))) return null;
+    return { v: 1, n, st: x.st, dn: x.dn, ask: x.ask, prep: x.prep, sh: x.sh, d: x.d.map(dinnerDay), p: dinnerDay(x.p) };
+  }
 
   function sanitize(input, methods) {
     const s = JSON.parse(JSON.stringify(DEFAULTS));
@@ -354,6 +388,7 @@ button{font:inherit;border:1px solid var(--line);background:var(--bg);color:var(
       s.tasks = input.tasks.filter(x => isObj(x) && typeof x.t === 'string' && x.t.trim()).slice(0, 20)
         .map(x => ({ t: x.t.trim().slice(0, 80), who: (str(x.who, 24) || '').trim(), when: (str(x.when, 24) || '').trim(), done: x.done === true }));
     }
+    s.dinner = sanitizeDinner(input.dinner);
     if (isObj(input.shows)) {
       const sh = input.shows;
       if (Array.isArray(sh.genres)) s.shows.genres = sh.genres.filter(g => typeof g === 'string' && /^[A-Za-z-]{2,20}$/.test(g)).slice(0, 16);
@@ -381,7 +416,7 @@ button{font:inherit;border:1px solid var(--line);background:var(--bg);color:var(
              method: s.method || country.method || 'mwl' };
   }
 
-  root.LubanSettings = { DEFAULTS, PANELS, MARKETS, sanitize, resolvePlace };
+  root.LubanSettings = { DEFAULTS, PANELS, MARKETS, sanitize, sanitizeDinner, resolvePlace };
   if (typeof module !== 'undefined' && module.exports) module.exports = root.LubanSettings;
 })(typeof window !== 'undefined' ? window : globalThis);
 /* Luban — the phone settings page. Served by the TV at http://<tv>:<port>/<token>/ ; it talks only to that same
@@ -390,7 +425,7 @@ button{font:inherit;border:1px solid var(--line);background:var(--bg);color:var(
 (function () {
   'use strict';
   const { METHODS, compute, hhmm } = window.LubanPrayer;
-  const { sanitize, resolvePlace, DEFAULTS } = window.LubanSettings;
+  const { sanitize, sanitizeDinner, resolvePlace, DEFAULTS } = window.LubanSettings;
   const DATA = window.LUBAN_DATA;
   const $ = id => document.getElementById(id);
   const h = (tag, attrs, text) => { const e = document.createElement(tag); Object.assign(e, attrs || {}); if (text != null) e.textContent = text; return e; };
@@ -402,16 +437,19 @@ button{font:inherit;border:1px solid var(--line);background:var(--bg);color:var(
     tz: 'Time zone (IANA)', lang: 'Language', digits: 'Digits', clock24: '24-hour clock', prayer: 'Prayer', method: 'Calculation method', asr: 'Asr',
     asrStd: 'Standard (shadow ×1)', asrHan: 'Hanafi (shadow ×2)', offsets: 'Adjust in minutes (to match the local calendar)', iqama: 'Iqama, minutes after adhan',
     hijri: 'Hijri date adjustment', screen: 'Screen', panel: 'Card beside the clock', pVerse: 'Verse or hadith of the day', pPrayers: "Today's prayers and iqama",
-    pForecast: 'Weather, next days', pMatches: 'Your teams', pShows: 'New episodes', pTasks: 'Household tasks', pNone: 'No card', omanDays: 'Oman National Day and Khareef season',
+    pForecast: 'Weather, next days', pMatches: 'Your teams', pShows: 'New episodes', pTasks: 'Household tasks', pDinner: "Tonight's dinner", pNone: 'No card', omanDays: 'Oman National Day and Khareef season',
     tasks: 'Household tasks', taskText: 'The task, e.g. water the plants', taskWho: 'For whom (optional)', taskWhen: 'When (optional)', add: 'Add',
     tasksHint: 'Everyone at home sees them on the screen until you mark them done or delete them; they are kept on the TV only. Press Save after editing.', done: 'Done',
+    dinnerPlan: 'Dinner plan', dinnerApply: 'Apply the code', dinnerClear: 'Remove the plan', dinnerCode: 'LBN1.…',
+    dinnerHint: 'From the Smart Dinner guide (dinner.bassamailab.xyz) → More → «Copy Luban code», then paste it here. The code is one full cycle of the plan and the screen repeats it by itself, so paste again only when the dishes or times change. Press Save after applying.',
+    dinnerNone: 'No plan yet', dinnerBad: 'That is not a Luban code from the dinner guide.',
     night: 'Dim at night', sources: 'Data sources', bg: 'Background', bgChart: 'The sea chart', bgPhotos: 'Photos of Oman', homeCard: 'Prayer card on the home screen', markets: 'Markets', teams: 'Your teams', search: 'Search',
     teamsHint: 'Up to 10 teams from the major European and Brazilian leagues, the Champions League, the World Cup and the Euros (football-data.org). Edit the Arabic name as you like it shown.', shows: 'TV shows', genres: 'Genres (empty = all)', minRating: 'Minimum rating',
     advanced: 'Advanced', api: 'Data server (optional)', channel: 'Update channel', stable: 'Stable', canary: 'Canary (gets updates first)', save: 'Save',
     saved: 'Saved. The screen updates now.', failed: 'Not saved: ', custom: 'Other place…', default: 'Country default', teamSearch: 'Search in English: Real Madrid, Liverpool, Flamengo…',
     gold: 'Gold, global reference price (OMR/g)', brent: 'Brent oil', btc: 'Bitcoin', spx: 'S&P 500', noHits: 'No team found',
   };
-  const AR = { done: 'تمت', custom: 'مكان آخر…', default: 'حسب البلد', saved: 'حُفظت. الشاشة تتحدث الآن.', failed: 'لم تُحفظ: ', gold: 'الذهب، سعر عالمي استرشادي (ر.ع/غ)', brent: 'نفط برنت', btc: 'بيتكوين', spx: 'S&P 500', noHits: 'لا نتائج' };
+  const AR = { dinnerNone: 'لا خطة بعد', dinnerBad: 'هذا ليس رمز لُبان من دليل العشاء.', done: 'تمت', custom: 'مكان آخر…', default: 'حسب البلد', saved: 'حُفظت. الشاشة تتحدث الآن.', failed: 'لم تُحفظ: ', gold: 'الذهب، سعر عالمي استرشادي (ر.ع/غ)', brent: 'نفط برنت', btc: 'بيتكوين', spx: 'S&P 500', noHits: 'لا نتائج' };
   let S = sanitize(null, METHODS), lang = 'ar';
   const t = k => lang === 'en' ? (EN[k] || k) : (AR[k] || (document.querySelector(`[data-t="${k}"]`) || {}).dataset?.ar || k);
 
@@ -503,6 +541,36 @@ button{font:inherit;border:1px solid var(--line);background:var(--bg);color:var(
     renderTasks();
   }
 
+  /** The dinner guide's code: LBN1. + base64url of the deflated JSON. Unpacked here; the TV only ever sees the checked plan. */
+  async function unpackDinner(code) {
+    const c = code.trim();
+    if (!/^LBN1\.[A-Za-z0-9_-]{8,30000}$/.test(c)) throw new Error('code');
+    const bytes = Uint8Array.from(atob(c.slice(5).replace(/-/g, '+').replace(/_/g, '/')), ch => ch.charCodeAt(0));
+    const reader = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('deflate-raw')).getReader();
+    const parts = []; let size = 0;
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      size += value.length;
+      if (size > 64 * 1024) { reader.cancel(); throw new Error('size'); }
+      parts.push(value);
+    }
+    return JSON.parse(await new Blob(parts).text());
+  }
+  function renderDinner() {
+    const d = S.dinner;
+    $('dinner-state').textContent = !d ? t('dinnerNone')
+      : lang === 'ar' ? `خطة من ${d.n} ليلة، أول عشاء فيها ${d.st}. تعيد الشاشة دورتها وحدها.` : `A ${d.n}-night plan, first dinner ${d.st}. The screen repeats the cycle by itself.`;
+  }
+  async function applyDinner() {
+    const msg = $('msg'); msg.className = '';
+    try {
+      const d = sanitizeDinner(await unpackDinner($('dcode').value));
+      if (!d) throw new Error('plan');
+      S.dinner = d; $('dcode').value = ''; renderDinner();
+    } catch (e) { msg.textContent = t('dinnerBad'); msg.className = 'err'; setTimeout(() => { msg.className = ''; }, 4000); }
+  }
+
   async function searchTeams() {
     const q = $('tq').value.trim(), box = $('hits'); box.textContent = '';
     if (q.length < 2) return;
@@ -550,7 +618,7 @@ button{font:inherit;border:1px solid var(--line);background:var(--bg);color:var(
     checks('markets', ['gold', 'brent', 'btc', 'spx'], S.markets, t);
     checks('genres', GENRES, S.shows.genres);
     $('minRating').value = String(S.shows.minRating); $('api').value = S.api; $('channel').value = S.channel;
-    renderTeams(); renderTasks(); preview();
+    renderTeams(); renderTasks(); renderDinner(); preview();
   }
 
   async function save() {
@@ -572,6 +640,7 @@ button{font:inherit;border:1px solid var(--line);background:var(--bg);color:var(
     $('lang').addEventListener('change', () => { S = collect(); fill(); });
     $('tgo').onclick = searchTeams; $('tq').addEventListener('keydown', e => { if (e.key === 'Enter') searchTeams(); });
     $('tadd').onclick = addTask; $('tt').addEventListener('keydown', e => { if (e.key === 'Enter') addTask(); });
+    $('dapply').onclick = applyDinner; $('dclear').onclick = () => { S.dinner = null; renderDinner(); };
     $('save').onclick = save;
     // the home screen's «مهام البيت» button opens the QR code with #tasks: land on the tasks
     if (location.hash === '#tasks') $('tasks-section').scrollIntoView();

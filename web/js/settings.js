@@ -3,7 +3,7 @@
  * and every value is checked against what it may be. */
 (function (root) {
   'use strict';
-  const PANELS = ['verse', 'prayers', 'forecast', 'matches', 'shows', 'tasks', 'none'];
+  const PANELS = ['verse', 'prayers', 'forecast', 'matches', 'shows', 'tasks', 'dinner', 'none'];
   const MARKETS = ['gold', 'brent', 'btc', 'spx'];
   const PRAYERS5 = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'];
 
@@ -24,6 +24,7 @@
     teams: [],                  // [{id, en, ar}] football-data.org team ids, priority order
     markets: ['gold', 'brent', 'btc', 'spx'],
     tasks: [],                  // [{t, who, when, done}] household tasks, written on the phone page, kept on this TV only
+    dinner: null,               // the dinner plan from SmartDinner (one cycle, which repeats): see sanitizeDinner(). Pasted on the phone page
     shows: { genres: [], langs: [], minRating: 7 },
     omanDays: true,             // National Day countdown, Khareef season
     night: true,                // dim after Isha until before Fajr
@@ -38,6 +39,31 @@
     ? Math.min(hi, Math.max(lo, +x)) : null;
   const pick = (x, list, d) => list.includes(x) ? x : d;
   const validTz = tz => { try { new Intl.DateTimeFormat('en', { timeZone: tz }); return true; } catch (e) { return false; } };
+
+  // The dinner plan SmartDinner shares as a code (the phone page unpacks it): one cycle of nights, repeated by the screen.
+  // Day k has r (tonight: title, emoji, time to start), m (tomorrow), and the tasks s/a/e (shopping day, after lunch,
+  // evening) as [text, minutes]; p is the day before the first dinner. Texts are shown as text, never as markup.
+  const HHMM = /^([01]\d|2[0-3]):[0-5]\d$/;
+  const isoDate = x => typeof x === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(x) && !isNaN(Date.parse(x + 'T00:00:00Z'));
+  const dinnerTasks = a => Array.isArray(a)
+    ? a.filter(x => Array.isArray(x) && typeof x[0] === 'string' && x[0].trim()).slice(0, 12)
+        .map(x => [x[0].trim().slice(0, 400), Math.round(num(x[1], 0, 240) || 0)]) : [];
+  function dinnerDay(x) {
+    const o = {};
+    if (!isObj(x)) return o;
+    if (Array.isArray(x.r) && typeof x.r[0] === 'string' && x.r[0].trim() && HHMM.test(x.r[2])) o.r = [x.r[0].trim().slice(0, 80), str(x.r[1], 8) || '', x.r[2]];
+    if (Array.isArray(x.m) && typeof x.m[0] === 'string' && x.m[0].trim()) o.m = [x.m[0].trim().slice(0, 80), str(x.m[1], 8) || ''];
+    for (const k of ['s', 'a', 'e']) { const t = dinnerTasks(x[k]); if (t.length) o[k] = t; }
+    const b = num(x.b, 1, 10); if (b !== null) o.b = Math.round(b);
+    return o;
+  }
+  function sanitizeDinner(x) {
+    if (!isObj(x) || x.v !== 1) return null;
+    const n = num(x.n, 1, 21);
+    if (n === null || n !== Math.round(n) || !isoDate(x.st) || !Array.isArray(x.d) || x.d.length !== n) return null;
+    if (![x.dn, x.ask, x.prep, x.sh].every(t => typeof t === 'string' && HHMM.test(t))) return null;
+    return { v: 1, n, st: x.st, dn: x.dn, ask: x.ask, prep: x.prep, sh: x.sh, d: x.d.map(dinnerDay), p: dinnerDay(x.p) };
+  }
 
   function sanitize(input, methods) {
     const s = JSON.parse(JSON.stringify(DEFAULTS));
@@ -71,6 +97,7 @@
       s.tasks = input.tasks.filter(x => isObj(x) && typeof x.t === 'string' && x.t.trim()).slice(0, 20)
         .map(x => ({ t: x.t.trim().slice(0, 80), who: (str(x.who, 24) || '').trim(), when: (str(x.when, 24) || '').trim(), done: x.done === true }));
     }
+    s.dinner = sanitizeDinner(input.dinner);
     if (isObj(input.shows)) {
       const sh = input.shows;
       if (Array.isArray(sh.genres)) s.shows.genres = sh.genres.filter(g => typeof g === 'string' && /^[A-Za-z-]{2,20}$/.test(g)).slice(0, 16);
@@ -98,6 +125,6 @@
              method: s.method || country.method || 'mwl' };
   }
 
-  root.LubanSettings = { DEFAULTS, PANELS, MARKETS, sanitize, resolvePlace };
+  root.LubanSettings = { DEFAULTS, PANELS, MARKETS, sanitize, sanitizeDinner, resolvePlace };
   if (typeof module !== 'undefined' && module.exports) module.exports = root.LubanSettings;
 })(typeof window !== 'undefined' ? window : globalThis);
