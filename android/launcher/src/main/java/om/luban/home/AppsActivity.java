@@ -103,6 +103,7 @@ public class AppsActivity extends Activity {
         key(keys, "●", " في المفضلة");
         TextView foot = Ui.text(this, "", 13, Ui.regular(), Ui.INK3);
         foot.setText(keys);
+        foot.setTextDirection(View.TEXT_DIRECTION_RTL);
         foot.setPadding(side, Ui.dp(this, 4), side, Ui.dp(this, 18));
         root.addView(foot, new LinearLayout.LayoutParams(-1, -2));
 
@@ -110,12 +111,14 @@ public class AppsActivity extends Activity {
         return root;
     }
 
+    /** One key and what it does. A right-to-left mark on each side keeps a Latin key ("OK", "Back") beside its own words. */
     private static void key(SpannableStringBuilder s, String key, String what) {
-        if (s.length() > 0) s.append("      ");
+        if (s.length() > 0) s.append("\u200F      ");
+        s.append("\u200F");
         int at = s.length();
         s.append(key);
         s.setSpan(new ForegroundColorSpan(Ui.LUBAN), at, s.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-        s.append(what);
+        s.append("\u200F").append(what);
     }
 
     /** The name of the app in focus, beside the title. */

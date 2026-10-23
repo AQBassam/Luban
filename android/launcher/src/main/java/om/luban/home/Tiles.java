@@ -48,6 +48,8 @@ final class Tiles {
             TextView label = Ui.text(c, a.label, 12, Ui.medium(), Ui.INK);
             label.setSingleLine(true);
             label.setGravity(Gravity.CENTER);
+            // a long name on a small tile steps down instead of being cut
+            label.setAutoSizeTextTypeUniformWithConfiguration(8, 12, 1, android.util.TypedValue.COMPLEX_UNIT_SP);
             FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(-1, -2, Gravity.BOTTOM);
             lp.setMargins(Ui.dp(c, 6), 0, Ui.dp(c, 6), Ui.dp(c, 6));
             t.addView(label, lp);
