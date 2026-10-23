@@ -21,14 +21,23 @@ class FakeTv:
         self.wraith, self.wraith_wifi = wraith, wraith_wifi   # setupwraith takes Home once the stock home is off
         self.home_works, self.works_after_disable, self.install_out = home_works, works_after_disable, install_out
         self.disabled, self.role = set(), "com.google.android.apps.tv.launcherx"
+        self.a11y, self.a11y_on = "null", "0"   # enabled_accessibility_services, accessibility_enabled
 
     def shell(self, cmd, timeout=60, tries=3):
         self.log.append(cmd)
         if cmd.startswith("pm list packages"):
             return ("package:com.google.android.apps.tv.launcherx\npackage:com.tcl.bi\npackage:com.google.android.feedback\n"
-                    "package:com.google.android.tungsten.setupwraith\n")
+                    "package:com.google.android.tungsten.setupwraith\npackage:om.luban.home\n")
         if cmd.startswith("dumpsys wifi"):
             return "cname=com.google.android.tungsten.setupwraith" if self.wraith_wifi else "cname=android.uid.system"
+        if cmd.startswith("settings get secure enabled_accessibility_services"):
+            return self.a11y
+        if cmd.startswith("settings put secure enabled_accessibility_services"):
+            self.a11y = cmd.split()[-1]; return ""
+        if cmd.startswith("settings delete secure enabled_accessibility_services"):
+            self.a11y = "null"; return ""
+        if cmd.startswith("settings put secure accessibility_enabled"):
+            self.a11y_on = cmd.split()[-1]; return ""
         if cmd.startswith("pm disable-user"):
             self.disabled.add(cmd.split()[-1]); return f"Package {cmd.split()[-1]} new state: disabled-user"
         if cmd.startswith("pm enable"):
@@ -59,6 +68,50 @@ class FakeTv:
 
 def first(log, prefix):
     return next(i for i, c in enumerate(log) if c.startswith(prefix))
+
+
+class HomeKey(unittest.TestCase):
+    def setUp(self):
+        luban.HOME_DIR = Path(tempfile.mkdtemp())
+
+    def test_on_keeps_the_services_already_on_and_changes_no_package(self):
+        tv = FakeTv()
+        tv.a11y = "com.example/.Other"
+        luban.homekey(tv, True)
+        self.assertEqual(tv.a11y, "com.example/.Other:" + luban.HOMEKEY)
+        self.assertEqual(tv.a11y_on, "1")
+        self.assertEqual(tv.disabled, set(), "nothing is turned off: the TV's own home stays")
+        self.assertFalse([c for c in tv.log if c.startswith(("pm disable", "cmd role", "cmd package set-home"))])
+
+    def test_on_twice_lists_it_once(self):
+        tv = FakeTv()
+        luban.homekey(tv, True); luban.homekey(tv, True)
+        self.assertEqual(tv.a11y, luban.HOMEKEY)
+
+    def test_off_removes_only_ours(self):
+        tv = FakeTv()
+        tv.a11y = "com.example/.Other:" + luban.HOMEKEY
+        luban.homekey(tv, False)
+        self.assertEqual(tv.a11y, "com.example/.Other")
+
+    def test_off_with_nothing_left_clears_the_setting(self):
+        tv = FakeTv()
+        luban.homekey(tv, True); luban.homekey(tv, False)
+        self.assertEqual((tv.a11y, tv.a11y_on), ("null", "0"))
+
+    def test_refused_when_luban_home_is_not_installed(self):
+        tv = FakeTv()
+        tv.packages = lambda: {"com.google.android.apps.tv.launcherx"}
+        with self.assertRaises(luban.Stop):
+            luban.homekey(tv, True)
+        self.assertEqual(tv.a11y, "null")
+
+    def test_reset_turns_it_off_before_the_apps_are_removed(self):
+        tv = FakeTv()
+        luban.homekey(tv, True)
+        luban.reset(tv)
+        self.assertEqual(tv.a11y, "null")
+        self.assertLess(first(tv.log, "settings delete secure enabled_accessibility_services"), first(tv.log, "pm uninstall"))
 
 
 class HomeSwitch(unittest.TestCase):

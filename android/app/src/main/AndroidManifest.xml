@@ -37,7 +37,8 @@
 
         <activity
             android:name=".PreviewActivity"
-            android:exported="false"
+            android:exported="true"
+            android:permission="om.luban.screen.READ_CONFIG"
             android:theme="@android:style/Theme.Black.NoTitleBar.Fullscreen" />
 
         <service

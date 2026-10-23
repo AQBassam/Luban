@@ -62,6 +62,13 @@ Luban's home is on screen. Only then does it disable the stock home, and it chec
 home back at once. A small safety script on the TV covers the seconds in between. `tests/test_setup.py` checks the
 order and both rollbacks against a fake TV.
 
+Some firmware keeps its own home ahead of the one Android picks, and the only way left is to disable the TV's
+packages (the setup wizard may own the Wi-Fi network). Luban does not do that for you. `luban.py homekey on` instead
+turns on an accessibility service in Luban's home that reads **key presses only** (`canRetrieveWindowContent` is
+false and it asks for no events): a short press of Home opens Luban's home, a long press opens the TV's own home,
+and if Luban's home will not open the TV's own does. It disables no package and changes no role. `homekey off`,
+`reset`, or turning it off in the TV's accessibility settings puts everything back. It stays off until you turn it on.
+
 ## 6. CI
 
 - Tests gate the build; the build gates publishing; publishing needs the signing secrets.

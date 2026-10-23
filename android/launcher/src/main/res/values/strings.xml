@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">لُبان · الرئيسية</string>
+    <string name="homekey_name">زر Home يفتح لُبان</string>
+    <string name="homekey_description">يجعل ضغطة Home القصيرة تفتح واجهة لُبان، والطويلة تفتح واجهة التلفزيون الأصلية. يقرأ ضغطات الأزرار فقط، ولا يقرأ ما على الشاشة.</string>
 </resources>

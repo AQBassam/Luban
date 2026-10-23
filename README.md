@@ -120,7 +120,9 @@ or Roku; Fire TV does not allow a third-party screensaver or home. See [docs/COM
    following docs/AGENT.md step by step."*
 
 **Undo everything:** `python3 tools/luban.py reset`. Other commands: `find`, `status`, `settings`, `favourites`,
-`update`, `home`, `debloat`, `adb-off` (`--help` on each).
+`update`, `home`, `homekey on|off`, `debloat`, `adb-off` (`--help` on each).
+On a TV that keeps its own home (`home` stops and says so), `homekey on` makes a short press of Home open Luban's home through
+an accessibility service that reads key presses only; a long press opens the TV's own home.
 
 **APKs:** [releases](https://github.com/AQBassam/Luban/releases), every build numbered `v1.N`, each with `SHA256SUMS`.
 Signing certificate SHA-256: see [keys/apk-cert.sha256](keys/apk-cert.sha256).

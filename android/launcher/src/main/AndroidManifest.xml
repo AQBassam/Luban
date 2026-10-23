@@ -60,6 +60,18 @@
             android:excludeFromRecents="true"
             android:configChanges="keyboard|keyboardHidden|navigation|orientation|screenSize|screenLayout|uiMode|density|locale|layoutDirection" />
 
+        <!-- the Home key opens Luban's home (off until turned on: tools/luban.py homekey on) -->
+        <service
+            android:name=".HomeKeyService"
+            android:label="@string/homekey_name"
+            android:exported="true"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+            <meta-data android:name="android.accessibilityservice" android:resource="@xml/accessibility_service" />
+        </service>
+
         <receiver
             android:name=".AdbReceiver"
             android:exported="true"

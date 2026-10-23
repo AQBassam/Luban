@@ -408,10 +408,10 @@ public class HomeActivity extends Activity {
         open(i, getPackageManager().getLaunchIntentForPackage("om.luban.screen"));
     }
 
+    /** Luban's own full-screen preview (the same one as the QR screen's Preview button; any key closes it). */
     private void screensaver() {
-        Intent dream = new Intent(Intent.ACTION_MAIN).setClassName("com.android.systemui", "com.android.systemui.Somnambulator");
-        Intent settings = getPackageManager().getLaunchIntentForPackage("om.luban.screen");
-        open(dream, settings);
+        Intent preview = new Intent().setClassName("om.luban.screen", "om.luban.screen.PreviewActivity");
+        open(preview, getPackageManager().getLaunchIntentForPackage("om.luban.screen"));
     }
 
     private void open(Intent first, Intent fallback) {

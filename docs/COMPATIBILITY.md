@@ -72,4 +72,4 @@ pressed, nothing was disabled. Checked on the TV by hand, each step undone strai
 
 On this TV the screensaver is the supported part. Luban's home can still be opened by hand as an app.
 
-The one route not tried is an accessibility service that catches the Home button, which is what Couchy Launcher recommends for Google TV. It would make Luban the real home on this firmware without disabling `launcherx`; it has not been built.
+The route that needs no package turned off is an accessibility service that catches the Home key (what Couchy Launcher recommends for Google TV): `luban.py homekey on`, in Luban's home since v1.39. A short press opens Luban's home, a long press opens `launcherx`. Not yet tried on this TV with the remote.

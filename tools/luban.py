@@ -9,7 +9,7 @@
         → offers to turn ADB off again at the end
     python3 tools/luban.py settings --city salalah --lang ar --panel prayers --home-card on
     python3 tools/luban.py favourites com.google.android.youtube.tv,com.netflix.ninja
-    python3 tools/luban.py status | update | reset | adb-off
+    python3 tools/luban.py status | update | homekey on|off | reset | adb-off
 
 Every step is safe to run again. State per TV in ~/.luban/.
 """
@@ -399,7 +399,32 @@ def settings(tv, args):
     say(json.dumps(s, ensure_ascii=False, indent=1))
 
 
+HOMEKEY = "om.luban.home/om.luban.home.HomeKeyService"
+
+
+def homekey(tv, on):
+    """The Home key opens Luban's home through an accessibility service (nothing is disabled: the TV's own home stays
+    installed and a long press on Home opens it). For TVs whose firmware keeps its own home ahead of Luban's."""
+    if "om.luban.home" not in tv.packages():
+        raise Stop("Luban's home is not installed: run `install all` first")
+    cur = [x for x in tv.shell("settings get secure enabled_accessibility_services").strip().split(":") if x and x != "null"]
+    rest = [x for x in cur if x != HOMEKEY]
+    if on:
+        tv.shell(f"settings put secure enabled_accessibility_services {':'.join(rest + [HOMEKEY])}")
+        tv.shell("settings put secure accessibility_enabled 1")
+        say("   ✓ the Home key now opens Luban's home (short press); a long press opens the TV's own home")
+    else:
+        if rest:
+            tv.shell(f"settings put secure enabled_accessibility_services {':'.join(rest)}")
+        else:
+            tv.shell("settings delete secure enabled_accessibility_services")
+            tv.shell("settings put secure accessibility_enabled 0")
+        say("   ✓ the Home key is back to how the TV had it")
+
+
 def reset(tv):
+    if "om.luban.home" in tv.packages():
+        homekey(tv, False)
     st = load_state(tv)
     stock = st.get("stock_home")
     for p in sorted(set(st.get("disabled", [])) | set(read_list("safe.txt"))):
@@ -506,6 +531,8 @@ def main(argv=None):
     p.add_argument("--force-reinstall", action="store_true")
     for name in ("home", "debloat", "status", "update", "reset", "adb-off", "check"):
         sub.add_parser(name)
+    p = sub.add_parser("homekey")
+    p.add_argument("state", choices=["on", "off"])
     p = sub.add_parser("settings")
     p.add_argument("--city"); p.add_argument("--lang", choices=["ar", "en"]); p.add_argument("--digits", choices=["latn", "arab"])
     p.add_argument("--panel", choices=["verse", "prayers", "forecast", "matches", "shows", "tasks", "none"]); p.add_argument("--method")
@@ -544,6 +571,8 @@ def main(argv=None):
                 install(tv, w, a.tag, a.force_reinstall)
         elif a.cmd == "home":
             switch_home(tv)
+        elif a.cmd == "homekey":
+            homekey(tv, a.state == "on")
         elif a.cmd == "debloat":
             debloat(tv)
         elif a.cmd == "settings":
