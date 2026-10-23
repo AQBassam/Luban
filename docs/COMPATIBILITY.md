@@ -51,7 +51,7 @@ was 1.22).
 | Phone settings page (QR) | Opens and saves settings. Team search works: Real Madrid found, with its recent and next matches |
 | Prayer times | Sohar matches the Ministry's calendar app to the minute (Fajr, Dhuhr, Asr, Maghrib, Isha) |
 | Match card | A Latin home name (Como 1907) pulled the score to the wrong side in Arabic; fixed after this test, the strip under the clock was already right |
-| Home screen | **Does not switch.** See below |
+| Home screen | `setup` does not switch it (see below), but `homekey on` makes the Home key open Luban's home: works, tested with the remote |
 | Luban home, opened by hand (22 October, v1.37) | Works: the anchored layout (greeting, clock, dates and prayer top right; five pills top left; one favourites row ending in an "All apps" tile), the all-apps page with six columns, the focus frame is no longer clipped at the row's ends, and focus stops at both ends. Fits 960×540 dp |
 | Household tasks | Work on the TV: the pill opens the phone page at `#tasks`, tasks show as a card page on the screensaver. Tried by writing settings over ADB and restoring them afterwards |
 | Photos | 52 photos from 17 places; the screensaver and the home screen show the same four each day. Home carries eight of them and reads the rest through the screen app's `content://` provider (not yet seen on the TV: the first such day is 24 October) |
@@ -72,4 +72,4 @@ pressed, nothing was disabled. Checked on the TV by hand, each step undone strai
 
 On this TV the screensaver is the supported part. Luban's home can still be opened by hand as an app.
 
-The route that needs no package turned off is an accessibility service that catches the Home key (what Couchy Launcher recommends for Google TV): `luban.py homekey on`, in Luban's home since v1.39. A short press opens Luban's home, a long press opens `launcherx`. Not yet tried on this TV with the remote.
+The route that needs no package turned off is an accessibility service that catches the Home key (what Couchy Launcher recommends for Google TV): `luban.py homekey on`, in Luban's home since v1.39. A short press opens Luban's home, a long press opens `launcherx`. Tried on this TV (23 October 2026, v1.39, remote in hand): from YouTube a short press of Home opens Luban's home and a long press opens Google's `launcherx`, which stays until Home is pressed again. Pressing Home with `adb shell input keyevent` does **not** reach the service (Android starts `launcherx` itself), so it cannot be tested that way; use the remote.
