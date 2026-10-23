@@ -50,7 +50,9 @@ public class HomeActivity extends Activity {
     private Wallpaper wallpaper;
     private View scrim;
     private PrayerCard card;
-    private TextView greeting, clock, ampm, dates, caption, tasksLabel, networkLabel, inputsLabel, screensaverLabel, settingsLabel;
+    private TextView greeting, clock, ampm, dates, caption, tasksLabel, tasksBadge, networkLabel, inputsLabel, screensaverLabel, settingsLabel, favLabel;
+    private View favLine, glow;
+    private int openTasks = 0;
     private ImageView networkIcon;
     private LinearLayout clockLine;
     private LinearLayout favRow;
@@ -102,6 +104,7 @@ public class HomeActivity extends Activity {
         if (rowsDirty) buildRows();
         boolean photos = card.photos();
         scrim.setVisibility(photos ? View.VISIBLE : View.GONE);
+        glow.setVisibility(photos ? View.VISIBLE : View.GONE);
         if (photos) wallpaper.resume(); else wallpaper.hide();
         main.postDelayed(every30s, 30_000);
     }
@@ -157,6 +160,15 @@ public class HomeActivity extends Activity {
         scrim.setBackground(new GradientDrawable(GradientDrawable.Orientation.BOTTOM_TOP,
             new int[] {0xF206192A, 0xBF06192A, 0x8C06192A, 0xBF06192A}));   // deeper behind the words at the top
         root.addView(scrim, new FrameLayout.LayoutParams(-1, -1));
+        // and a deeper shade behind the clock's corner, for a bright photo
+        GradientDrawable shade = new GradientDrawable();
+        shade.setGradientType(GradientDrawable.RADIAL_GRADIENT);
+        shade.setColors(new int[] {0x9906192A, 0x0006192A});
+        shade.setGradientCenter(.93f, .18f);
+        shade.setGradientRadius(Ui.dp(this, 460));
+        glow = new View(this);
+        glow.setBackground(shade);
+        root.addView(glow, new FrameLayout.LayoutParams(-1, -1));
 
         // a dock (960x540dp, any 1080p or 720p TV): the time at the top, the buttons opposite, one row of favourites at
         // the bottom whose last tile opens every app; the middle is left to the sea chart or the photo
@@ -195,33 +207,57 @@ public class HomeActivity extends Activity {
         tl.topMargin = top;
         root.addView(time, tl);
 
-        // five pills, an icon then its name: household tasks, network, inputs, screensaver, settings; the photo's caption below
+        // five pills, an icon then its name: household tasks (with how many are open), network, inputs, screensaver, settings
         LinearLayout end = new LinearLayout(this);
         end.setOrientation(LinearLayout.VERTICAL);
         end.setGravity(Gravity.END);
         LinearLayout buttons = new LinearLayout(this);
         buttons.setOrientation(LinearLayout.HORIZONTAL);
         tasksLabel = pill(buttons, R.drawable.ic_tasks, v -> tasks());
+        tasksBadge = Ui.text(this, "", 12, Ui.bold(), Ui.DEEP);
+        GradientDrawable bd = new GradientDrawable();
+        bd.setColor(Ui.LUBAN);
+        bd.setCornerRadius(Ui.dp(this, 10));
+        tasksBadge.setBackground(bd);
+        tasksBadge.setGravity(Gravity.CENTER);
+        tasksBadge.setMinWidth(Ui.dp(this, 20));
+        tasksBadge.setPadding(Ui.dp(this, 5), 0, Ui.dp(this, 5), 0);
+        tasksBadge.setVisibility(View.GONE);
+        LinearLayout.LayoutParams bl = new LinearLayout.LayoutParams(-2, Ui.dp(this, 20));
+        bl.setMarginStart(Ui.dp(this, 8));
+        ((LinearLayout) tasksLabel.getParent()).addView(tasksBadge, bl);
         networkLabel = pill(buttons, R.drawable.ic_offline, v -> open(new Intent(Settings.ACTION_WIFI_SETTINGS), new Intent(Settings.ACTION_SETTINGS)));
         networkIcon = (ImageView) ((LinearLayout) networkLabel.getParent()).getChildAt(0);
         inputsLabel = pill(buttons, R.drawable.ic_inputs, v -> inputs());
         screensaverLabel = pill(buttons, R.drawable.ic_moon, v -> screensaver());
         settingsLabel = pill(buttons, R.drawable.ic_settings, v -> open(new Intent(Settings.ACTION_SETTINGS), null));
         end.addView(buttons);
-        caption = Ui.text(this, "", 12, Ui.regular(), Ui.INK3);   // the photo: place · photographer, licence
-        caption.setPadding(0, Ui.dp(this, 10), 0, 0);
-        end.addView(caption);
         FrameLayout.LayoutParams el = new FrameLayout.LayoutParams(-2, -2, Gravity.TOP | Gravity.END);
         el.setMarginEnd(side);
         el.topMargin = top;
         root.addView(end, el);
+        // the photo's place, photographer and licence, small in the lower corner, as on the screensaver
+        caption = Ui.text(this, "", 11, Ui.regular(), Ui.INK3);
+        FrameLayout.LayoutParams capl = new FrameLayout.LayoutParams(-2, -2, Gravity.BOTTOM | Gravity.END);
+        capl.setMarginEnd(side);
+        capl.bottomMargin = Ui.dp(this, 9);
+        root.addView(caption, capl);
         wallpaper.onChange = this::updateCaption;
 
         LinearLayout dock = new LinearLayout(this);
         dock.setOrientation(LinearLayout.VERTICAL);
-        TextView label = Ui.text(this, "المفضلة · Favourites", 13, Ui.bold(), Ui.LUBAN_SOFT);
-        label.setPadding(Ui.dp(this, 8), 0, Ui.dp(this, 8), Ui.dp(this, 2));
-        dock.addView(label);
+        // the row's name in the screen's language, and a resin rule fading out after it
+        LinearLayout dockHead = new LinearLayout(this);
+        dockHead.setOrientation(LinearLayout.HORIZONTAL);
+        dockHead.setGravity(Gravity.CENTER_VERTICAL);
+        dockHead.setPadding(Ui.dp(this, 8), 0, Ui.dp(this, 8), Ui.dp(this, 2));
+        favLabel = Ui.text(this, "", 13, Ui.bold(), Ui.LUBAN_SOFT);
+        dockHead.addView(favLabel);
+        favLine = new View(this);
+        LinearLayout.LayoutParams fl = new LinearLayout.LayoutParams(0, Math.max(1, Ui.dp(this, 1)), 1f);
+        fl.setMarginStart(Ui.dp(this, 12));
+        dockHead.addView(favLine, fl);
+        dock.addView(dockHead, new LinearLayout.LayoutParams(-1, -2));
         int p = Ui.dp(this, 8);   // room for the 7% lift of a focused tile
         HorizontalScrollView sv = new HorizontalScrollView(this) {
             // scroll a focused tile in with its lift too, so a tile at either end of the row is never cut at the edge
@@ -276,6 +312,13 @@ public class HomeActivity extends Activity {
         name(inputsLabel, ar ? "المداخل" : "Inputs");
         name(screensaverLabel, ar ? "شاشة التوقف" : "Screensaver");
         name(settingsLabel, ar ? "الإعدادات" : "Settings");
+        favLabel.setText(ar ? "المفضلة" : "Favourites");
+        // the rule starts at the name: on its left in Arabic, on its right in English
+        favLine.setBackground(new GradientDrawable(ar ? GradientDrawable.Orientation.RIGHT_LEFT : GradientDrawable.Orientation.LEFT_RIGHT,
+            new int[] {0x66E2A94F, 0x00E2A94F}));
+        tasksBadge.setText(Ui.digits(String.valueOf(openTasks), arabicDigits));
+        tasksBadge.setVisibility(openTasks > 0 ? View.VISIBLE : View.GONE);
+        if (openTasks > 0) ((View) tasksLabel.getParent()).setContentDescription(tasksLabel.getText() + " · " + openTasks);
     }
 
     private static void name(TextView label, String s) {
@@ -337,6 +380,12 @@ public class HomeActivity extends Activity {
                 arabicDigits = "arab".equals(o.optString("digits"));
                 clock24 = o.optBoolean("clock24", false);
                 hijriOffset = Math.max(-2, Math.min(2, o.optInt("hijriOffset", 0)));
+                org.json.JSONArray tasks = o.optJSONArray("tasks");
+                openTasks = 0;
+                if (tasks != null) for (int i = 0; i < tasks.length(); i++) {
+                    org.json.JSONObject t = tasks.optJSONObject(i);
+                    if (t != null && !t.optBoolean("done", false)) openTasks++;
+                }
             }
         } catch (Exception ignored) { }
     }
@@ -348,7 +397,11 @@ public class HomeActivity extends Activity {
         clock.setText(Ui.digits(hh + ":" + (m < 10 ? "0" : "") + m, arabicDigits));
         ampm.setText(clock24 ? "" : h < 12 ? (ar ? "صباحًا" : "AM") : (ar ? "مساءً" : "PM"));
         clockLine.setLayoutDirection(ar ? View.LAYOUT_DIRECTION_RTL : View.LAYOUT_DIRECTION_LTR);
-        greeting.setText(h < 12 ? (ar ? "صباح الخير" : "Good morning") : (ar ? "مساء الخير" : "Good evening"));
+        // morning is from Fajr to Dhuhr (at one in the night it is still evening); without prayer times, from 4 to noon
+        double[] fd = card.morning();
+        double mins = fd != null ? card.nowMinutes() : h * 60 + m;
+        boolean morning = fd != null ? mins >= fd[0] && mins < fd[1] : h >= 4 && h < 12;
+        greeting.setText(morning ? (ar ? "صباح الخير" : "Good morning") : (ar ? "مساء الخير" : "Good evening"));
         // the day, the Hijri date, then the Gregorian: الخميس 11 جمادى الأولى 1448 هـ · 22 أكتوبر 2026 م
         String nu = arabicDigits ? "arab" : "latn";
         ULocale greg = new ULocale((ar ? "ar_OM" : "en_GB") + "@numbers=" + nu);

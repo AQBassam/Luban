@@ -29,7 +29,8 @@ final class PrayerCard {
     private final TextView next, left;
     private final Dial dial;
     private JSONObject cfg;
-    private String computedFor = "";
+    private String computedFor = "", morningFor = "";
+    private double[] morningTimes;
     private double[] today, tomorrow;
 
     PrayerCard(Context c) {
@@ -37,9 +38,12 @@ final class PrayerCard {
         view = new LinearLayout(c);
         view.setOrientation(LinearLayout.HORIZONTAL);
         view.setGravity(Gravity.CENTER_VERTICAL);
+        // a glass pill, so the next prayer reads on any photo
+        view.setBackground(Ui.glass(c, 99));
+        view.setPaddingRelative(Ui.dp(c, 8), Ui.dp(c, 5), Ui.dp(c, 16), Ui.dp(c, 5));
 
         dial = new Dial(c);
-        LinearLayout.LayoutParams dl = new LinearLayout.LayoutParams(Ui.dp(c, 40), Ui.dp(c, 40));
+        LinearLayout.LayoutParams dl = new LinearLayout.LayoutParams(Ui.dp(c, 34), Ui.dp(c, 34));
         dl.setMarginEnd(Ui.dp(c, 10));
         view.addView(dial, dl);
         next = Ui.text(c, "", 18, Ui.bold(), Ui.FOAM);
@@ -61,6 +65,7 @@ final class PrayerCard {
             // the screensaver app is missing, older, or signed with another key: no card
         }
         computedFor = "";
+        morningFor = "";
         tick();
     }
 
@@ -97,6 +102,33 @@ final class PrayerCard {
         long l = (long) Math.ceil(leftMin), h = l / 60, mm = l % 60;
         left.setText(Ui.digits("· " + (ar ? (h > 0 ? "بعد " + h + " س " + mm + " د" : "بعد " + mm + " دقيقة") : "in " + (h > 0 ? h + "h " : "") + mm + "m"), arab));
         dial.set(order, mins, idx, ar);
+    }
+
+    /**
+     * Today's Fajr and Dhuhr, in minutes after midnight in the place's zone, for the greeting (morning runs from Fajr to
+     * Dhuhr); null before the screensaver has settings. Works with the card off too.
+     */
+    double[] morning() {
+        if (cfg == null) return null;
+        try {
+            TimeZone tz = TimeZone.getTimeZone(cfg.optString("tz", "Asia/Muscat"));
+            Calendar now = Calendar.getInstance(tz);
+            String key = now.get(Calendar.YEAR) + "-" + now.get(Calendar.DAY_OF_YEAR);
+            if (!key.equals(morningFor)) {
+                double[] t = compute(now.get(Calendar.YEAR), now.get(Calendar.MONTH) + 1, now.get(Calendar.DAY_OF_MONTH), tz, 0);
+                morningTimes = new double[] {t[0], t[2]};
+                morningFor = key;
+            }
+            return morningTimes;
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    /** Minutes after midnight now, in the place's zone. */
+    double nowMinutes() {
+        Calendar now = Calendar.getInstance(TimeZone.getTimeZone(cfg == null ? "Asia/Muscat" : cfg.optString("tz", "Asia/Muscat")));
+        return now.get(Calendar.HOUR_OF_DAY) * 60 + now.get(Calendar.MINUTE);
     }
 
     private double[] compute(int y, int m, int d, TimeZone tz, int dayOffset) {

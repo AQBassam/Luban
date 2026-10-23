@@ -80,10 +80,9 @@ final class Tiles {
     static FrameLayout allApps(Activity c, int heightDp) {
         FrameLayout t = new FrameLayout(c);
         t.setTag("all-apps");
-        GradientDrawable bg = new GradientDrawable();
-        bg.setColor(0);
-        bg.setCornerRadius(Ui.dp(c, 12));
-        bg.setStroke(Ui.dp(c, 1), 0x66E2A94F, Ui.dp(c, 4), Ui.dp(c, 3));
+        GradientDrawable bg = Ui.glass(c, 12);   // solid glass like the buttons: a dashed outline read as an empty place
+        bg.setStroke(Ui.dp(c, 1), 0x59E2A94F);
+        t.setElevation(Ui.dp(c, 3));
         Ui.focusable(t, bg);
         LinearLayout in = new LinearLayout(c);
         in.setOrientation(LinearLayout.VERTICAL);
