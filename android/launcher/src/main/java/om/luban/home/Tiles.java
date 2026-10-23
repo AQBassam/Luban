@@ -46,7 +46,7 @@ final class Tiles {
             ip.topMargin = Ui.dp(c, heightDp * 0.12f);
             t.addView(img, ip);
             TextView label = Ui.text(c, a.label, 12, Ui.medium(), Ui.INK);
-            label.setSingleLine(true);
+            label.setMaxLines(1);   // not setSingleLine: a single-line TextView scrolls sideways and never auto-sizes
             label.setGravity(Gravity.CENTER);
             // a long name on a small tile steps down instead of being cut
             label.setAutoSizeTextTypeUniformWithConfiguration(8, 12, 1, android.util.TypedValue.COMPLEX_UNIT_SP);
