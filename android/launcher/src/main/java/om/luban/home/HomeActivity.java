@@ -153,6 +153,7 @@ public class HomeActivity extends Activity {
         FrameLayout root = new FrameLayout(this);
         root.setBackground(new SeaChart());
         root.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+        root.setClipChildren(false);   // the prayer pill's edge stands past the clock column (see time.setClipChildren)
         wallpaper = new Wallpaper(this, root);
 
         // over the photos (when the owner chose them): the deep sea, so the words stay readable
