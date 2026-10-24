@@ -222,10 +222,11 @@ public class HomeActivity extends Activity {
         bw.setOrientation(LinearLayout.VERTICAL);
         bw.setGravity(Gravity.CENTER_HORIZONTAL);
         bw.addView(Ui.wordmark(this, 28, Ui.LUBAN));
-        TextView latin = Ui.text(this, "LUBAN", 8, Ui.medium(), Ui.LUBAN);
-        latin.setLetterSpacing(.4f);
-        // room on both sides: the spacing after the last letter is not measured, and in a right-to-left row the N was cut
-        latin.setPadding(Ui.dp(this, 4), Ui.dp(this, 2), Ui.dp(this, 4), 0);
+        // spaced with hair spaces, not letterSpacing: in a right-to-left row a letter-spaced line lost its last letters
+        TextView latin = Ui.text(this, "L\u200AU\u200AB\u200AA\u200AN", 8, Ui.medium(), Ui.LUBAN);
+        latin.setTextDirection(View.TEXT_DIRECTION_LTR);
+        latin.setSingleLine(true);
+        latin.setPadding(0, Ui.dp(this, 2), 0, 0);
         bw.addView(latin);
         LinearLayout.LayoutParams bwl = new LinearLayout.LayoutParams(-2, -2);
         bwl.setMarginStart(Ui.dp(this, 10));

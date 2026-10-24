@@ -101,9 +101,10 @@ public class SettingsActivity extends Activity {
         word.setContentDescription("لُبان · Luban");
         name.addView(word, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, dp(46)));
         word.setAdjustViewBounds(true);
-        TextView latin = label("LUBAN", 11, regular, LUBAN, 2);
-        latin.setLetterSpacing(.4f);
-        latin.setPadding(dp(6), dp(2), dp(6), 0);   // the spacing after the last letter is not measured: the N was cut
+        // spaced with hair spaces, not letterSpacing: in a right-to-left row a letter-spaced line lost its last letters
+        TextView latin = label("L\u200AU\u200AB\u200AA\u200AN", 11, regular, LUBAN, 2);
+        latin.setTextDirection(View.TEXT_DIRECTION_LTR);
+        latin.setSingleLine(true);
         name.addView(latin);
         LinearLayout.LayoutParams nl = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         nl.setMarginStart(dp(18));
