@@ -41,6 +41,14 @@ select,input[type=text],input[type=number],input[type=url]{width:100%;font:inher
 .team input[type=checkbox]{flex:none;width:24px;height:24px;min-height:0;accent-color:var(--luban)}
 textarea{width:100%;font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
 button{font:inherit;border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:10px;padding:8px 12px;cursor:pointer}
+.cardrow{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--line);min-height:52px}
+.cardrow:last-child{border-bottom:0}
+.cardrow input{width:22px;height:22px;accent-color:var(--luban);flex:none}
+.cardrow .ord{width:24px;height:24px;border-radius:50%;background:var(--luban);color:var(--card);font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;flex:none}
+.cardrow .ord:empty{background:none}
+.cardrow .nm{flex:1;font-size:15px;min-width:0}.cardrow .nm small{display:block;font-size:12px;color:var(--ink-2)}
+.cardrow.off .nm{color:var(--ink-2)}
+.cardrow button{min-width:40px;min-height:40px;padding:0}.cardrow button:disabled{opacity:.3}
 .hit{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:6px 0}
 #save{position:fixed;inset-inline:16px;bottom:16px;padding:14px;font-size:17px;font-weight:700;background:var(--luban);color:#1D1407;border:0;border-radius:14px;box-shadow:0 6px 20px rgba(0,0,0,.18)}
 #msg{position:fixed;inset-inline:16px;bottom:80px;text-align:center;font-weight:700;padding:10px;border-radius:12px;display:none}
@@ -110,12 +118,11 @@ details#fine[open] summary::after{transform:rotate(180deg)}
 <div class="panel" role="tabpanel" id="p-screen" aria-labelledby="tab-screen" hidden>
 <section>
   <h2 data-t="screen">الشاشة</h2>
-  <label for="panel" data-t="panel">البطاقة بجانب الساعة</label>
-  <select id="panel">
-    <option value="verse" data-t="pVerse">آية أو حديث اليوم</option><option value="prayers" data-t="pPrayers">مواقيت اليوم والإقامة</option>
-    <option value="forecast" data-t="pForecast">طقس الأيام القادمة</option><option value="matches" data-t="pMatches">مباريات فرقك</option>
-    <option value="shows" data-t="pShows">جديد المسلسلات</option><option value="tasks" data-t="pTasks">مهام البيت</option><option value="dinner" data-t="pDinner">عشاء الليلة</option><option value="none" data-t="pNone">بدون بطاقة</option>
-  </select>
+  <label data-t="cards">البطاقات بجانب الساعة</label>
+  <p class="hint" data-t="cardsHint">علّم ما تريد أن يظهر؛ تتناوب البطاقات المعلَّمة بهذا الترتيب، وتُتخطّى بطاقة ليس عندها ما تعرضه. رتّبها بالسهمين.</p>
+  <div id="cards"></div>
+  <div class="row" style="align-items:center;margin-top:8px"><label for="cardSecs" data-t="cardSecs" style="margin:0;flex:0 0 auto">مدة كل بطاقة</label>
+   <select id="cardSecs"><option value="20" data-t="s20">20 ثانية</option><option value="40" data-t="s40">40 ثانية</option><option value="60" data-t="s60">60 ثانية</option><option value="120" data-t="s120">دقيقتان</option></select></div>
   <label for="bg" data-t="bg">الخلفية</label>
   <select id="bg"><option value="chart" data-t="bgChart">خريطة البحر</option><option value="photos" data-t="bgPhotos">صور من عُمان</option></select>
   <label class="check"><input type="checkbox" id="omanDays"><span data-t="omanDays">اليوم الوطني وموسم الخريف</span></label>

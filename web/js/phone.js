@@ -4,7 +4,7 @@
 (function () {
   'use strict';
   const { METHODS, compute, hhmm } = window.LubanPrayer;
-  const { sanitize, sanitizeDinner, resolvePlace, DEFAULTS } = window.LubanSettings;
+  const { sanitize, sanitizeDinner, resolvePlace, DEFAULTS, CARDS } = window.LubanSettings;
   const DATA = window.LUBAN_DATA;
   const $ = id => document.getElementById(id);
   const h = (tag, attrs, text) => { const e = document.createElement(tag); Object.assign(e, attrs || {}); if (text != null) e.textContent = text; return e; };
@@ -19,6 +19,8 @@
     pForecast: 'Weather, next days', pMatches: 'Your teams', pShows: 'New episodes', pTasks: 'Household tasks', pDinner: "Tonight's dinner", pNone: 'No card', omanDays: 'Oman National Day and Khareef season',
     tasks: 'Household tasks', taskText: 'The task, e.g. water the plants', taskWho: 'For whom (optional)', taskWhen: 'When (optional)', add: 'Add',
     tasksHint: 'Everyone at home sees them on the screen until you mark them done or delete them; they are kept on the TV only. Press Save after editing.', done: 'Done',
+    cards: 'Cards beside the clock', cardSecs: 'Each card for', s20: '20 seconds', s40: '40 seconds', s60: '60 seconds', s120: '2 minutes',
+    cardsHint: 'Tick what to show; the ticked cards take turns in this order, and one with nothing to show is skipped. Order them with the arrows.',
     tabBasic: 'Basics', tabScreen: 'Screen', tabHome: 'Home', tabAdvanced: 'Advanced', fine: 'Fine-tune prayer times', fineLink: 'Adjust prayer and iqama minutes…',
     dinnerPlan: 'Dinner plan', dinnerApply: 'Apply the code', dinnerClear: 'Remove the plan', dinnerCode: 'LBN1.…',
     dinnerHint: 'From the Smart Dinner guide (dinner.bassamailab.xyz) → More → «Copy Luban code», then paste it here. The code is one full cycle of the plan and the screen repeats it by itself, so paste again only when the dishes or times change. Press Save after applying.',
@@ -165,13 +167,45 @@
     } catch (e) { box.append(h('div', { className: 'hint' }, String(e))); }
   }
 
+  /** The cards' names and a word on each, in the page's language. */
+  const CARD_NAMES = {
+    ar: { dinner: ['عشاء الليلة', 'عشاء الليلة والغد وموعد بدء الطهي'], dinnerTasks: ['مهام العشاء', 'التسوق والتجهيز بمواعيدها'],
+      prayers: ['مواقيت اليوم والإقامة', ''], tasks: ['مهام البيت', ''], verse: ['آية أو حديث اليوم', ''],
+      markets: ['الأسعار', 'الأسواق المختارة أدناه'], forecast: ['طقس الأيام القادمة', ''], matches: ['مباريات فرقك', ''], shows: ['جديد المسلسلات', ''] },
+    en: { dinner: ["Tonight's dinner", 'Tonight, tomorrow, and when to start cooking'], dinnerTasks: ['Dinner tasks', 'Shopping and prep, with their times'],
+      prayers: ["Today's prayers and iqama", ''], tasks: ['Household tasks', ''], verse: ['Verse or hadith of the day', ''],
+      markets: ['Prices', 'The markets chosen below'], forecast: ['Weather, next days', ''], matches: ['Your teams', ''], shows: ['New episodes', ''] },
+  };
+  /** The cards beside the clock: tick the ones to show; the ticked ones take turns in this order, moved with the arrows. */
+  function renderCards() {
+    const box = $('cards'); box.textContent = '';
+    [...S.cards, ...CARDS.filter(c => S.cards.indexOf(c) < 0)].forEach(id => {
+      const i = S.cards.indexOf(id), on = i >= 0, [name, sub] = CARD_NAMES[lang][id];
+      const row = h('div', { className: 'cardrow' + (on ? '' : ' off') });
+      const cb = h('input', { type: 'checkbox', checked: on, title: name });
+      cb.addEventListener('change', () => { S.cards = cb.checked ? [...S.cards, id] : S.cards.filter(c => c !== id); renderCards(); });
+      const nm = h('span', { className: 'nm' }, name);
+      if (sub) nm.append(h('small', {}, sub));
+      const up = h('button', { type: 'button', title: '↑', disabled: !on || i === 0 }, '↑'); up.onclick = () => moveCard(id, -1);
+      const down = h('button', { type: 'button', title: '↓', disabled: !on || i === S.cards.length - 1 }, '↓'); down.onclick = () => moveCard(id, 1);
+      row.append(cb, h('span', { className: 'ord' }, on ? String(i + 1) : ''), nm, up, down);
+      box.append(row);
+    });
+  }
+  function moveCard(id, d) {
+    const i = S.cards.indexOf(id), j = i + d;
+    if (i < 0 || j < 0 || j >= S.cards.length) return;
+    [S.cards[i], S.cards[j]] = [S.cards[j], S.cards[i]];
+    renderCards();
+  }
+
   function collect() {
     const custom = $('city').value === 'custom';
     return sanitize({
       ...S, lang: $('lang').value, digits: $('digits').value, clock24: $('clock24').checked, city: $('city').value,
       place: custom ? { ar: $('c-ar').value, en: $('c-en').value, lat: +$('c-lat').value, lon: +$('c-lon').value, tz: $('c-tz').value.trim() } : null,
       method: $('method').value, asr: $('asr').value, offsets: grid('offsets'), iqama: grid('iqama'), hijriOffset: +$('hijri').value,
-      panel: $('panel').value, bg: $('bg').value, omanDays: $('omanDays').checked, night: $('night').checked, homeCard: $('homeCard').checked,
+      cards: S.cards, cardSecs: +$('cardSecs').value, bg: $('bg').value, omanDays: $('omanDays').checked, night: $('night').checked, homeCard: $('homeCard').checked,
       markets: checked('markets'), shows: { genres: checked('genres'), langs: S.shows.langs, minRating: +$('minRating').value },
       api: $('api').value.trim(), channel: $('channel').value,
     }, METHODS);
@@ -193,7 +227,7 @@
     $('method').value = S.method; $('asr').value = S.asr; $('hijri').value = String(S.hijriOffset);
     numberGrid('offsets', PR, S.offsets, -30, 30);
     numberGrid('iqama', ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'], S.iqama, 0, 60);
-    $('panel').value = S.panel; $('bg').value = S.bg; $('omanDays').checked = S.omanDays; $('night').checked = S.night; $('homeCard').checked = S.homeCard;
+    renderCards(); $('cardSecs').value = String(S.cardSecs); $('bg').value = S.bg; $('omanDays').checked = S.omanDays; $('night').checked = S.night; $('homeCard').checked = S.homeCard;
     checks('markets', ['gold', 'brent', 'btc', 'spx'], S.markets, t);
     checks('genres', GENRES, S.shows.genres);
     $('minRating').value = String(S.shows.minRating); $('api').value = S.api; $('channel').value = S.channel;
@@ -228,9 +262,9 @@
   function strip() {
     const s = collect(), p = resolvePlace(s, DATA.cities), box = $('strip');
     const open = s.tasks.filter(x => !x.done).length, ar = lang === 'ar';
-    const panel = $('panel').options[$('panel').selectedIndex];
-    const n = open === 1 ? 'مهمة مفتوحة' : open === 2 ? 'مهمتان مفتوحتان' : open <= 10 ? `${open} مهام مفتوحة` : `${open} مهمة مفتوحة`;
-    const items = [panel ? panel.textContent : '',
+    const c = s.cards.length, n = open === 1 ? 'مهمة مفتوحة' : open === 2 ? 'مهمتان مفتوحتان' : open <= 10 ? `${open} مهام مفتوحة` : `${open} مهمة مفتوحة`;
+    const cards = ar ? (c === 0 ? 'بلا بطاقات' : c === 1 ? 'بطاقة واحدة' : c === 2 ? 'بطاقتان' : c <= 10 ? `${c} بطاقات` : `${c} بطاقة`) : `${c} card${c === 1 ? '' : 's'}`;
+    const items = [cards,
       ar ? (open ? n : 'لا مهام') : (open ? `${open} open task${open > 1 ? 's' : ''}` : 'no tasks'),
       s.dinner ? (ar ? `عشاء: ${s.dinner.n} ليلة` : `dinner: ${s.dinner.n} nights`) : (ar ? 'لا خطة عشاء' : 'no dinner plan')];
     box.textContent = ''; items.forEach(x => box.append(h('span', {}, x)));

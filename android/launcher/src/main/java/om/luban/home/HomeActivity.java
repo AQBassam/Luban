@@ -201,9 +201,9 @@ public class HomeActivity extends Activity {
         dl.topMargin = Ui.dp(this, 6);
         time.addView(dates, dl);
         card = new PrayerCard(this);
-        LinearLayout.LayoutParams cl = new LinearLayout.LayoutParams(-2, -2);
+        LinearLayout.LayoutParams cl = new LinearLayout.LayoutParams(Ui.dp(this, 440), -2);   // today's six prayers in a row
         cl.topMargin = Ui.dp(this, 10);
-        // the pill's own padding hangs outside the column, so its dial starts on the line of the words above it
+        // the panel's edge hangs outside the column, so what is in it sits on the line of the words above
         cl.setMarginStart(-Ui.dp(this, 8));
         time.addView(card.view, cl);
         FrameLayout.LayoutParams tl = new FrameLayout.LayoutParams(-2, -2, Gravity.TOP | Gravity.START);

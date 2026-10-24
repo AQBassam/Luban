@@ -3,7 +3,10 @@
  * and every value is checked against what it may be. */
 (function (root) {
   'use strict';
-  const PANELS = ['verse', 'prayers', 'forecast', 'matches', 'shows', 'tasks', 'dinner', 'none'];
+  const PANELS = ['verse', 'prayers', 'forecast', 'matches', 'shows', 'tasks', 'dinner', 'none'];   // the one card of before
+  // the cards beside the clock, ticked on the phone; the ticked ones take turns in their order, cardSecs each
+  const CARDS = ['dinner', 'dinnerTasks', 'prayers', 'tasks', 'verse', 'markets', 'forecast', 'matches', 'shows'];
+  const CARD_SECS = [20, 40, 60, 120];
   const MARKETS = ['gold', 'brent', 'btc', 'spx'];
   const PRAYERS5 = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'];
 
@@ -19,7 +22,8 @@
     offsets: { fajr: 0, sunrise: 0, dhuhr: 0, asr: 0, maghrib: 0, isha: 0 },
     iqama: { fajr: 25, dhuhr: 20, asr: 20, maghrib: 10, isha: 20 },
     hijriOffset: 0,             // -2..2 days, for countries that follow a local moon sighting
-    panel: 'verse',
+    cards: ['verse', 'markets', 'tasks'],   // in turn order; a card with nothing to show is skipped
+    cardSecs: 40,
     homeCard: false,            // the launcher's card
     teams: [],                  // [{id, en, ar}] football-data.org team ids, priority order
     markets: ['gold', 'brent', 'btc', 'spx'],
@@ -86,7 +90,15 @@
     if (isObj(input.offsets)) for (const k of Object.keys(s.offsets)) { const n = num(input.offsets[k], -30, 30); if (n !== null) s.offsets[k] = Math.round(n); }
     if (isObj(input.iqama)) for (const k of PRAYERS5) { const n = num(input.iqama[k], 0, 60); if (n !== null) s.iqama[k] = Math.round(n); }
     const h = num(input.hijriOffset, -2, 2); if (h !== null) s.hijriOffset = Math.round(h);
-    s.panel = pick(input.panel, PANELS, s.panel);
+    if (Array.isArray(input.cards)) s.cards = input.cards.filter((c, i, a) => CARDS.includes(c) && a.indexOf(c) === i);
+    else if (PANELS.includes(input.panel)) {
+      // settings saved before the checklist (October 2026): the one card first, then what used to come as its extra pages
+      const p = input.panel;
+      s.cards = p === 'none' ? [] : p === 'dinner' ? ['dinner', 'dinnerTasks'] : [p];
+      for (const c of ['dinner', 'dinnerTasks', 'markets', 'tasks']) if (s.cards.indexOf(c) < 0) s.cards.push(c);
+    }
+    const cs = num(input.cardSecs, 20, 120);
+    if (cs !== null) s.cardSecs = CARD_SECS.reduce((a, b) => Math.abs(b - cs) < Math.abs(a - cs) ? b : a);
     s.homeCard = input.homeCard === true;
     if (Array.isArray(input.teams)) {
       s.teams = input.teams.filter(t => isObj(t) && /^\d{1,9}$/.test(String(t.id))).slice(0, 10)
@@ -125,6 +137,6 @@
              method: s.method || country.method || 'mwl' };
   }
 
-  root.LubanSettings = { DEFAULTS, PANELS, MARKETS, sanitize, sanitizeDinner, resolvePlace };
+  root.LubanSettings = { DEFAULTS, PANELS, CARDS, CARD_SECS, MARKETS, sanitize, sanitizeDinner, resolvePlace };
   if (typeof module !== 'undefined' && module.exports) module.exports = root.LubanSettings;
 })(typeof window !== 'undefined' ? window : globalThis);

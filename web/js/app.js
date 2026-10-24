@@ -410,7 +410,7 @@
       if (c && Date.now() - c.at < 12 * 3600e3) { state.weather = c.w; state.forecast = c.f; }
     }
     renderWeather();
-    if (S.panel === 'forecast') renderCard();
+    refreshCard('forecast');
   }
   const level = (v, steps) => steps.filter(s => v > s).length;   // how many thresholds v is above
   function renderWeather() {
@@ -421,9 +421,10 @@
     const parts = [];
     if (typeof w.rh === 'number') parts.push(`${T.humidity} ${dg(Math.round(w.rh))}%`);
     if (typeof w.ws === 'number') parts.push(w.ws < 2 ? T.calm : `${T.wind} ${T.winds[Math.round((w.wd || 0) / 45) % 8]} ${dg(Math.round(w.ws))} ${T.kmh}`);
-    if (typeof w.aqi === 'number') parts.push(`${T.air} ${T.airLevels[level(w.aqi, [50, 100, 150, 200])]}`);
+    // air quality and UV as their numbers, the level in words beside them (US AQI; the UV index)
+    if (typeof w.aqi === 'number') parts.push(`${T.air} ${dg(Math.round(w.aqi))} (${T.airLevels[level(w.aqi, [50, 100, 150, 200])]})`);
     // the UV index is the day's highest: it says nothing after dark
-    if (typeof w.uv === 'number' && w.day) parts.push(`${T.uv} ${T.uvLevels[level(w.uv, [2.99, 5.99, 7.99, 10.99])]}`);
+    if (typeof w.uv === 'number' && w.day) parts.push(`${T.uv} ${dg(Math.round(w.uv))} (${T.uvLevels[level(w.uv, [2.99, 5.99, 7.99, 10.99])]})`);
     parts.forEach((p, i) => { if (i) more.append(h('span', 'sep', '·')); more.append(h('span', '', p)); });
     // Open-Meteo's licence asks for its name next to where its data shows
     const by = h('span', 'by'); by.append(h('bdi', '', 'Open-Meteo')); more.append(by);
@@ -498,24 +499,30 @@
     return pages;
   }
   /**
-   * Prices and household tasks are extra pages of the card: after 60 s of the chosen panel, 20 s for each of them
-   * (with no panel chosen, they take turns). Tasks chosen as the panel show all the time instead.
+   * The cards ticked on the phone take turns beside the clock, in their order, S.cardSecs each (the card's clock ticks
+   * every 20 s). A card with nothing to show now (no open tasks, no plan, no prices or matches yet) is skipped; with
+   * none ticked, or none with something to show, there is no card.
    */
-  function extraList() {
-    const extra = [];
-    if (S.panel !== 'dinner' && dinnerPages().length) extra.push('dinner');
-    if (shownMarkets().length) extra.push('markets');
-    if (openTasks().length && S.panel !== 'tasks') extra.push('tasks');
-    return extra;
+  function hasCard(id) {
+    const d = id === 'dinner' || id === 'dinnerTasks' ? dinnerToday() : null;
+    switch (id) {
+      case 'dinner': return !!(d && (d.tonight || d.tomorrow));
+      case 'dinnerTasks': return !!(d && d.tasks.length);
+      case 'tasks': return openTasks().length > 0;
+      case 'markets': return shownMarkets().length > 0;
+      case 'forecast': return state.forecast.length > 1;
+      case 'matches': return matchList().length > 0;
+      case 'shows': return state.shows.length > 0;
+      default: return true;   // verse, prayers
+    }
   }
-  function extraPage() {
-    const extra = extraList();
-    if (!extra.length) return null;
-    if (S.panel === 'none') return extra[state.page % extra.length];
-    const p = state.page % (3 + extra.length);
-    return p >= 3 ? extra[p - 3] : null;
+  function cardNow() {
+    const list = S.cards.filter(hasCard);
+    if (!list.length) return null;
+    return list[Math.floor(state.page / Math.max(1, S.cardSecs / 20)) % list.length];
   }
-  const marketsPage = () => extraPage() === 'markets';
+  /** New data for a card: show it if it is the one on screen, or if the card was empty and may now have something. */
+  function refreshCard(id) { if (state.cardId === id || !state.cardId) renderCard(); }
   function marketsList() {
     const ul = h('ul', 'mks');
     for (const id of shownMarkets()) {
@@ -536,7 +543,7 @@
     }
     return ul;
   }
-  function renderMarkets() { if (marketsPage()) renderCard(); }
+  function renderMarkets() { refreshCard('markets'); }
 
   // ---------- matches (football-data.org, through the data server: the free token stays on the server)
   const norm = s => String(s || '').toLowerCase().replace(/\b(al|fc|sc|club|saudi club)\b/g, '').replace(/[^a-z0-9]/g, '');
@@ -554,11 +561,11 @@
     return ts ? new Date(/Z$/.test(ts) ? ts : ts + 'Z') : null;
   }
   async function loadMatches() {
-    if (!S.teams.length) { state.matches = {}; if (S.panel === 'matches') renderCard(); return; }
+    if (!S.teams.length) { state.matches = {}; refreshCard('matches'); return; }
     let data = null;
     if (S.api) { try { data = await getJSON(`${S.api}/v1/matches?teams=${S.teams.map(t => t.id).join(',')}`, 12000); } catch (e) { data = null; } }
     if (data && Object.keys(data).length) { state.matches = data; store.set('matches', data); }
-    if (S.panel === 'matches') renderCard();
+    refreshCard('matches');
   }
   /** Events of the followed teams: results from the last 20 hours, then upcoming ones, soonest first. */
   function matchList() {
@@ -610,7 +617,7 @@
       list.sort((a, b) => b.rating - a.rating).splice(30);
     }
     if (list.length) { state.shows = list; store.set('shows', list); }
-    if (S.panel === 'shows') renderCard();
+    refreshCard('shows');
   }
 
   // ---------- the card beside the clock
@@ -639,37 +646,35 @@
 
   function renderCard(animate) {
     const card = $('card'), body = $('card-body'), title = $('card-title');
-    const extra = extraPage();
-    if (S.panel === 'none' && !extra) { card.hidden = true; return; }
+    const id = cardNow();
+    state.cardId = id;
+    if (!id) { card.hidden = true; return; }
     card.hidden = false; clear(body);
     if (animate) { body.classList.remove('fade'); void body.offsetWidth; body.classList.add('fade'); }
-    if (extra === 'dinner' || (!extra && S.panel === 'dinner')) {
-      // chosen as the panel, the pages follow each other every 20 s; as a turn of the card, each turn shows the next one
-      const pages = dinnerPages();
-      const turn = S.panel === 'dinner' ? state.page : Math.floor(state.page / (S.panel === 'none' ? extraList().length : 3 + extraList().length));
-      const pg = pages[turn % Math.max(1, pages.length)];
-      title.textContent = pg ? pg.title : T.dinner;
-      if (!pg) body.append(h('div', 'empty', T.noDinner));
-      else if (pg.rows) body.append(rowsList(pg.rows, -1));
-      else {
-        const ul = h('ul', 'rows');
-        for (const x of pg.tasks) { const li = h('li', 'tk'); li.append(h('span', 'b', fmtTime(x.at)), h('span', 'a', x.text)); ul.append(li); }
-        body.append(ul);
-      }
-    } else if (extra === 'tasks' || (!extra && S.panel === 'tasks')) {
+    if (id === 'dinner') {
+      title.textContent = T.dinner;
+      body.append(rowsList(dinnerPages()[0].rows, -1));
+    } else if (id === 'dinnerTasks') {
+      // three tasks to a page, the next page every 20 s
+      const pages = dinnerPages().filter(p => p.tasks), pg = pages[state.page % pages.length];
+      title.textContent = T.dinnerTasks;
+      const ul = h('ul', 'rows');
+      for (const x of pg.tasks) { const li = h('li', 'tk'); li.append(h('span', 'b', fmtTime(x.at)), h('span', 'a', x.text)); ul.append(li); }
+      body.append(ul);
+    } else if (id === 'tasks') {
       title.textContent = T.tasks;
       const rows = openTasks().map(x => [x.t, [x.who, x.when].filter(Boolean).join(' · ')]);
       body.append(rows.length ? rowsList(rows, -1) : h('div', 'empty', T.noTasks));
-    } else if (extra === 'markets') {
+    } else if (id === 'markets') {
       title.textContent = T.markets;
       body.append(marketsList());
       // CoinGecko's terms ask for this line wherever its prices show
       if (shownMarkets().indexOf('btc') >= 0) { const s = h('div', 'src'); s.append(h('bdi', '', 'Powered by CoinGecko')); body.append(s); }
-    } else if (S.panel === 'verse') {
+    } else if (id === 'verse') {
       const q = quoteOfDay(); title.textContent = q.title;
       body.append(h('div', q.cls, S.digits === 'arab' ? q.quote.replace(/\d+/g, dg) : q.quote), h('div', 'src', q.src));
       fitCard();
-    } else if (S.panel === 'prayers') {
+    } else if (id === 'prayers') {
       ensureTimes(); title.textContent = T.prayersToday;
       const nx = nextPrayer(), friday = local().wd === 'Fri';
       const rows = ['fajr', 'sunrise', 'dhuhr', 'asr', 'maghrib', 'isha'].map(k => {
@@ -677,11 +682,11 @@
         return [prayerName(k, friday), fmtTime(state.times[k]) + iq];
       });
       body.append(rowsList(rows, nx.tomorrow ? -1 : KEYS.indexOf(nx.key)));
-    } else if (S.panel === 'forecast') {
+    } else if (id === 'forecast') {
       title.textContent = T.forecast;
       const rows = state.forecast.slice(1, 6).map(f => [CAL.day.format(new Date(f.d + 'T12:00:00Z')), `${T.weather[f.code] || ''}  ${dg(f.hi)}° / ${dg(f.lo)}°`]);
       body.append(rows.length ? rowsList(rows, -1) : h('div', 'empty', T.noData));
-    } else if (S.panel === 'matches') {
+    } else if (id === 'matches') {
       title.textContent = T.matches;
       // one line of text: a Latin name next to the score would pull the score into its own direction, so a mark of the
       // reading direction holds each part apart (home first, its score beside it, like the strip under the clock)
@@ -692,7 +697,7 @@
           live ? T.live : done ? T.ft : whenText(at)];
       });
       body.append(list.length ? rowsList(list, -1) : h('div', 'empty', T.noMatches));
-    } else if (S.panel === 'shows') {
+    } else if (id === 'shows') {
       title.textContent = T.shows;
       const per = 5, pages = Math.max(1, Math.ceil(state.shows.length / per)), p = state.page % pages;
       const rows = state.shows.slice(p * per, p * per + per).map(s => [s.name, `S${dg(s.season || 1)}·E${dg(s.number || 1)}  ★${dg((s.rating || 0).toFixed(1))}`]);
@@ -702,11 +707,6 @@
     fitCard();
   }
 
-  /**
-   * The photo's author and licence, the one credit along the bottom. The other sources are named where their terms ask:
-   * Open-Meteo beside the weather, CoinGecko under its price, TVmaze under the episodes; football-data.org and Yahoo ask
-   * for none on screen, and every source is listed on the phone page (docs/DATA-SOURCES.md).
-   */
   /** The wordmark (docs/brand/v4): Noto Sans Arabic SemiBold outlines (SIL OFL), refined with rhombus dots and pen cuts. */
   const WORDMARK_BOX = '0 0 596.81 495.89';
   const WORDMARK = 'M506.53 411.07L510.23 367.41Q528.73 367.41 536.5 363.71Q544.27 360.01 545.75 350.02Q547.23 340.03 546.49 321.16L539.46 158.97L583.49 140.97L590.89 322.27Q591.63 342.99 589.04 359.64Q586.82 375.92 578.31 387.39Q569.8 398.86 552.41 405.15Q535.39 411.07 506.53 411.07ZM505.42 95.09L501.72 74Q515.04 73.63 526.51 71.04Q537.98 68.45 546.86 64.75Q538.72 59.57 533.54 52.17Q528.36 44.4 528.36 34.04Q528.36 19.98 538.35 9.99Q548.34 0 563.88 0Q580.16 0 588.3 10.73Q596.81 21.46 596.81 35.15Q596.81 52.17 584.97 65.49Q573.13 78.44 552.41 86.21Q531.69 93.61 505.42 95.09ZM550.56 34.78Q550.56 40.33 554.63 45.51Q558.7 50.32 564.99 53.65Q574.98 44.77 574.98 35.89Q574.98 29.97 572.02 25.9Q569.06 21.46 563.14 21.46Q557.96 21.46 554.26 25.53Q550.56 29.23 550.56 34.78ZM370 411.07L373.7 367.41Q388.13 367.41 396.64 364.82Q405.52 361.86 410.33 354.09Q415.14 345.95 418.47 330.78Q422.17 315.24 426.24 290.08L467.31 297.11Q465.46 306.36 463.24 318.57Q461.02 330.78 461.02 340.4Q461.02 348.54 464.72 354.83Q468.42 360.75 478.78 364.08Q489.51 367.41 510.23 367.41Q521.7 367.41 526.51 373.7Q531.69 379.62 531.69 388.5Q531.69 398.12 525.03 404.78Q518.37 411.07 506.53 411.07Q476.93 411.07 461.39 404.78Q445.85 398.49 439.56 383.69Q426.98 401.45 409.59 406.26Q392.2 411.07 370 411.07ZM434.93 437.62L464.07 466.76L434.93 495.89L405.8 466.76ZM369.63 411.07Q337.07 411.07 319.31 404.04Q301.92 397.01 294.89 382.58Q288.23 368.15 287.49 345.21L279.72 158.97L323.38 140.97L331.15 325.6Q331.89 342.99 334.48 352.24Q337.44 361.12 346.32 364.45Q355.2 367.41 373.33 367.41Q384.8 367.41 389.98 373.7Q395.53 379.62 395.53 388.5Q395.53 398.12 388.5 404.78Q381.84 411.07 369.63 411.07ZM0 402.93Q0 389.98 3.33 371.85Q7.03 353.35 17.76 329.3L56.24 342.99Q49.95 359.64 46.62 372.22Q43.66 384.8 43.66 396.27Q43.66 424.39 63.27 437.34Q82.88 450.66 113.96 450.66Q137.64 450.66 153.18 444.37Q168.72 438.45 177.6 428.09Q186.48 417.73 190.18 405.52Q193.88 393.31 193.88 381.47Q193.88 366.67 188.7 346.32Q183.52 325.6 169.83 297.85L209.79 280.09Q220.89 300.07 229.03 326.71Q237.54 353.35 237.54 378.14Q237.54 396.64 231.62 416.62Q225.7 436.97 211.64 454.73Q197.95 472.49 173.9 483.59Q149.85 494.69 113.22 494.69Q82.14 494.69 56.24 485.07Q30.71 475.82 15.17 455.47Q0 435.49 0 402.93ZM117.1 205.62L147.17 235.69L117.1 265.76L87.04 235.69Z';
@@ -724,6 +724,11 @@
     box.append(h('div', 'line', T.slogan));
   }
 
+  /**
+   * The photo's author and licence, the one credit along the bottom. The other sources are named where their terms ask:
+   * Open-Meteo beside the weather, CoinGecko under its price, TVmaze under the episodes; football-data.org and Yahoo ask
+   * for none on screen, and every source is listed on the phone page (docs/DATA-SOURCES.md).
+   */
   function renderCredit() {
     const box = clear($('credit'));
     if (!state.photoCredit || S.bg !== 'photos') return;
@@ -783,19 +788,18 @@
 
     setInterval(tickClock, 1000);
     setInterval(() => { tickDates(); renderPrayers(); renderChips(); applyNight(); }, 20000);
-    // every 20 s: the next page of episodes, fresh times, and the turn to the prices or the tasks and back
+    // every 20 s: the next card when its time is up, the next page of episodes or dinner tasks, fresh times
     setInterval(() => {
-      const was = extraPage();
       state.page++;
-      const turned = extraPage() !== was;
-      if (turned || ['shows', 'prayers', 'matches', 'dinner'].includes(S.panel)) renderCard(turned || S.panel === 'shows' || S.panel === 'dinner');
+      const id = cardNow(), turned = id !== state.cardId;
+      if (turned || ['shows', 'prayers', 'matches', 'dinnerTasks'].includes(id)) renderCard(turned || id === 'shows' || id === 'dinnerTasks');
     }, 20000);
     setInterval(applyPhoto, 60000);
     setInterval(shift, 180000);
     loadWeather(); setInterval(loadWeather, 30 * 60000);
     loadMarkets(); setInterval(loadMarkets, 15 * 60000);
     loadMatches(); setInterval(loadMatches, 10 * 60000);
-    if (S.panel === 'shows') { loadShows(); setInterval(loadShows, 6 * 3600e3); }
+    if (S.cards.indexOf('shows') >= 0) { loadShows(); setInterval(loadShows, 6 * 3600e3); }
     window.addEventListener('hashchange', () => location.reload());
   }
 

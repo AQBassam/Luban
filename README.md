@@ -19,8 +19,8 @@
 
 | | |
 |---|---|
-| **شاشة لُبان** (شاشة التوقف) | بوصلة اليوم وجمرة اللبان، وساعة كبيرة، والتاريخان الميلادي والهجري، والصلوات الست مع العدّ للصلاة القادمة ثم للإقامة، و«الجمعة» مكان الظهر يوم الجمعة. وبطاقة بجانب الساعة تختارها: آية أو حديث، مواقيت اليوم، طقس الأيام القادمة، مباريات فرقك، جديد المسلسلات، مهام البيت، أو «عشاء الليلة» (عشاء الليلة والغد ومهام اليوم بمواعيدها، من خطة [دليل العشاء](https://dinner.bassamailab.xyz) تلصق رمزها من الجوال، وتعيد الشاشة دورتها وحدها). وبعد دقيقة من البطاقة المختارة تأتي صفحة للأسعار وأخرى للمهام |
-| **لُبان الرئيسية** (الواجهة) | واجهة عربية خفيفة: التحية والساعة والتاريخان وسطر الصلاة القادمة في الأعلى، وخمس كبسولات (مهام البيت، والشبكة، والمداخل HDMI، وشاشة التوقف، والإعدادات)، وصف واحد للمفضلة ينتهي ببطاقة «جميع التطبيقات»، وخلفيتها صور شاشة التوقف نفسها لليوم |
+| **شاشة لُبان** (شاشة التوقف) | بوصلة اليوم وجمرة اللبان، وساعة كبيرة، والتاريخان الميلادي والهجري، والصلوات الست مع العدّ للصلاة القادمة ثم للإقامة، و«الجمعة» مكان الظهر يوم الجمعة. وبطاقات بجانب الساعة تختارها وترتّبها من الجوال فتتناوب: آية أو حديث، مواقيت اليوم، طقس الأيام القادمة، مباريات فرقك، جديد المسلسلات، الأسعار، مهام البيت، و«عشاء الليلة» ومهامه (عشاء الليلة والغد ومهام اليوم بمواعيدها، من خطة [دليل العشاء](https://dinner.bassamailab.xyz) تلصق رمزها من الجوال، وتعيد الشاشة دورتها وحدها) |
+| **لُبان الرئيسية** (الواجهة) | واجهة عربية خفيفة: التحية والساعة والتاريخان وجدول صلوات اليوم بعدّاد للأذان ثم للإقامة، وخمس كبسولات (مهام البيت، والشبكة، والمداخل HDMI، وشاشة التوقف، والإعدادات)، وصف واحد للمفضلة ينتهي ببطاقة «جميع التطبيقات»، وخلفيتها صور شاشة التوقف نفسها لليوم |
 | **إعدادات من الجوال** | افتح التطبيق على التلفزيون، وامسح الرمز، واختر المدينة وطريقة الحساب والفرق وكل شيء |
 | **خادم بيانات** (اختياري) | خدمة صغيرة على Coolify تجمع المباريات والأسواق مرة واحدة لكل التلفزيونات |
 
@@ -89,8 +89,8 @@ Luban (لُبان) is frankincense, which Oman has traded with the world for tho
 
 | | |
 |---|---|
-| **Luban screen** (screensaver) | The day's compass and the frankincense ember, a large clock, Gregorian and Hijri dates, six prayer times with a countdown to the next and then to the iqama, Jumu'ah on Fridays. A card beside the clock: verse or hadith, today's prayers, the forecast, your teams, new episodes, household tasks, or tonight's dinner (tonight and tomorrow plus the day's tasks with their times, from your [dinner guide](https://dinner.bassamailab.xyz) plan: paste its code from the phone, and the screen repeats the cycle by itself); after a minute on the chosen card, a page of prices and one of tasks follow |
-| **Luban home** (launcher) | A light Arabic home screen: greeting, clock, dates and the next prayer on top; five pills (household tasks, network, HDMI inputs, screensaver, settings); one row of favourites ending in an "All apps" tile; the background is the same photos the screensaver shows that day |
+| **Luban screen** (screensaver) | The day's compass and the frankincense ember, a large clock, Gregorian and Hijri dates, six prayer times with a countdown to the next and then to the iqama, Jumu'ah on Fridays. Cards beside the clock, ticked and ordered on the phone, taking turns: verse or hadith, today's prayers, the forecast, your teams, new episodes, prices, household tasks, and tonight's dinner with its tasks (from your [dinner guide](https://dinner.bassamailab.xyz) plan: paste its code from the phone, and the screen repeats the cycle by itself) |
+| **Luban home** (launcher) | A light Arabic home screen: greeting, clock, dates and today's prayers with a countdown to the adhan, then to the iqama; five pills (household tasks, network, HDMI inputs, screensaver, settings); one row of favourites ending in an "All apps" tile; the background is the same photos the screensaver shows that day |
 | **Phone settings** | Open the app on the TV, scan the code, set the city, method, teams, everything |
 | **Data server** (optional) | A small service for Coolify that fetches matches and markets once for every TV ([server/](server/README.md)) |
 

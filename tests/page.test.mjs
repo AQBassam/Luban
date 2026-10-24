@@ -33,6 +33,12 @@ const enc = s => Buffer.from(JSON.stringify(s)).toString('base64').replace(/\+/g
   check('settings: custom place kept when valid', c2.city === 'custom' && c2.place.tz === 'Africa/Dar_es_Salaam');
   const many = Array.from({ length: 25 }, (_, i) => ({ t: 'task ' + i }));
   const tk = sanitize({ tasks: [{ t: '  سقي الزرع  ', who: 'x'.repeat(40), when: 'الخميس', done: true, extra: 1 }, { t: '' }, { t: 5 }, 'x', ...many] }, P.METHODS).tasks;
+  const cs = (x) => sanitize(x, P.METHODS);
+  check('settings: cards keep their order, drop unknown and repeated ones; the time snaps to 20/40/60/120 s',
+    JSON.stringify(cs({ cards: ['prayers', 'nope', 'verse', 'prayers'], cardSecs: 50 }).cards) === '["prayers","verse"]' && cs({ cardSecs: 50 }).cardSecs === 40 && cs({ cardSecs: 999 }).cardSecs === 120);
+  check('settings: a card chosen before the checklist comes first, then what used to come as its extra pages',
+    JSON.stringify(cs({ panel: 'prayers' }).cards) === '["prayers","dinner","dinnerTasks","markets","tasks"]' &&
+    JSON.stringify(cs({ panel: 'dinner' }).cards) === '["dinner","dinnerTasks","markets","tasks"]' && cs({ panel: 'none' }).cards.length === 4 && !('panel' in cs({ panel: 'verse' })));
   check('settings: tasks trimmed and capped (20, 80 chars, who/when 24), empty and odd ones dropped, unknown keys gone',
     tk.length === 20 && tk[0].t === 'سقي الزرع' && tk[0].who.length === 24 && tk[0].when === 'الخميس' && tk[0].done === true && !('extra' in tk[0]) && tk[1].done === false, tk.slice(0, 2));
 }
@@ -296,7 +302,19 @@ for (const vp of [{ width: 1920, height: 1080 }, { width: 1280, height: 720 }]) 
   const c = await card('2026-11-03T05:10:00Z');   // the last night: tomorrow is the next cycle's first
   check('dinner: on the last night tomorrow is the first dish of the next cycle', c.includes('شاورما الدجاج المنزلية') && c.includes('غداً'), c);
   const gone = await card('2026-10-17T05:10:00Z');
-  check('dinner: before the plan starts there is nothing to show', gone.includes('لا خطة عشاء'), gone);
+  check('dinner: before the plan starts the card has nothing to show and is skipped', !gone.trim(), gone);
+  {
+    // the chosen cards take turns in their order; one with nothing to show is skipped; none chosen, no card
+    const rot = await open({ cards: ['tasks', 'verse', 'prayers'], cardSecs: 20 });   // no tasks: skipped
+    const t1 = await text(rot, '#card-title');
+    await rot.clock.runFor(20000); const t2 = await text(rot, '#card-title');
+    await rot.clock.runFor(20000); const t3 = await text(rot, '#card-title');
+    check('cards: in their order, every 20 s here, a card with nothing to show skipped', /آية|حديث/.test(t1) && t2 === 'مواقيت اليوم' && t3 === t1, [t1, t2, t3]);
+    await rot.close();
+    const none = await open({ cards: [] });
+    check('cards: none chosen, no card', await none.$eval('#card', c => c.hidden));
+    await none.close();
+  }
   const turn = await open({ panel: 'verse', dinner: PLAN });
   const before = await text(turn, '#card-title');
   await turn.clock.runFor(60000);
@@ -338,6 +356,14 @@ for (const vp of [{ width: 1920, height: 1080 }, { width: 1280, height: 720 }]) 
   await page.click('#tofine');
   check('phone: the link to the prayer minutes opens Advanced with the details open', (await shown()).join() === 'p-advanced' && await page.$eval('#fine', d => d.open));
   await page.click('#tab-screen');
+  const order = () => page.$$eval('#cards .cardrow', r => r.map(x => (x.querySelector('.ord').textContent || '-') + x.querySelector('.nm').firstChild.textContent));
+  check('phone: the cards are a checklist, the ticked ones numbered first', (await order()).slice(0, 3).join() === '1آية أو حديث اليوم,2الأسعار,3مهام البيت', await order());
+  await page.click('#cards .cardrow:nth-child(2) button[title="↑"]');
+  check('phone: an arrow moves a ticked card up', (await order())[0] === '1الأسعار', await order());
+  await page.check('#cards .cardrow:nth-child(4) input');
+  check('phone: ticking a card adds it at the end', (await order())[3].startsWith('4'), await order());
+  await page.uncheck('#cards .cardrow:nth-child(1) input');
+  check('phone: unticking one takes it out of the turns', !(await order()).slice(0, 3).some(x => x.endsWith('الأسعار')), await order());
   const gold = () => page.$eval('#markets input[data-v=gold]', i => i.checked);
   const was = await gold();
   await page.click('#markets label:has(input[data-v=gold])');

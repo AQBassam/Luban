@@ -383,9 +383,12 @@ def settings(tv, args):
         if args.city not in {c["id"] for c in cities["cities"]}:
             raise Stop(f"unknown city {args.city!r}; see `luban.py cities`")
         s["city"] = args.city
-    for k in ("lang", "panel", "method", "digits"):
+    for k in ("lang", "method", "digits"):
         if getattr(args, k):
             s[k] = getattr(args, k)
+    if args.panel:   # one card beside the clock (the phone page can tick several and order them)
+        s["cards"] = [] if args.panel == "none" else ["dinner", "dinnerTasks"] if args.panel == "dinner" else [args.panel]
+        s.pop("panel", None)
     if args.home_card:
         s["homeCard"] = args.home_card == "on"
     if args.teams is not None:
@@ -535,7 +538,7 @@ def main(argv=None):
     p.add_argument("state", choices=["on", "off"])
     p = sub.add_parser("settings")
     p.add_argument("--city"); p.add_argument("--lang", choices=["ar", "en"]); p.add_argument("--digits", choices=["latn", "arab"])
-    p.add_argument("--panel", choices=["verse", "prayers", "forecast", "matches", "shows", "tasks", "none"]); p.add_argument("--method")
+    p.add_argument("--panel", choices=["verse", "prayers", "forecast", "matches", "shows", "tasks", "dinner", "markets", "none"]); p.add_argument("--method")
     p.add_argument("--home-card", choices=["on", "off"]); p.add_argument("--teams", help="id:English name,..."); p.add_argument("--api")
     p = sub.add_parser("favourites")
     p.add_argument("apps", nargs="?", help="com.a,com.b (omit to list)")
