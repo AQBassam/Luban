@@ -1,0 +1,60 @@
+<!doctype html>
+<!-- A demo of the settings-code screen for the site's screenshots: the QR pattern encodes nothing and the address is made up.
+     Rendered by site/shots.mjs. -->
+<html lang="ar" dir="rtl"><head><meta charset="utf-8">
+<style>
+@font-face{font-family:M;font-weight:400;src:url(../../assets/fonts/el-messiri-arabic-400-normal.woff2)}
+@font-face{font-family:M;font-weight:600;src:url(../../assets/fonts/el-messiri-arabic-600-normal.woff2)}
+@font-face{font-family:L;font-weight:400;src:url(../../assets/fonts/el-messiri-latin-400-normal.woff2)}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:1920px;height:1080px;overflow:hidden}
+body{font-family:M,L,sans-serif;color:#F1EBDD;background:radial-gradient(ellipse 80% 90% at 70% 30%,#0C2E45,#06192A 80%);position:relative}
+.rays{position:absolute;inset:0;opacity:.5;background:repeating-conic-gradient(from 0deg at 28% 46%,transparent 0 10deg,rgba(143,224,214,.08) 10deg 10.2deg)}
+.waves{position:absolute;left:0;right:0;bottom:0;height:260px;opacity:.18;background:repeating-linear-gradient(0deg,transparent 0 22px,rgba(241,235,221,.25) 22px 23px)}
+.card{position:absolute;left:130px;top:154px;width:658px;height:658px;border-radius:44px;background:rgba(12,46,69,.6);border:2px solid rgba(241,235,221,.12);display:grid;place-items:center}
+.paper{width:588px;height:588px;border-radius:30px;background:#F7F1E4;display:grid;place-items:center}
+canvas{width:462px;height:462px;image-rendering:pixelated}
+.under{position:absolute;left:130px;width:658px;top:840px;text-align:center;font-size:28px;color:rgba(241,235,221,.8);line-height:1.6}
+.under span{display:block;font-family:L;color:rgba(241,235,221,.7)}
+.side{position:absolute;right:128px;top:170px;width:880px;text-align:right}
+.brand{display:flex;align-items:center;gap:18px;justify-content:flex-start}
+.brand .sym{height:96px}
+.brand .wm{display:flex;flex-direction:column;align-items:center}
+.brand .wm img{height:70px}
+.brand .wm span{font-family:L;letter-spacing:.18em;font-size:19px;color:#E2A94F;margin-top:6px}
+h1{font-weight:600;font-size:60px;margin-top:40px}
+p{font-size:34px;color:rgba(241,235,221,.82);margin-top:8px}
+p.en{font-family:L;font-size:27px;color:rgba(241,235,221,.6);margin-top:0}
+.url{display:inline-block;margin-top:36px;padding:16px 26px;border-radius:22px;border:2px solid rgba(241,235,221,.14);background:rgba(6,25,42,.5);font-family:L;font-size:28px;color:#E2A94F;direction:ltr;text-align:left}
+.meta{margin-top:30px;font-size:26px;color:rgba(241,235,221,.75)}
+.meta em{font-style:normal;color:#E2A94F;margin:0 12px}
+.btns{display:flex;gap:26px;margin-top:30px;justify-content:flex-start}
+.b{width:278px;height:124px;border-radius:24px;border:2px solid rgba(241,235,221,.14);background:rgba(12,46,69,.6);text-align:center;display:flex;flex-direction:column;justify-content:center;font-size:34px;font-weight:600}
+.b span{font-family:L;font-weight:400;font-size:26px;color:rgba(241,235,221,.7)}
+.b.on{border:4px solid #E2A94F}
+</style></head><body>
+<div class="rays"></div><div class="waves"></div>
+<div class="card"><div class="paper"><canvas id="q" width="29" height="29"></canvas></div></div>
+<div class="under">الجوال والتلفزيون على الشبكة نفسها<span>Phone and TV on the same network</span></div>
+<div class="side">
+  <div class="brand"><img class="sym" src="../../docs/brand/v4/luban_symbol_v4.svg"><div class="wm"><img src="../../docs/brand/v4/luban_wordmark_resin_v4.svg"><span>LUBAN</span></div></div>
+  <h1>امسح الرمز بكاميرا جوالك</h1>
+  <p>لضبط المدينة والمواقيت والفرق وكل شيء.</p>
+  <p class="en" dir="ltr" style="text-align:right">Scan with your phone to set everything up.</p>
+  <div class="url">http://192.168.1.20:8737/…</div>
+  <div class="meta">الإصدار 1.54<em>•</em>القناة المستقرة</div>
+  <div class="btns"><div class="b on">معاينة<span>Preview</span></div><div class="b">تحديث<span>Update</span></div><div class="b">شاشة التوقف<span>Screensaver</span></div></div>
+</div>
+<script>
+// a QR-looking pattern that encodes nothing: finder squares, timing lines, seeded noise
+const c=document.getElementById('q').getContext('2d'),N=29;let s=7;const r=()=>(s=(s*16807)%2147483647)/2147483647;
+const m=[...Array(N)].map(()=>Array(N).fill(0)),res=[...Array(N)].map(()=>Array(N).fill(0));
+function finder(x,y){for(let i=-1;i<8;i++)for(let j=-1;j<8;j++){const X=x+i,Y=y+j;if(X<0||Y<0||X>=N||Y>=N)continue;res[Y][X]=1;
+ const on=i>=0&&i<7&&j>=0&&j<7&&(i==0||i==6||j==0||j==6||(i>=2&&i<=4&&j>=2&&j<=4));m[Y][X]=on?1:0;}}
+finder(0,0);finder(N-7,0);finder(0,N-7);
+for(let i=8;i<N-8;i++){m[6][i]=m[i][6]=i%2?0:1;res[6][i]=res[i][6]=1;}
+for(let i=-2;i<=2;i++)for(let j=-2;j<=2;j++){const X=22+i,Y=22+j;res[Y][X]=1;m[Y][X]=(Math.max(Math.abs(i),Math.abs(j))!=1)?1:0;}
+for(let y=0;y<N;y++)for(let x=0;x<N;x++)if(!res[y][x])m[y][x]=r()<.5?1:0;
+c.fillStyle='#06192A';for(let y=0;y<N;y++)for(let x=0;x<N;x++)if(m[y][x])c.fillRect(x,y,1,1);
+</script>
+</body></html>

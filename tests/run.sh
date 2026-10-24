@@ -17,3 +17,4 @@ echo "== setup tool";             python3 tests/test_setup.py 2>&1 | tail -3
 echo "== signed updates";         bash tests/verifier.sh
 echo "== prayer times, Java = JS"; bash tests/prayer_parity.sh
 echo "== the screen in a browser"; node tests/page.test.mjs
+echo "== the promo site";         node tests/site.test.mjs

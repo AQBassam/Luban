@@ -131,9 +131,13 @@ jobs:
           python3 tools/sign.py "$N"
           cp dist/manifest.json dist/manifest.sig out/
 
+      - name: The promo site (LubanTV.bassamailab.xyz), installed by hand with its deploy/install.sh
+        run: python3 site/build.py out/site --version "1.$N" --tar
+
       - name: Numbered release v1.N
         run: |
           gh release create "v1.$N" out/luban-screen.apk out/luban-home.apk out/SHA256SUMS \
+            "out/site/lubantv-site-1.$N.tar.gz" "out/site/lubantv-site-1.$N.tar.gz.sha256" \
             --title "Luban 1.$N" --notes "Built from ${GITHUB_SHA} by run ${N}." --latest
 
       - name: apk-latest (fixed download links for the setup tool)

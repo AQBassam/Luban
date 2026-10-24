@@ -8,6 +8,8 @@
 
 **شاشة توقف وواجهة رئيسية لتلفزيونات Android TV و Google TV، بهويّة عُمانية، لكل بيت في العالم.**
 
+الموقع: [LubanTV.bassamailab.xyz](https://lubantv.bassamailab.xyz)
+
 اليوم كله على بوصلة الملّاحين العُمانيين: الزوال في الأعلى ومنتصف الليل في الأسفل، والصلوات مواقع على حافتها،
 و«الآن» حبّة لُبان متّقدة يتصاعد دخانها فوق خريطة بحرية؛ فاللبان هو ما حمله العُمانيون عبر هذا البحر إلى العالم.
 ومعها الساعة والتاريخ الهجري ومواقيت الصلاة والإقامة (مطابقة لتقويم وزارة الأوقاف)، والطقس والغبار، ومباريات
@@ -76,6 +78,8 @@ python3 tools/luban.py setup
 
 **A screensaver and home screen for Android TV / Google TV, Omani by design, for homes everywhere.**
 
+Website: [LubanTV.bassamailab.xyz](https://lubantv.bassamailab.xyz/en/)
+
 The whole day on an Omani navigator's star compass: noon at the top, midnight at the bottom, the prayers as bearings
 on the rim, and "now" a lit grain of frankincense whose smoke rises across a sea chart, because frankincense is what
 Oman carried across this sea to the world. With it: the clock, Hijri date, prayer times and iqama computed on the TV
@@ -143,6 +147,7 @@ android/app     om.luban.screen: DreamService, preview, settings + QR, phone ser
 android/launcher om.luban.home: the home screen; PrayerTimes.java is the twin of web/js/prayer.js
 server/         the optional data server (Python stdlib, Dockerfile for Coolify)
 tools/          luban.py (setup over ADB), sign.py, photos.py, content.py, brand.py
+site/           the promo site LubanTV.bassamailab.xyz (static, strict CSP): build.py, shots.mjs, deploy/
 tests/          run.sh runs everything: static rules, server, setup tool, signatures, Java = JS, the page in Chromium
 ```
 
