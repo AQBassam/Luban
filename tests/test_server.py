@@ -1,7 +1,14 @@
-"""The data server with every upstream source faked: validation, caching, stale-if-error, host allowlist."""
+"""The data server with every upstream source faked: validation, caching, stale-if-error, host allowlist, the dinner store."""
+import base64
+import contextlib
+import hashlib
+import io
 import json
+import os
 import sys
+import tempfile
 import threading
+import time
 import unittest
 import urllib.error
 import urllib.request
@@ -15,6 +22,7 @@ REAL_FETCH = app.fetch_json
 
 CALLS = []
 FAIL = {"on": False}
+PLAN = json.loads((Path(__file__).parent / "dinner-fixture.json").read_text(encoding="utf-8"))["share"]
 
 
 def fake_fetch(url, timeout=12, headers=None):
@@ -51,6 +59,8 @@ class ServerTest(unittest.TestCase):
     def setUpClass(cls):
         app.fetch_json = fake_fetch
         app.FD_KEY, app.FD_GAP = "k", 0
+        cls.tmp = tempfile.TemporaryDirectory()
+        app.DINNER_DIR = cls.tmp.name
         cls.srv = ThreadingHTTPServer(("127.0.0.1", 0), app.Handler)
         cls.base = f"http://127.0.0.1:{cls.srv.server_address[1]}"
         threading.Thread(target=cls.srv.serve_forever, daemon=True).start()
@@ -58,13 +68,73 @@ class ServerTest(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         cls.srv.shutdown()
+        cls.tmp.cleanup()
 
-    def get(self, path):
+    def get(self, path, method="GET", body=None, headers=None):
+        req = urllib.request.Request(self.base + path, data=body, method=method, headers=headers or {})
         try:
-            with urllib.request.urlopen(self.base + path, timeout=5) as r:
+            with urllib.request.urlopen(req, timeout=5) as r:
                 return r.status, json.loads(r.read()), r.headers
         except urllib.error.HTTPError as e:
             return e.code, json.loads(e.read()), e.headers
+
+    def put(self, key, plan, origin=None):
+        h = {"Content-Type": "application/json", **({"X-Luban-Key": key} if key else {}), **({"Origin": origin} if origin else {})}
+        return self.get("/v1/dinner", "PUT", json.dumps(plan).encode(), h)
+
+    def test_dinner_write_read_delete(self):
+        key = "A" * 43
+        did = app.dinner_id(key)
+        self.assertEqual(len(did), 22)
+        self.assertEqual(did, base64.urlsafe_b64encode(hashlib.sha256(key.encode()).digest()).decode()[:22])
+        app._dinner_last.clear()
+        code, body, h = self.put(key, PLAN, "https://dinner.bassamailab.xyz")
+        self.assertEqual((code, body["id"]), (200, did))
+        self.assertEqual(h["Access-Control-Allow-Origin"], "https://dinner.bassamailab.xyz")
+        code, body, h = self.get("/v1/dinner/" + did)
+        self.assertEqual((code, body["plan"]), (200, PLAN))
+        self.assertEqual(h["Cache-Control"], "no-store")
+        self.assertIsInstance(body["at"], int)
+        self.assertEqual(self.put(key, PLAN)[0], 429, "one write every few seconds per plan")
+        self.assertEqual(self.get("/v1/dinner", "DELETE", headers={"X-Luban-Key": key})[0], 200)
+        self.assertEqual(self.get("/v1/dinner/" + did)[0], 404, "unlinked: the plan is gone")
+
+    def test_dinner_refusals(self):
+        app._dinner_last.clear()
+        key = "B" * 43
+        self.assertEqual(self.put(None, PLAN)[0], 401, "no key")
+        self.assertEqual(self.put("short", PLAN)[0], 401, "a key of the wrong shape")
+        self.assertEqual(self.put(key, PLAN, "https://evil.example.com")[0], 403, "another site's page may not write")
+        self.assertEqual(self.put(key, {**PLAN, "n": 3})[0], 400, "nights and days must agree")
+        self.assertEqual(self.put(key, {"v": 2})[0], 400)
+        self.assertEqual(self.put(key, {**PLAN, "big": "x" * 70000})[0], 413, "64 KB at most")
+        self.assertEqual(self.get("/v1/dinner/../../etc/passwd")[0], 400, "only a 22-character id is read")
+        self.assertEqual(self.get("/v1/dinner/" + "C" * 22)[0], 404)
+        self.assertEqual(os.listdir(app.DINNER_DIR), [], "nothing refused was stored")
+
+    def test_dinner_preflight_and_old_plans(self):
+        req = urllib.request.Request(self.base + "/v1/dinner", method="OPTIONS")
+        with urllib.request.urlopen(req, timeout=5) as r:
+            self.assertEqual(r.headers["Access-Control-Allow-Origin"], "https://dinner.bassamailab.xyz")
+            self.assertIn("X-Luban-Key", r.headers["Access-Control-Allow-Headers"])
+        old = os.path.join(app.DINNER_DIR, "D" * 22 + ".json")
+        with open(old, "w") as f:
+            f.write("{}")
+        os.utime(old, (0, 0))
+        app._dinner_sweep[0] = 0
+        app._dinner_last.clear()
+        key = "E" * 43
+        self.assertEqual(self.put(key, PLAN)[0], 200)
+        self.assertFalse(os.path.exists(old), "a plan not written for 180 days is removed")
+        self.get("/v1/dinner", "DELETE", headers={"X-Luban-Key": key})
+
+    def test_dinner_ids_stay_out_of_the_log(self):
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            self.get("/v1/dinner/" + "F" * 22)
+            time.sleep(0.1)
+        self.assertNotIn("F" * 22, out.getvalue())
+        self.assertIn("/v1/dinner/…", out.getvalue())
 
     def test_markets_and_cache(self):
         CALLS.clear()

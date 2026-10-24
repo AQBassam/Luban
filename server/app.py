@@ -7,15 +7,28 @@
     GET /health                               the process answers (liveness, for Coolify)
     GET /ready                                each source: fresh, stale, failing or idle, and the age of its data
 
+    PUT    /v1/dinner         X-Luban-Key: k  SmartDinner stores its plan (one cycle; dishes, times and tasks only)
+    DELETE /v1/dinner         X-Luban-Key: k  and removes it (unlinking)
+    GET    /v1/dinner/<id>                    the TV reads it: {"at": unix seconds, "plan": {...}}
+
+Dinner: the guide makes a random write key k (32 bytes, base64url) and keeps it; the read id is the first 22 characters
+of base64url(SHA-256(k)). The TV is given only the id, so it can read the plan but never change it, and the id never
+leads back to the key. One JSON file per plan in DINNER_DIR (a persistent volume); a plan not written for 180 days is
+removed. Ids never appear in the log.
+
 Only these upstream hosts are ever contacted; requests are validated before any of them is. Standard library only.
 Configuration (environment): PORT (8080), FOOTBALL_DATA_KEY (free token from football-data.org/client/register; without
-it there are no matches), CORS_ORIGIN (*), MARKETS_TTL (900), MATCHES_TTL (600), SHOWS_TTL (21600).
+it there are no matches), CORS_ORIGIN (*), MARKETS_TTL (900), MATCHES_TTL (600), SHOWS_TTL (21600),
+DINNER_DIR (/data/dinner; not writable = no dinner), DINNER_ORIGIN (https://dinner.bassamailab.xyz: the only page that
+may write from a browser).
 
 Matches: football-data.org's free plan (10 calls a minute, scores delayed) covers the competitions people here follow:
 Premier League, La Liga, Serie A, Bundesliga, Ligue 1, Eredivisie, Primeira Liga, Championship, Brasileirão, Champions
 League, World Cup, European Championship. One call a few minutes fetches every match of the coming days for all of
 them; each TV's teams are picked out of that, so the number of TVs never changes the number of calls.
 """
+import base64
+import hashlib
 import json
 import os
 import re
@@ -69,6 +82,7 @@ def ready():
         else:
             state = "fresh" if age <= 2 * ttl[name] else "stale"
         out[name] = {"state": state, "age": age}
+    out["dinner"] = {"state": "on" if dinner_on() else "off", "age": None}   # the store is writable (a volume is mounted)
     bad = [n for n, v in out.items() if v["state"] == "failing" and (v["age"] is None or v["age"] > 86400)]
     return {"ok": not bad, "sources": out}
 
@@ -247,6 +261,112 @@ def _safe(fn):
         return None
 
 
+DINNER_DIR = os.environ.get("DINNER_DIR", "/data/dinner")
+DINNER_ORIGIN = os.environ.get("DINNER_ORIGIN", "https://dinner.bassamailab.xyz")
+DINNER_MAX = 64 * 1024          # bytes in a plan: the default 15-night plan is about 25 KB as JSON
+DINNER_GAP = 5                  # seconds between two writes of one plan
+DINNER_KEEP = 180 * 86400       # a plan not written for this long is removed
+DINNER_CAP = 20000              # plans on disk at most
+KEY_RE = re.compile(r"[A-Za-z0-9_-]{43}")
+ID_RE = re.compile(r"[A-Za-z0-9_-]{22}")
+_dinner_lock, _dinner_last, _dinner_sweep = threading.Lock(), {}, [0.0]
+
+
+class Refused(Exception):
+    def __init__(self, code, msg):
+        super().__init__(msg)
+        self.code, self.msg = code, msg
+
+
+def dinner_id(key):
+    """The read id of a write key: the first 22 characters of base64url(SHA-256(key))."""
+    return base64.urlsafe_b64encode(hashlib.sha256(key.encode()).digest()).decode()[:22]
+
+
+def dinner_on():
+    try:
+        os.makedirs(DINNER_DIR, exist_ok=True)
+        return os.access(DINNER_DIR, os.W_OK)
+    except OSError:
+        return False
+
+
+def dinner_path(did):
+    return os.path.join(DINNER_DIR, did + ".json")
+
+
+def dinner_shape(plan):
+    """The outline only (the TV checks every field itself): one cycle of 1-21 nights from a start date."""
+    if not isinstance(plan, dict) or plan.get("v") != 1:
+        return False
+    n = plan.get("n")
+    return (isinstance(n, int) and 1 <= n <= 21 and isinstance(plan.get("d"), list) and len(plan["d"]) == n
+            and isinstance(plan.get("st"), str) and re.fullmatch(r"\d{4}-\d{2}-\d{2}", plan["st"]) is not None)
+
+
+def dinner_sweep(now):
+    """Remove plans not written for DINNER_KEEP, at most once an hour."""
+    if now - _dinner_sweep[0] < 3600:
+        return
+    _dinner_sweep[0] = now
+    for name in os.listdir(DINNER_DIR):
+        p = os.path.join(DINNER_DIR, name)
+        try:
+            if now - os.path.getmtime(p) > DINNER_KEEP:
+                os.remove(p)
+        except OSError:
+            pass
+
+
+def dinner_put(key, body):
+    if not KEY_RE.fullmatch(key or ""):
+        raise Refused(401, "key")
+    if not dinner_on():
+        raise Refused(503, "dinner is off")
+    try:
+        plan = json.loads(body)
+    except ValueError:
+        raise Refused(400, "json")
+    if not dinner_shape(plan):
+        raise Refused(400, "plan")
+    did, now = dinner_id(key), time.time()
+    with _dinner_lock:
+        if now - _dinner_last.get(did, 0) < DINNER_GAP:
+            raise Refused(429, "too soon")
+        dinner_sweep(now)
+        path = dinner_path(did)
+        if not os.path.exists(path) and len(os.listdir(DINNER_DIR)) >= DINNER_CAP:
+            raise Refused(507, "full")
+        _dinner_last[did] = now
+        if len(_dinner_last) > 5000:
+            _dinner_last.clear()
+        tmp = path + ".tmp"
+        with open(tmp, "w", encoding="utf-8") as f:
+            json.dump({"at": int(now), "plan": plan}, f, ensure_ascii=False, separators=(",", ":"))
+        os.replace(tmp, path)   # a reader never sees half a file
+    return {"ok": True, "id": did, "at": int(now)}
+
+
+def dinner_delete(key):
+    if not KEY_RE.fullmatch(key or ""):
+        raise Refused(401, "key")
+    try:
+        os.remove(dinner_path(dinner_id(key)))
+    except OSError:
+        pass
+    return {"ok": True}
+
+
+def dinner_get(did):
+    if not ID_RE.fullmatch(did):
+        raise Refused(400, "id")
+    try:
+        with open(dinner_path(did), encoding="utf-8") as f:
+            return json.load(f)
+    except (OSError, ValueError):
+        raise Refused(404, "no plan")
+
+
 def csv(qs, key, pattern, limit):
     vals = [v for v in (qs.get(key, [""])[0]).split(",") if v]
     return [v for v in vals if re.fullmatch(pattern, v)][:limit]
@@ -255,25 +375,60 @@ def csv(qs, key, pattern, limit):
 class Handler(BaseHTTPRequestHandler):
     server_version = "Luban/1"
 
-    def log_message(self, fmt, *args):   # one short line per request, no client addresses
-        print(f"{self.command} {self.path.split('?')[0]} {args[1] if len(args) > 1 else ''}", flush=True)
+    def log_message(self, fmt, *args):   # one short line per request, no client addresses, no dinner ids
+        path = re.sub(r"^/v1/dinner/.*", "/v1/dinner/…", self.path.split('?')[0])
+        print(f"{self.command} {path} {args[1] if len(args) > 1 else ''}", flush=True)
 
-    def send(self, code, obj, max_age=60):
+    def send(self, code, obj, max_age=60, origin=None):
         body = json.dumps(obj, ensure_ascii=False, separators=(",", ":")).encode()
         self.send_response(code)
         self.send_header("Content-Type", "application/json; charset=utf-8")
         self.send_header("Content-Length", str(len(body)))
-        self.send_header("Access-Control-Allow-Origin", CORS)
-        self.send_header("Cache-Control", f"public, max-age={max_age}")
+        self.send_header("Access-Control-Allow-Origin", origin or CORS)
+        self.send_header("Cache-Control", f"public, max-age={max_age}" if max_age else "no-store")
         self.send_header("X-Content-Type-Options", "nosniff")
         self.end_headers()
         self.wfile.write(body)
 
     def do_OPTIONS(self):
         self.send_response(204)
-        self.send_header("Access-Control-Allow-Origin", CORS)
-        self.send_header("Access-Control-Allow-Methods", "GET")
+        if urllib.parse.urlsplit(self.path).path == "/v1/dinner":   # only the dinner guide's page may write
+            self.send_header("Access-Control-Allow-Origin", DINNER_ORIGIN)
+            self.send_header("Access-Control-Allow-Methods", "PUT, DELETE")
+            self.send_header("Access-Control-Allow-Headers", "Content-Type, X-Luban-Key")
+            self.send_header("Access-Control-Max-Age", "86400")
+        else:
+            self.send_header("Access-Control-Allow-Origin", CORS)
+            self.send_header("Access-Control-Allow-Methods", "GET")
         self.end_headers()
+
+    def write_dinner(self, put):
+        """PUT or DELETE /v1/dinner: the key in a header (never in the address, so never in any log)."""
+        if urllib.parse.urlsplit(self.path).path != "/v1/dinner":
+            return self.send(404, {"error": "not found"})
+        origin = self.headers.get("Origin")
+        if origin and origin != DINNER_ORIGIN:
+            return self.send(403, {"error": "origin"}, 0, DINNER_ORIGIN)
+        try:
+            key = self.headers.get("X-Luban-Key", "")
+            if put:
+                size = int(self.headers.get("Content-Length") or 0)
+                if size <= 0 or size > DINNER_MAX:
+                    raise Refused(413, "size")
+                out = dinner_put(key, self.rfile.read(size))
+            else:
+                out = dinner_delete(key)
+            return self.send(200, out, 0, DINNER_ORIGIN)
+        except Refused as e:
+            return self.send(e.code, {"error": e.msg}, 0, DINNER_ORIGIN)
+        except Exception as e:  # noqa: BLE001
+            return self.send(500, {"error": type(e).__name__}, 0, DINNER_ORIGIN)
+
+    def do_PUT(self):
+        self.write_dinner(True)
+
+    def do_DELETE(self):
+        self.write_dinner(False)
 
     def do_GET(self):
         url = urllib.parse.urlsplit(self.path)
@@ -302,6 +457,11 @@ class Handler(BaseHTTPRequestHandler):
                 if not re.fullmatch(r"[\w .'-]{2,40}", q):
                     return self.send(400, {"error": "q: 2-40 letters"})
                 return self.send(200, _safe(lambda: team_search(q)) or [], 3600)
+            if url.path.startswith("/v1/dinner/"):
+                try:
+                    return self.send(200, dinner_get(url.path[len("/v1/dinner/"):]), 0)
+                except Refused as e:
+                    return self.send(e.code, {"error": e.msg}, 0)
             return self.send(404, {"error": "not found"})
         except Exception as e:  # noqa: BLE001
             return self.send(502, {"error": type(e).__name__})
@@ -309,7 +469,8 @@ class Handler(BaseHTTPRequestHandler):
 
 def main():
     srv = ThreadingHTTPServer(("0.0.0.0", PORT), Handler)
-    print(f"Luban data server on :{PORT}" + ("" if FD_KEY else " (no FOOTBALL_DATA_KEY: no matches)"), flush=True)
+    print(f"Luban data server on :{PORT}" + ("" if FD_KEY else " (no FOOTBALL_DATA_KEY: no matches)")
+          + ("" if dinner_on() else f" (no writable {DINNER_DIR}: no dinner)"), flush=True)
     if FD_KEY:   # the team list takes a minute and a half to gather at the free pace: start before anyone searches
         threading.Thread(target=lambda: _safe(lambda: CACHE.get("fd:teams", TTL["teams"], fd_teams)), daemon=True).start()
     srv.serve_forever()

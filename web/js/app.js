@@ -463,9 +463,25 @@
 
   // ---------- the dinner plan from SmartDinner: one cycle of nights that the screen repeats by itself
   const DAY_MS = 864e5;
+  /**
+   * Linked on the phone page: the guide sends the plan to the data server on every change and the screen fetches it
+   * every 10 minutes, keeping the last good copy for when the server cannot be reached. A pasted code is the fallback.
+   */
+  const dinnerPlan = () => state.dinnerLive || S.dinner;
+  async function loadDinner() {
+    if (!S.dinnerLink || !S.api) return;
+    try {
+      const j = await getJSON(`${S.api}/v1/dinner/${S.dinnerLink}`, 12000);
+      const plan = window.LubanSettings.sanitizeDinner(j && j.plan);
+      if (!plan) return;
+      state.dinnerLive = plan;
+      store.set('dinner:' + S.dinnerLink, plan);
+    } catch (e) { return; /* keep the last copy */ }
+    refreshCard('dinner'); refreshCard('dinnerTasks');
+  }
   /** Today in the plan: tonight's and tomorrow's dinner and the day's tasks by time, or null before the plan starts. */
   function dinnerToday() {
-    const D = S.dinner;
+    const D = dinnerPlan();
     if (!D) return null;
     const l = local(), s0 = Date.parse(D.st + 'T00:00:00Z');
     const diff = Math.round((Date.UTC(l.y, l.m - 1, l.d) - s0) / DAY_MS);
@@ -779,6 +795,7 @@
     state.markets = store.get('markets', {});
     state.matches = store.get('matches', {});
     state.shows = store.get('shows', []);
+    if (S.dinnerLink) state.dinnerLive = window.LubanSettings.sanitizeDinner(store.get('dinner:' + S.dinnerLink, null));
     const wc = store.get('weather:' + P.id, null);
     if (wc) { state.weather = wc.w; state.forecast = wc.f; }
     tickClock(); tickDates(); renderPrayers(); renderChips(); renderWeather(); renderCard(); applyPhoto(true); applyNight();
@@ -799,6 +816,7 @@
     loadWeather(); setInterval(loadWeather, 30 * 60000);
     loadMarkets(); setInterval(loadMarkets, 15 * 60000);
     loadMatches(); setInterval(loadMatches, 10 * 60000);
+    loadDinner(); setInterval(loadDinner, 10 * 60000);
     if (S.cards.indexOf('shows') >= 0) { loadShows(); setInterval(loadShows, 6 * 3600e3); }
     window.addEventListener('hashchange', () => location.reload());
   }

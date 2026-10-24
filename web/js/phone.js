@@ -1,6 +1,7 @@
-/* Luban — the phone settings page. Served by the TV at http://<tv>:<port>/<token>/ ; it talks only to that same
- * address: GET settings.json, POST settings.json, GET teams?q=. The token in the path is the pairing secret shown
- * in the QR code on the TV, so another device on the network cannot change the settings without seeing the screen. */
+/* Luban — the phone settings page. Served by the TV at http://<tv>:<port>/<token>/ ; it talks to that same address
+ * (GET settings.json, POST settings.json, GET teams?q=) and, when the dinner plan is linked, reads that plan's state
+ * from the data server (a GET with the read id only). The token in the path is the pairing secret shown in the QR
+ * code on the TV, so another device on the network cannot change the settings without seeing the screen. */
 (function () {
   'use strict';
   const { METHODS, compute, hhmm } = window.LubanPrayer;
@@ -22,16 +23,21 @@
     cards: 'Cards beside the clock', cardSecs: 'Each card for', s20: '20 seconds', s40: '40 seconds', s60: '60 seconds', s120: '2 minutes',
     cardsHint: 'Tick what to show; the ticked cards take turns in this order, and one with nothing to show is skipped. Order them with the arrows.',
     tabBasic: 'Basics', tabScreen: 'Screen', tabHome: 'Home', tabAdvanced: 'Advanced', fine: 'Fine-tune prayer times', fineLink: 'Adjust prayer and iqama minutes…',
-    dinnerPlan: 'Dinner plan', dinnerApply: 'Apply the code', dinnerClear: 'Remove the plan', dinnerCode: 'LBN1.…',
-    dinnerHint: 'From the Smart Dinner guide (dinner.bassamailab.xyz) → More → «Copy Luban code», then paste it here. The code is one full cycle of the plan and the screen repeats it by itself, so paste again only when the dishes or times change. Press Save after applying.',
+    dinnerPlan: 'Dinner plan', dinnerApply: 'Apply the code', dinnerClear: 'Remove the plan', dinnerCode: 'LBNL.… or LBN1.…',
+    dinnerHint: 'From the Smart Dinner guide (dinner.bassamailab.xyz) → More → «Link to Luban screen», copy the code and paste it here, then press Save. Once linked, every change you make in the guide reaches the screen within 10 minutes, with nothing more to paste. A plan code (LBN1.…) still works too: one full cycle that the screen repeats by itself.',
     dinnerNone: 'No plan yet', dinnerBad: 'That is not a Luban code from the dinner guide.',
+    dinnerUnlink: 'Unlink', dinnerLinked: 'Linked to the dinner guide.', dinnerWaiting: 'No plan has arrived from the guide yet.',
+    dinnerUpdated: 'Last update', dinnerNoReach: 'The data server cannot be reached now; the screen keeps the last copy.',
+    dinnerNoApi: 'The link needs the data server (Advanced tab), which is off.',
     night: 'Dim at night', sources: 'Data sources', bg: 'Background', bgChart: 'The sea chart', bgPhotos: 'Photos of Oman', homeCard: 'Prayer card on the home screen', markets: 'Markets', teams: 'Your teams', search: 'Search',
     teamsHint: 'Up to 10 teams from the major European and Brazilian leagues, the Champions League, the World Cup and the Euros (football-data.org). Edit the Arabic name as you like it shown.', shows: 'TV shows', genres: 'Genres (empty = all)', minRating: 'Minimum rating',
     advanced: 'Advanced', api: 'Data server (optional)', channel: 'Update channel', stable: 'Stable', canary: 'Canary (gets updates first)', save: 'Save',
     saved: 'Saved. The screen updates now.', failed: 'Not saved: ', custom: 'Other place…', default: 'Country default', teamSearch: 'Search in English: Real Madrid, Liverpool, Flamengo…',
     gold: 'Gold, global reference price (OMR/g)', brent: 'Brent oil', btc: 'Bitcoin', spx: 'S&P 500', noHits: 'No team found',
   };
-  const AR = { dinnerNone: 'لا خطة بعد', dinnerBad: 'هذا ليس رمز لُبان من دليل العشاء.', done: 'تمت', custom: 'مكان آخر…', default: 'حسب البلد', saved: 'حُفظت. الشاشة تتحدث الآن.', failed: 'لم تُحفظ: ', gold: 'الذهب، سعر عالمي استرشادي (ر.ع/غ)', brent: 'نفط برنت', btc: 'بيتكوين', spx: 'S&P 500', noHits: 'لا نتائج' };
+  const AR = { dinnerNone: 'لا خطة بعد', dinnerBad: 'هذا ليس رمز لُبان من دليل العشاء.', dinnerClear: 'إزالة الخطة', dinnerUnlink: 'فك الربط',
+    dinnerLinked: 'مرتبطة بدليل العشاء.', dinnerWaiting: 'لم تصل خطة من الدليل بعد.', dinnerUpdated: 'آخر تحديث',
+    dinnerNoReach: 'تعذّر الوصول إلى خادم البيانات الآن، والشاشة تعرض آخر نسخة وصلتها.', dinnerNoApi: 'الربط يحتاج خادم البيانات (تبويب «متقدم»)، وهو متوقف.', done: 'تمت', custom: 'مكان آخر…', default: 'حسب البلد', saved: 'حُفظت. الشاشة تتحدث الآن.', failed: 'لم تُحفظ: ', gold: 'الذهب، سعر عالمي استرشادي (ر.ع/غ)', brent: 'نفط برنت', btc: 'بيتكوين', spx: 'S&P 500', noHits: 'لا نتائج' };
   let S = sanitize(null, METHODS), lang = 'ar';
   const t = k => lang === 'en' ? (EN[k] || k) : (AR[k] || (document.querySelector(`[data-t="${k}"]`) || {}).dataset?.ar || k);
 
@@ -139,17 +145,45 @@
     }
     return JSON.parse(await new Blob(parts).text());
   }
+  /** "قبل 5 دقائق" / "5 min ago" */
+  function ago(sec) {
+    const m = Math.floor(Math.max(0, sec) / 60), hr = Math.floor(m / 60), dy = Math.floor(hr / 24);
+    if (lang !== 'ar') return m < 1 ? 'just now' : dy ? `${dy} day${dy > 1 ? 's' : ''} ago` : hr ? `${hr} h ago` : `${m} min ago`;
+    const ar = (n, one, two, few, many) => n === 1 ? one : n === 2 ? two : n <= 10 ? `${n} ${few}` : `${n} ${many}`;
+    return m < 1 ? 'الآن' : 'قبل ' + (dy ? ar(dy, 'يوم', 'يومين', 'أيام', 'يومًا') : hr ? ar(hr, 'ساعة', 'ساعتين', 'ساعات', 'ساعة') : ar(m, 'دقيقة', 'دقيقتين', 'دقائق', 'دقيقة'));
+  }
+  const planText = d => lang === 'ar' ? `خطة من ${d.n} ليلة، أول عشاء فيها ⁦${d.st}⁩. تعيد الشاشة دورتها وحدها.` : `A ${d.n}-night plan, first dinner ${d.st}. The screen repeats the cycle by itself.`;
+  /** Linked: what the data server holds for this TV now (the page asks it directly; a GET with the read id only). */
+  async function linkState() {
+    const box = $('dinner-state'), id = S.dinnerLink, api = $('api').value.trim().replace(/\/+$/, '');
+    if (!api) { box.textContent = t('dinnerNoApi'); return; }
+    box.textContent = t('dinnerLinked');
+    try {
+      const r = await fetch(`${api}/v1/dinner/${id}`, { cache: 'no-store' });
+      if (S.dinnerLink !== id) return;
+      if (r.status === 404) { box.textContent = t('dinnerLinked') + ' ' + t('dinnerWaiting'); return; }
+      const j = await r.json(), d = sanitizeDinner(j && j.plan);
+      box.textContent = `${t('dinnerLinked')} ${d ? planText(d) : ''} ${t('dinnerUpdated')} ${ago(Date.now() / 1000 - j.at)}.`;
+    } catch (e) { if (S.dinnerLink === id) box.textContent = t('dinnerLinked') + ' ' + t('dinnerNoReach'); }
+  }
   function renderDinner() {
     const d = S.dinner;
-    $('dinner-state').textContent = !d ? t('dinnerNone')
-      : lang === 'ar' ? `خطة من ${d.n} ليلة، أول عشاء فيها ⁦${d.st}⁩. تعيد الشاشة دورتها وحدها.` : `A ${d.n}-night plan, first dinner ${d.st}. The screen repeats the cycle by itself.`;
+    $('dclear').textContent = t(S.dinnerLink ? 'dinnerUnlink' : 'dinnerClear');
+    if (S.dinnerLink) { linkState(); return; }
+    $('dinner-state').textContent = !d ? t('dinnerNone') : planText(d);
   }
   async function applyDinner() {
-    const msg = $('msg'); msg.className = '';
+    const msg = $('msg'), c = $('dcode').value.trim(); msg.className = '';
     try {
-      const d = sanitizeDinner(await unpackDinner($('dcode').value));
-      if (!d) throw new Error('plan');
-      S.dinner = d; $('dcode').value = ''; renderDinner();
+      // LBNL.<id>: the link to the guide (the screen fetches the plan by itself from then on); LBN1.…: the plan itself
+      const link = c.match(/^LBNL\.([A-Za-z0-9_-]{22})$/);
+      if (link) S.dinnerLink = link[1];
+      else {
+        const d = sanitizeDinner(await unpackDinner(c));
+        if (!d) throw new Error('plan');
+        S.dinner = d;
+      }
+      $('dcode').value = ''; renderDinner();
     } catch (e) { msg.textContent = t('dinnerBad'); msg.className = 'err'; setTimeout(() => { msg.className = ''; }, 4000); }
   }
 
@@ -266,7 +300,8 @@
     const cards = ar ? (c === 0 ? 'بلا بطاقات' : c === 1 ? 'بطاقة واحدة' : c === 2 ? 'بطاقتان' : c <= 10 ? `${c} بطاقات` : `${c} بطاقة`) : `${c} card${c === 1 ? '' : 's'}`;
     const items = [cards,
       ar ? (open ? n : 'لا مهام') : (open ? `${open} open task${open > 1 ? 's' : ''}` : 'no tasks'),
-      s.dinner ? (ar ? `عشاء: ${s.dinner.n} ليلة` : `dinner: ${s.dinner.n} nights`) : (ar ? 'لا خطة عشاء' : 'no dinner plan')];
+      s.dinnerLink ? (ar ? 'عشاء: مرتبط بالدليل' : 'dinner: linked')
+        : s.dinner ? (ar ? `عشاء: ${s.dinner.n} ليلة` : `dinner: ${s.dinner.n} nights`) : (ar ? 'لا خطة عشاء' : 'no dinner plan')];
     box.textContent = ''; items.forEach(x => box.append(h('span', {}, x)));
   }
   let saved = '';
@@ -280,7 +315,7 @@
     $('lang').addEventListener('change', () => { S = collect(); fill(); });
     $('tgo').onclick = searchTeams; $('tq').addEventListener('keydown', e => { if (e.key === 'Enter') searchTeams(); });
     $('tadd').onclick = addTask; $('tt').addEventListener('keydown', e => { if (e.key === 'Enter') addTask(); });
-    $('dapply').onclick = applyDinner; $('dclear').onclick = () => { S.dinner = null; renderDinner(); };
+    $('dapply').onclick = applyDinner; $('dclear').onclick = () => { if (S.dinnerLink) S.dinnerLink = ''; else S.dinner = null; renderDinner(); };
     $('save').onclick = save;
     TABS.forEach((k, i) => {
       $('tab-' + k).onclick = () => { showTab(k); history.replaceState(null, '', '#' + k); };

@@ -29,6 +29,7 @@
     markets: ['gold', 'brent', 'btc', 'spx'],
     tasks: [],                  // [{t, who, when, done}] household tasks, written on the phone page, kept on this TV only
     dinner: null,               // the dinner plan from SmartDinner (one cycle, which repeats): see sanitizeDinner(). Pasted on the phone page
+    dinnerLink: '',             // or linked: the plan's read id on the data server (22 characters); the screen fetches it every 10 minutes
     shows: { genres: [], langs: [], minRating: 7 },
     omanDays: true,             // National Day countdown, Khareef season
     night: true,                // dim after Isha until before Fajr
@@ -110,6 +111,7 @@
         .map(x => ({ t: x.t.trim().slice(0, 80), who: (str(x.who, 24) || '').trim(), when: (str(x.when, 24) || '').trim(), done: x.done === true }));
     }
     s.dinner = sanitizeDinner(input.dinner);
+    if (typeof input.dinnerLink === 'string' && /^[A-Za-z0-9_-]{22}$/.test(input.dinnerLink)) s.dinnerLink = input.dinnerLink;
     if (isObj(input.shows)) {
       const sh = input.shows;
       if (Array.isArray(sh.genres)) s.shows.genres = sh.genres.filter(g => typeof g === 'string' && /^[A-Za-z-]{2,20}$/.test(g)).slice(0, 16);

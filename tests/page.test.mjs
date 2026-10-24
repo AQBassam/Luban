@@ -13,6 +13,9 @@ let fails = 0;
 const check = (name, ok, extra) => { console.log(`${ok ? 'PASS' : 'FAIL'} ${name}${ok || extra === undefined ? '' : ' — ' + JSON.stringify(extra)}`); if (!ok) fails++; };
 // a real plan from the dinner guide (SmartDinner's share.ts): 15 nights from 2026-10-20, and its code
 const { share: PLAN, code: PLAN_CODE } = JSON.parse(fs.readFileSync(path.join(ROOT, 'tests/dinner-fixture.json'), 'utf8'));
+// a linked plan's read id on the data server, and that plan with night 2 changed in the guide
+const LINK = 'Abc_def-0123456789xyzQ';
+const LIVE = { ...PLAN, d: PLAN.d.map((x, i) => i === 1 ? { ...x, r: ['طبق من الدليل', '🍽', x.r[2]] } : x) };
 const enc = s => Buffer.from(JSON.stringify(s)).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 
 // ---------- settings.js: the one gate for every value
@@ -49,6 +52,8 @@ const enc = s => Buffer.from(JSON.stringify(s)).toString('base64').replace(/\+/g
   check('dinner: a plan from the guide passes unchanged', JSON.stringify(d) === JSON.stringify(PLAN));
   const no = x => sanitize({ dinner: x }, P.METHODS).dinner === null;
   check('dinner: wrong version, night count, time or date are refused', no({ ...PLAN, v: 2 }) && no({ ...PLAN, n: 14 }) && no({ ...PLAN, dn: '25:00' }) && no({ ...PLAN, st: '2026-13-40' }) && no('x') && no(null));
+  check('dinner: a link is a 22-character id, anything else is dropped', sanitize({ dinnerLink: LINK }, P.METHODS).dinnerLink === LINK &&
+    sanitize({ dinnerLink: LINK + 'x' }, P.METHODS).dinnerLink === '' && sanitize({ dinnerLink: '../x' }, P.METHODS).dinnerLink === '');
   const big = sanitize({ dinner: { ...PLAN, d: PLAN.d.map(x => ({ ...x, r: ['<img src=x>'.repeat(20), '🍲'.repeat(9), '19:30'], a: Array.from({ length: 30 }, () => ['y'.repeat(900), 999]) })) } }, P.METHODS).dinner;
   check('dinner: titles, tasks and minutes are capped', big.d[0].r[0].length === 80 && big.d[0].r[1].length === 8 && big.d[0].a.length === 12 && big.d[0].a[0][0].length === 400 && big.d[0].a[0][1] === 240);
 }
@@ -77,11 +82,12 @@ const enc = s => Buffer.from(JSON.stringify(s)).toString('base64').replace(/\+/g
 }
 
 const browser = await chromium.launch();
-async function open(settings, when, viewport) {
+async function open(settings, when, viewport, routes) {
   const page = await browser.newPage({ viewport: viewport || { width: 1920, height: 1080 } });
   const errors = [];
   page.on('pageerror', e => errors.push(e.message));
   await page.route(/^https?:\/\//, r => r.abort());
+  for (const [url, fn] of Object.entries(routes || {})) await page.route(url, fn);   // the last added is tried first
   await page.clock.install({ time: new Date(when || '2026-10-21T05:10:00Z') });
   await page.goto('file://' + path.join(ROOT, 'dist/luban.html') + '#s=' + enc(settings || {}));
   await page.clock.runFor(3000);
@@ -328,6 +334,26 @@ for (const vp of [{ width: 1920, height: 1080 }, { width: 1280, height: 720 }]) 
   check('dinner: shopping day lists its tasks, with real weekdays instead of {n}', all.includes('رحلة التسوق') && all.includes('(الخميس)') && !/\{\d+\}/.test(all), all);
   check('dinner: no script errors', eve.errors.length === 0, eve.errors);
   await eve.close();
+  {
+    // linked: the screen fetches the plan from the data server, keeps the last copy, and falls back to a pasted plan
+    let up = true, asked = 0;
+    const serve = { [`https://luban.bassamailab.xyz/v1/dinner/${LINK}`]: r => { asked++; return up
+      ? r.fulfill({ contentType: 'application/json', headers: { 'Access-Control-Allow-Origin': '*' }, body: JSON.stringify({ at: 1792000000, plan: LIVE }) })
+      : r.abort(); } };
+    const live = await open({ cards: ['dinner'], dinner: PLAN, dinnerLink: LINK }, '2026-10-21T05:10:00Z', null, serve);
+    await live.clock.runFor(2000);
+    check('dinner link: the plan from the server is shown, not the pasted one', (await text(live, '#card')).includes('طبق من الدليل'), await text(live, '#card'));
+    up = false;
+    await live.clock.runFor(10 * 60000);
+    check('dinner link: asked again every 10 minutes; the server gone, the last copy stays', asked >= 2 && (await text(live, '#card')).includes('طبق من الدليل'), [asked, await text(live, '#card')]);
+    check('dinner link: no script errors', live.errors.length === 0, live.errors);
+    await live.close();
+    const bad = { [`https://luban.bassamailab.xyz/v1/dinner/${LINK}`]: r => r.fulfill({ contentType: 'application/json', headers: { 'Access-Control-Allow-Origin': '*' }, body: '{"at":1,"plan":{"v":2}}' }) };
+    const off = await open({ cards: ['dinner'], dinner: PLAN, dinnerLink: LINK }, '2026-10-21T05:10:00Z', null, bad);
+    await off.clock.runFor(2000);
+    check('dinner link: a plan that fails the checks is ignored; the pasted plan shows', (await text(off, '#card')).includes('شوربة العدس الحمراء'), await text(off, '#card'));
+    await off.close();
+  }
 }
 
 // ---------- the phone settings page
@@ -389,6 +415,17 @@ for (const vp of [{ width: 1920, height: 1080 }, { width: 1280, height: 720 }]) 
   check('phone: the pasted code becomes a plan, with the box cleared', (await page.inputValue('#dcode')) === '' && (await page.textContent('#dinner-state')).includes('2026-10-20'));
   await page.click('#dclear');
   check('phone: the plan can be removed', (await page.textContent('#dinner-state')).includes('لا خطة'));
+  await page.route(`https://luban.bassamailab.xyz/v1/dinner/${LINK}`, r => r.fulfill({ contentType: 'application/json', headers: { 'Access-Control-Allow-Origin': '*' },
+    body: JSON.stringify({ at: Math.floor(Date.now() / 1000) - 300, plan: LIVE }) }));
+  await page.fill('#dcode', 'LBNL.short'); await page.click('#dapply');
+  check('phone: a link code of the wrong length is refused', (await page.textContent('#dinner-state')).includes('لا خطة'));
+  await page.fill('#dcode', 'LBNL.' + LINK); await page.click('#dapply');
+  await page.waitForFunction(() => document.getElementById('dinner-state').textContent.includes('آخر تحديث'));
+  const ls = await page.textContent('#dinner-state');
+  check('phone: a link code links the guide; the server says what it holds and since when', ls.includes('مرتبطة بدليل العشاء') && ls.includes('15 ليلة') && ls.includes('قبل 5 دقائق'), ls);
+  check('phone: linked, the button unlinks and the strip says so', (await page.textContent('#dclear')) === 'فك الربط' && (await text(page, '#strip')).includes('مرتبط'));
+  await page.click('#dclear');
+  check('phone: unlinking leaves no plan', (await page.textContent('#dinner-state')).includes('لا خطة') && (await page.textContent('#dclear')) === 'إزالة الخطة');
   await page.click('#tab-basic');
   await page.selectOption('#lang', 'en');
   check('phone: switches to English', (await page.textContent('#save')) === 'Save');

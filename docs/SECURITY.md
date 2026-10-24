@@ -69,7 +69,24 @@ false and it asks for no events): a short press of Home opens Luban's home, a lo
 and if Luban's home will not open the TV's own does. It disables no package and changes no role. `homekey off`,
 `reset`, or turning it off in the TV's accessibility settings puts everything back. It stays off until you turn it on.
 
-## 6. CI
+## 6. The linked dinner plan
+
+The dinner guide sends its plan to the data server so the screen can follow changes. The plan holds dishes, times and
+cooking tasks only: no names, no family details. The guide keeps a random 256-bit **write key** and sends it in a
+header (`X-Luban-Key`), never in the address. The TV is given only the **read id**, the first 22 characters of
+base64url(SHA-256(key)), so a TV, a phone, or anyone who sees the link code can read the plan but never change or
+delete it, and the id does not lead back to the key. The server:
+
+- accepts writes only with a key of the right shape, from no browser page but `DINNER_ORIGIN`, at most every 5 seconds
+  per plan and 64 KB at most, after checking the plan's outline;
+- reads only a 22-character id, so no path can reach outside its folder;
+- answers reads with `no-store`, and never writes an id into its log;
+- removes a plan not written for 180 days, and keeps 20,000 at most.
+
+The screen passes what it fetches through `sanitizeDinner()` like a pasted plan, and keeps its last good copy when the
+server cannot be reached. `tests/test_server.py` and `tests/page.test.mjs` cover each point above.
+
+## 7. CI
 
 - Tests gate the build; the build gates publishing; publishing needs the signing secrets.
 - Every action is pinned to a commit SHA (`tests/check.py` enforces it).
