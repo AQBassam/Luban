@@ -34,9 +34,9 @@ final class LubanMark extends Drawable {
         ring.setStrokeWidth(s * .03f);
         lived.setStrokeWidth(s * .09f);
         c.drawCircle(cx, cy, r, ring);
-        // from Fajr (lower right in Arabic reading) round through noon to now (upper left)
-        c.drawArc(new RectF(cx - r, cy - r, cx + r, cy + r), 45, -225, false, lived);
-        float ex = cx + r * (float) Math.cos(Math.toRadians(-180)), ey = cy + r * (float) Math.sin(Math.toRadians(-180));
+        // clockwise, as the dial runs: from Fajr (lower left) round through noon to now (right)
+        c.drawArc(new RectF(cx - r, cy - r, cx + r, cy + r), 135, 225, false, lived);
+        float ex = cx + r, ey = cy;
         glow.setShader(new RadialGradient(ex, ey, s * .16f, new int[] {0xF2FFB547, 0x73E2762A, 0x00E2762A}, new float[] {0, .35f, 1}, Shader.TileMode.CLAMP));
         c.drawCircle(ex, ey, s * .16f, glow);
         c.drawCircle(ex, ey, s * .07f, grain);

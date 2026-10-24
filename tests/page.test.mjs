@@ -102,8 +102,10 @@ const text = (page, sel) => page.$eval(sel, e => e.textContent);
   check('screen: Western digits by default', /\d/.test(await text(page, '#hh')));
   check('dial: the centre names the next prayer and counts down in words', (await text(page, '#next-name')) === 'الظهر' && (await text(page, '#next-left')).startsWith('بعد ساعتين و'), await text(page, '#next-left'));
   check('dial: a lit grain of frankincense marks now, its smoke drawn', await page.evaluate(() => !!document.querySelector('#dial-svg circle[fill="url(#glow)"]') && document.getElementById('smoke-a').toDataURL().length > 2000));
-  check('dial: morning on the right in Arabic (Fajr right of centre, Maghrib left)', await page.evaluate(() =>
-    parseFloat(document.querySelector('.pr.fajr').style.left) > 50 && parseFloat(document.querySelector('.pr.maghrib').style.left) < 50));
+  check('dial: clockwise in Arabic too (Fajr left of centre, Maghrib right: the sky facing south)', await page.evaluate(() =>
+    parseFloat(document.querySelector('.pr.fajr').style.left) < 50 && parseFloat(document.querySelector('.pr.maghrib').style.left) > 50));
+  check('brand: the symbol, the wordmark and the line, quiet in the lower corner', (await text(page, '#brand')).includes('من روح عُمان') &&
+    (await page.$$('#brand svg')).length === 2 && await page.evaluate(() => getComputedStyle(document.getElementById('brand')).opacity < 1));
   check('chart: 48 rhumb lines run out from the dial', await page.evaluate(() => document.querySelectorAll('#rhumbs line').length === 48));
   check('chart: no photos unless chosen', await page.evaluate(() => !document.body.classList.contains('photos')));
   await page.close();

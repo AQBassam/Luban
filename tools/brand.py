@@ -7,15 +7,53 @@ the part of the day already lived in frankincense resin, and a lit grain of fran
 rising. Oman shipped frankincense across this sea for three thousand years; the compass is how it travelled.
 """
 import math
+import re
 from pathlib import Path
 
-from PIL import Image, ImageDraw, ImageFilter, ImageFont
+from PIL import Image, ImageChops, ImageDraw, ImageFilter, ImageFont
 
 ROOT = Path(__file__).resolve().parents[1]
 DEEP, SEA = (6, 25, 42), (12, 46, 69)
 RESIN, RESIN_SOFT, INK, GRAIN = (226, 169, 79), (243, 217, 164), (241, 235, 221), (247, 231, 196)
 SEMI = str(ROOT / "assets/native/ElMessiri-SemiBold.ttf")
 MED = str(ROOT / "assets/native/ElMessiri-Medium.ttf")
+# the wordmark (docs/brand/v4): Noto Sans Arabic SemiBold outlines, refined with rhombus dots and slanted pen cuts
+WORDMARK = ROOT / "docs/brand/v4/luban_wordmark_ink_v4.svg"
+
+
+def wordmark(height, colour):
+    """The wordmark as an RGBA image of the given height: its SVG path flattened and filled non-zero (letters that overlap
+    stay filled; a contour wound the other way, the damma's hole, is cut out)."""
+    svg = WORDMARK.read_text(encoding="utf-8")
+    w, h = (float(v) for v in re.search(r'viewBox="0 0 ([\d.]+) ([\d.]+)"', svg).groups())
+    d = re.search(r' d="([^"]+)"', svg).group(1)
+    s = height * 4 / h
+    W, H = int(w * s) + 2, int(height * 4) + 2
+    contours = []
+    for sub in re.findall(r"M[^M]+", d):
+        pts, cur = [], None
+        for cmd, args in re.findall(r"([MLQZ])([^MLQZ]*)", sub):
+            v = [float(x) for x in re.findall(r"-?[\d.]+", args)]
+            if cmd in "ML":
+                cur = (v[0], v[1]); pts.append(cur)
+            elif cmd == "Q":
+                (cx, cy, x, y), (x0, y0) = v, cur
+                for i in range(1, 13):
+                    t = i / 12
+                    pts.append(((1 - t) ** 2 * x0 + 2 * (1 - t) * t * cx + t * t * x, (1 - t) ** 2 * y0 + 2 * (1 - t) * t * cy + t * t * y))
+                cur = (x, y)
+        contours.append((sum(x0 * y1 - x1 * y0 for (x0, y0), (x1, y1) in zip(pts, pts[1:] + pts[:1])), pts))
+    outer = max(contours, key=lambda c: abs(c[0]))[0] > 0   # the winding of the letters (the largest contour is one)
+    fill, holes = Image.new("1", (W, H), 0), Image.new("1", (W, H), 0)
+    for area, pts in contours:
+        one = Image.new("1", (W, H), 0)
+        ImageDraw.Draw(one).polygon([(x * s, y * s) for x, y in pts], fill=1)
+        if (area > 0) == outer: fill = ImageChops.logical_or(fill, one)
+        else: holes = ImageChops.logical_or(holes, one)
+    mask = ImageChops.logical_and(fill, ImageChops.invert(holes))
+    out = Image.new("RGBA", (W, H), colour + (255,))
+    out.putalpha(mask.convert("L"))
+    return out.resize((W // 4, H // 4), Image.LANCZOS)
 
 
 def sea(w, h, cx, cy, rhumbs=True):
@@ -37,16 +75,16 @@ def sea(w, h, cx, cy, rhumbs=True):
 
 
 def mark(im, cx, cy, r, smoke=True):
-    """Rim, the lived arc from Fajr round through noon, and the grain (upper left: late morning, read right to left)."""
+    """Rim, the lived arc from Fajr round through noon, and the grain: clockwise, as the dial runs (now on the right)."""
     over = Image.new("RGBA", im.size, (0, 0, 0, 0))
     d = ImageDraw.Draw(over)
     w = max(2, int(r * .06))
     d.ellipse((cx - r, cy - r, cx + r, cy + r), outline=INK + (90,), width=max(1, w // 2))
     band = max(3, int(r * .2))
-    # PIL angles: 0 = 3 o'clock, clockwise. From lower right (Fajr) anticlockwise over the top to the left.
-    d.arc((cx - r, cy - r, cx + r, cy + r), start=200, end=45 + 360 - 360, fill=RESIN + (255,), width=band)
-    d.arc((cx - r, cy - r, cx + r, cy + r), start=45, end=200, fill=RESIN + (50,), width=band)
-    a = math.radians(200)
+    # PIL angles: 0 = 3 o'clock, clockwise. From lower left (Fajr) clockwise over the top to the right (now).
+    d.arc((cx - r, cy - r, cx + r, cy + r), start=135, end=360, fill=RESIN + (255,), width=band)
+    d.arc((cx - r, cy - r, cx + r, cy + r), start=0, end=135, fill=RESIN + (50,), width=band)
+    a = math.radians(0)
     ex, ey = cx + (r - band / 2) * math.cos(a), cy + (r - band / 2) * math.sin(a)
     # glow
     g = Image.new("RGBA", im.size, (0, 0, 0, 0))
@@ -87,17 +125,17 @@ def icon(size):
     return out.resize((size, size), Image.LANCZOS)
 
 
-def banner(w, h, sub):
+def banner(w, h, sub, sub_size=.1):
     s = 3
     W, H = w * s, h * s
     cx, cy = W * .80, H * .54
     im = sea(W, H, cx, cy)
     im = mark(im, cx, cy, H * .3)
     d = ImageDraw.Draw(im)
-    f = ImageFont.truetype(SEMI, int(H * .34), layout_engine=ImageFont.Layout.RAQM)
-    d.text((W * .38, H * .42), "لُبان", font=f, fill=INK, anchor="mm", direction="rtl", language="ar")
-    f2 = ImageFont.truetype(MED, int(H * .1))
-    d.text((W * .38, H * .74), sub, font=f2, fill=RESIN_SOFT, anchor="mm")
+    wm = wordmark(int(H * .42), RESIN)
+    im.paste(wm, (int(W * .38 - wm.width / 2), int(H * .42 - wm.height / 2)), wm)
+    f2 = ImageFont.truetype(MED, int(H * sub_size))
+    d.text((W * .38, H * .78), sub, font=f2, fill=RESIN_SOFT, anchor="mm")
     return im.resize((w, h), Image.LANCZOS)
 
 
@@ -113,7 +151,7 @@ def main():
         banner(320, 180, "SCREENSAVER" if name == "app" else "HOME").save(p, optimize=True)
     brand = ROOT / "docs/brand"
     brand.mkdir(parents=True, exist_ok=True)
-    banner(1600, 600, "LUBAN · FRANKINCENSE, BY SEA").save(brand / "hero.png", optimize=True)
+    banner(1600, 600, "A TOUCH OF OMAN ON YOUR SCREEN", .055).save(brand / "hero.png", optimize=True)
     icon(512).save(brand / "icon-512.png", optimize=True)
     print("brand images written")
 

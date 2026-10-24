@@ -92,9 +92,20 @@ public class SettingsActivity extends Activity {
         View mark = new View(this);
         mark.setBackground(new LubanMark());
         brand.addView(mark, new LinearLayout.LayoutParams(dp(48), dp(48)));
-        TextView name = label("لُبان", 42, bold, INK, 0);
+        LinearLayout name = new LinearLayout(this);
+        name.setOrientation(LinearLayout.VERTICAL);
+        name.setGravity(Gravity.CENTER_HORIZONTAL);
+        ImageView word = new ImageView(this);
+        word.setImageResource(R.drawable.wordmark);
+        word.setImageTintList(android.content.res.ColorStateList.valueOf(LUBAN));
+        word.setContentDescription("لُبان · Luban");
+        name.addView(word, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, dp(46)));
+        word.setAdjustViewBounds(true);
+        TextView latin = label("LUBAN", 11, regular, LUBAN, 2);
+        latin.setLetterSpacing(.4f);
+        name.addView(latin);
         LinearLayout.LayoutParams nl = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        nl.setMarginStart(dp(24));   // El Messiri's letters reach past their box: a margin, not padding, keeps them off the ring
+        nl.setMarginStart(dp(18));
         brand.addView(name, nl);
         text.addView(brand);
 

@@ -58,8 +58,8 @@ frankincense, shipped from Sumhuram (Khor Rori) in Dhofar to India, Mesopotamia 
 of the UNESCO *Land of Frankincense*.
 
 - **The dial** is the navigators' star compass (32 rhumbs, each named for a star's rising or setting) used as a
-  24-hour clock: noon at the top, midnight at the bottom, time running the way the language reads (morning on the right
-  in Arabic, on the left in English). The prayers are bearings on the rim; daylight is a faint resin band; the day
+  24-hour clock: noon at the top, midnight at the bottom, time running clockwise in both languages (sunrise on the left,
+  sunset on the right: the sky of Oman facing south; until October 2026 it ran the way the language reads). The prayers are bearings on the rim; daylight is a faint resin band; the day
   lived since Fajr is solid resin.
 - **Now** is a lit grain of frankincense on the rim, its smoke rising across the chart (two pre-drawn layers that
   breathe with CSS, redrawn once a minute: cheap on a TV's GPU).

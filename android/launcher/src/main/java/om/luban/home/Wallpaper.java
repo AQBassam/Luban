@@ -53,14 +53,15 @@ final class Wallpaper {
         index = c.getSharedPreferences("home", Context.MODE_PRIVATE).getInt("wallpaper", -1);
     }
 
-    /** The photo on screen: its place, its photographer and licence (the licence asks for both); "" with the sea chart. */
+    /** The photo on screen: its place, licence and photographer, the name last (the licence asks for both); "" with the sea chart. */
     String caption(boolean ar) {
         if (current == null) return "";
         for (int i = 0; i < credits.length(); i++) {
             JSONObject p = credits.optJSONObject(i);
             if (p != null && current.equals(p.optString("f"))) {
                 String by = p.optString("by"), lic = p.optString("licence");
-                return p.optString(ar ? "place_ar" : "place_en") + " · " + (ar ? "تصوير " : "Photo ") + by + (lic.isEmpty() ? "" : ", " + lic);
+                return p.optString(ar ? "place_ar" : "place_en") + (lic.isEmpty() ? "" : " · \u2068" + lic + "\u2069")
+                    + " · " + (ar ? "تصوير: " : "Photo: ") + "\u2068" + by + "\u2069";
             }
         }
         return "";

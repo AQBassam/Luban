@@ -119,6 +119,14 @@ body.ltr .mk .d{margin-right:0;margin-left:1.6rem}
 #credit{position:fixed;bottom:2rem;left:7.2rem;font-size:1.4rem;color:var(--ink-3)}
 body.ltr #credit{left:auto;right:7.2rem}
 #credit .cr{margin-left:2.4rem}
+/* the brand: under the dial, quiet (a still logo on a screensaver must not compete with the clock, nor mark an OLED panel) */
+#brand{position:fixed;bottom:5.4rem;left:7.2rem;display:flex;align-items:center;color:var(--ink);opacity:.72;direction:rtl}
+#brand>*{margin-left:1.2rem}
+body.ltr #brand{left:auto;right:7.2rem}
+#brand .sym{width:3.6rem;height:3.6rem;flex:none}
+#brand .word{height:3.4rem;width:auto;color:var(--resin)}
+#brand .line{font-size:1.4rem;color:var(--ink-2);margin-right:.4rem}
+body.ltr #brand .line{direction:ltr}
 body.ltr #credit .cr{margin-left:0;margin-right:2.4rem}
 
 /* the dial */

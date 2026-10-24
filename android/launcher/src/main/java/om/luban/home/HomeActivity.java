@@ -211,6 +211,29 @@ public class HomeActivity extends Activity {
         tl.topMargin = top + Ui.dp(this, 40 + 28);   // under the row of buttons: one line of controls at the top
         root.addView(time, tl);
 
+        // the brand in the upper corner, on the line of the buttons: the mark, the wordmark, LUBAN under it
+        LinearLayout brand = new LinearLayout(this);
+        brand.setOrientation(LinearLayout.HORIZONTAL);
+        brand.setGravity(Gravity.CENTER_VERTICAL);
+        View bm = new View(this);
+        bm.setBackground(new LubanMark());
+        brand.addView(bm, new LinearLayout.LayoutParams(Ui.dp(this, 32), Ui.dp(this, 32)));
+        LinearLayout bw = new LinearLayout(this);
+        bw.setOrientation(LinearLayout.VERTICAL);
+        bw.setGravity(Gravity.CENTER_HORIZONTAL);
+        bw.addView(Ui.wordmark(this, 28, Ui.LUBAN));
+        TextView latin = Ui.text(this, "LUBAN", 8, Ui.medium(), Ui.LUBAN);
+        latin.setLetterSpacing(.4f);
+        latin.setPadding(0, Ui.dp(this, 2), 0, 0);
+        bw.addView(latin);
+        LinearLayout.LayoutParams bwl = new LinearLayout.LayoutParams(-2, -2);
+        bwl.setMarginStart(Ui.dp(this, 10));
+        brand.addView(bw, bwl);
+        FrameLayout.LayoutParams brl = new FrameLayout.LayoutParams(-2, -2, Gravity.TOP | Gravity.START);
+        brl.setMarginStart(side);
+        brl.topMargin = top;
+        root.addView(brand, brl);
+
         // five pills, an icon then its name: household tasks (with how many are open), network, inputs, screensaver, settings
         LinearLayout end = new LinearLayout(this);
         end.setOrientation(LinearLayout.VERTICAL);

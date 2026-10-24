@@ -182,13 +182,16 @@
     if (parent) parent.appendChild(e);
     return e;
   }
-  /** Noon at the top, midnight at the bottom. Time runs the way the language reads: morning on the right in Arabic. */
+  /**
+   * Noon at the top, midnight at the bottom, time running clockwise in both languages: sunrise on the left and sunset
+   * on the right, the sky of Oman as it looks facing south.
+   */
   function at(min, r) {
-    const a = (min - 720) / 1440 * 2 * Math.PI, side = S.lang === 'ar' ? -1 : 1;
-    return [side * r * Math.sin(a), -r * Math.cos(a)];
+    const a = (min - 720) / 1440 * 2 * Math.PI;
+    return [r * Math.sin(a), -r * Math.cos(a)];
   }
   function arc(t0, t1, r) {
-    const p = at(t0, r), q = at(t1, r), sweep = S.lang === 'ar' ? 0 : 1;
+    const p = at(t0, r), q = at(t1, r), sweep = 1;
     return `M${p[0].toFixed(1)} ${p[1].toFixed(1)} A${r} ${r} 0 ${t1 - t0 > 720 ? 1 : 0} ${sweep} ${q[0].toFixed(1)} ${q[1].toFixed(1)}`;
   }
   let dialDyn = null;
@@ -704,11 +707,31 @@
    * Open-Meteo beside the weather, CoinGecko under its price, TVmaze under the episodes; football-data.org and Yahoo ask
    * for none on screen, and every source is listed on the phone page (docs/DATA-SOURCES.md).
    */
+  /** The wordmark (docs/brand/v4): Noto Sans Arabic SemiBold outlines (SIL OFL), refined with rhombus dots and pen cuts. */
+  const WORDMARK_BOX = '0 0 596.81 495.89';
+  const WORDMARK = 'M506.53 411.07L510.23 367.41Q528.73 367.41 536.5 363.71Q544.27 360.01 545.75 350.02Q547.23 340.03 546.49 321.16L539.46 158.97L583.49 140.97L590.89 322.27Q591.63 342.99 589.04 359.64Q586.82 375.92 578.31 387.39Q569.8 398.86 552.41 405.15Q535.39 411.07 506.53 411.07ZM505.42 95.09L501.72 74Q515.04 73.63 526.51 71.04Q537.98 68.45 546.86 64.75Q538.72 59.57 533.54 52.17Q528.36 44.4 528.36 34.04Q528.36 19.98 538.35 9.99Q548.34 0 563.88 0Q580.16 0 588.3 10.73Q596.81 21.46 596.81 35.15Q596.81 52.17 584.97 65.49Q573.13 78.44 552.41 86.21Q531.69 93.61 505.42 95.09ZM550.56 34.78Q550.56 40.33 554.63 45.51Q558.7 50.32 564.99 53.65Q574.98 44.77 574.98 35.89Q574.98 29.97 572.02 25.9Q569.06 21.46 563.14 21.46Q557.96 21.46 554.26 25.53Q550.56 29.23 550.56 34.78ZM370 411.07L373.7 367.41Q388.13 367.41 396.64 364.82Q405.52 361.86 410.33 354.09Q415.14 345.95 418.47 330.78Q422.17 315.24 426.24 290.08L467.31 297.11Q465.46 306.36 463.24 318.57Q461.02 330.78 461.02 340.4Q461.02 348.54 464.72 354.83Q468.42 360.75 478.78 364.08Q489.51 367.41 510.23 367.41Q521.7 367.41 526.51 373.7Q531.69 379.62 531.69 388.5Q531.69 398.12 525.03 404.78Q518.37 411.07 506.53 411.07Q476.93 411.07 461.39 404.78Q445.85 398.49 439.56 383.69Q426.98 401.45 409.59 406.26Q392.2 411.07 370 411.07ZM434.93 437.62L464.07 466.76L434.93 495.89L405.8 466.76ZM369.63 411.07Q337.07 411.07 319.31 404.04Q301.92 397.01 294.89 382.58Q288.23 368.15 287.49 345.21L279.72 158.97L323.38 140.97L331.15 325.6Q331.89 342.99 334.48 352.24Q337.44 361.12 346.32 364.45Q355.2 367.41 373.33 367.41Q384.8 367.41 389.98 373.7Q395.53 379.62 395.53 388.5Q395.53 398.12 388.5 404.78Q381.84 411.07 369.63 411.07ZM0 402.93Q0 389.98 3.33 371.85Q7.03 353.35 17.76 329.3L56.24 342.99Q49.95 359.64 46.62 372.22Q43.66 384.8 43.66 396.27Q43.66 424.39 63.27 437.34Q82.88 450.66 113.96 450.66Q137.64 450.66 153.18 444.37Q168.72 438.45 177.6 428.09Q186.48 417.73 190.18 405.52Q193.88 393.31 193.88 381.47Q193.88 366.67 188.7 346.32Q183.52 325.6 169.83 297.85L209.79 280.09Q220.89 300.07 229.03 326.71Q237.54 353.35 237.54 378.14Q237.54 396.64 231.62 416.62Q225.7 436.97 211.64 454.73Q197.95 472.49 173.9 483.59Q149.85 494.69 113.22 494.69Q82.14 494.69 56.24 485.07Q30.71 475.82 15.17 455.47Q0 435.49 0 402.93ZM117.1 205.62L147.17 235.69L117.1 265.76L87.04 235.69Z';
+  /** The brand, small and quiet in the lower corner under the dial: the symbol, the wordmark, the line in the screen's language. */
+  function renderBrand() {
+    const box = $('brand');
+    if (box.childElementCount) { box.querySelector('.line').textContent = T.slogan; return; }
+    const sym = svg('svg', { class: 'sym', viewBox: '-50 -50 100 100', 'aria-hidden': 'true' }, box);
+    svg('circle', { r: 38, fill: 'none', stroke: 'currentColor', 'stroke-opacity': '.35', 'stroke-width': 3 }, sym);
+    svg('path', { d: 'M-26.87 26.87A38 38 0 1 1 38 0', fill: 'none', stroke: '#E2A94F', 'stroke-width': 9, 'stroke-linecap': 'round' }, sym);
+    svg('circle', { cx: 38, cy: 0, r: 12, fill: '#E2A94F', 'fill-opacity': '.35' }, sym);
+    svg('circle', { cx: 38, cy: 0, r: 7, fill: '#F7E7C4' }, sym);
+    const word = svg('svg', { class: 'word', viewBox: WORDMARK_BOX, 'aria-label': 'لُبان' }, box);
+    svg('path', { fill: 'currentColor', d: WORDMARK }, word);
+    box.append(h('div', 'line', T.slogan));
+  }
+
   function renderCredit() {
     const box = clear($('credit'));
     if (!state.photoCredit || S.bg !== 'photos') return;
     // the name in its own <bdi>, so a Latin name keeps its place inside Arabic text
-    const sp = h('span', 'cr', T.photo + ': '); sp.append(h('bdi', '', state.photoCredit)); box.append(sp);
+    // place · licence · photographer last, each Latin part in its own <bdi> so it keeps its place inside Arabic text
+    const c = state.photoCredit, sp = h('span', 'cr', c.place + ' · ');
+    if (c.licence) { sp.append(h('bdi', '', c.licence)); sp.append(' · '); }
+    sp.append(T.photo + ': '); sp.append(h('bdi', '', c.by)); box.append(sp);
   }
 
   // ---------- photos: four a day out of the set, a new one every 20 minutes
@@ -725,7 +748,7 @@
     img.onload = () => {
       const a = $(layer ? 'ph-a' : 'ph-b'), b = $(layer ? 'ph-b' : 'ph-a');
       a.style.backgroundImage = `url("${img.src}")`; a.classList.add('on'); b.classList.remove('on'); layer ^= 1;
-      state.photoCredit = `${S.lang === 'ar' ? ph.place_ar : ph.place_en}, ${ph.by}${ph.licence ? ', ' + ph.licence : ''}`;
+      state.photoCredit = { place: S.lang === 'ar' ? ph.place_ar : ph.place_en, by: ph.by, licence: ph.licence || '' };
       renderCredit();
     };
     img.src = photoUrl(ph.f);
@@ -754,7 +777,7 @@
     const wc = store.get('weather:' + P.id, null);
     if (wc) { state.weather = wc.w; state.forecast = wc.f; }
     tickClock(); tickDates(); renderPrayers(); renderChips(); renderWeather(); renderCard(); applyPhoto(true); applyNight();
-    drawRhumbs();
+    drawRhumbs(); renderBrand();
     window.addEventListener('resize', () => { drawRhumbs(); renderPrayers(); });
     document.body.classList.add('ready');
 

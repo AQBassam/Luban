@@ -53,6 +53,14 @@ public class AppsActivity extends Activity {
         View mark = new View(this);
         mark.setBackground(new LubanMark());
         head.addView(mark, new LinearLayout.LayoutParams(Ui.dp(this, 36), Ui.dp(this, 36)));
+        android.widget.ImageView word = Ui.wordmark(this, 30, Ui.LUBAN);
+        ((LinearLayout.LayoutParams) word.getLayoutParams()).setMarginStart(Ui.dp(this, 12));
+        head.addView(word);
+        View rule = new View(this);   // a resin rule between the brand and the title
+        rule.setBackgroundColor(0x59E2A94F);
+        LinearLayout.LayoutParams rl = new LinearLayout.LayoutParams(Math.max(1, Ui.dp(this, 1)), Ui.dp(this, 26));
+        rl.setMarginStart(Ui.dp(this, 16));
+        head.addView(rule, rl);
         TextView title = Ui.text(this, "جميع التطبيقات", 28, Ui.bold(), Ui.INK);
         LinearLayout.LayoutParams tl = new LinearLayout.LayoutParams(-2, -2);
         tl.setMarginStart(Ui.dp(this, 14));

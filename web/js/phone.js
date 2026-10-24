@@ -12,7 +12,7 @@
   const PR = ['fajr', 'sunrise', 'dhuhr', 'asr', 'maghrib', 'isha'];
   const GENRES = ['Drama', 'Comedy', 'Action', 'Crime', 'Thriller', 'Mystery', 'Science-Fiction', 'Fantasy', 'Adventure', 'Family', 'History', 'Documentary', 'Anime', 'Romance', 'Horror'];
   const EN = {
-    title: 'Luban settings', place: 'Place and time', city: 'City', nameAr: 'Arabic name', nameEn: 'English name', lat: 'Latitude', lon: 'Longitude',
+    title: 'Settings', place: 'Place and time', city: 'City', nameAr: 'Arabic name', nameEn: 'English name', lat: 'Latitude', lon: 'Longitude',
     tz: 'Time zone (IANA)', lang: 'Language', digits: 'Digits', clock24: '24-hour clock', prayer: 'Prayer', method: 'Calculation method', asr: 'Asr',
     asrStd: 'Standard (shadow ×1)', asrHan: 'Hanafi (shadow ×2)', offsets: 'Adjust in minutes (to match the local calendar)', iqama: 'Iqama, minutes after adhan',
     hijri: 'Hijri date adjustment', screen: 'Screen', panel: 'Card beside the clock', pVerse: 'Verse or hadith of the day', pPrayers: "Today's prayers and iqama",

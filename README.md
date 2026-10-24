@@ -155,6 +155,7 @@ collected from TVs, so a bad bundle is caught by testing it on real TVs on the c
 
 ## Credits
 
+Brand: the wordmark is [Noto Sans Arabic](https://github.com/notofonts/arabic) SemiBold (SIL OFL) refined with rhombus dots and pen-cut tops; the files and the identity board are in [docs/brand/v4](docs/brand/v4).
 Fonts: [El Messiri](https://github.com/Gue3bara/El-Messiri) and [Amiri](https://www.amirifont.org/) (SIL OFL).
 Photos: Wikimedia Commons photographers (Quality images of Oman), each with its licence in [docs/PHOTO-CREDITS.md](docs/PHOTO-CREDITS.md). Quran text: King Fahd Complex Uthmani
 Hafs edition and the Forty Hadith of an-Nawawi, via [fawazahmed0](https://github.com/fawazahmed0)'s public-domain

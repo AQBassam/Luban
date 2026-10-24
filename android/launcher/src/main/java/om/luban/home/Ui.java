@@ -72,6 +72,17 @@ final class Ui {
         });
     }
 
+    /** The wordmark (res/drawable/wordmark.xml) at a height, in a colour: resin on the deep sea is the main one. */
+    static android.widget.ImageView wordmark(Context c, int heightDp, int color) {
+        android.widget.ImageView w = new android.widget.ImageView(c);
+        w.setImageResource(R.drawable.wordmark);
+        w.setImageTintList(android.content.res.ColorStateList.valueOf(color));
+        w.setAdjustViewBounds(true);
+        w.setContentDescription("لُبان · Luban");
+        w.setLayoutParams(new android.widget.LinearLayout.LayoutParams(-2, dp(c, heightDp)));
+        return w;
+    }
+
     /** 0-9 or ٠-٩, as the screensaver's setting says. */
     static String digits(String s, boolean arabic) {
         if (!arabic) return s;

@@ -11,7 +11,7 @@ import android.view.View;
 /**
  * The prayer card's dial, a small twin of the screensaver's: a 24-hour compass with noon at the top, today's prayers as
  * marks on the rim, the day lived since Fajr in resin, and a lit grain of frankincense where "now" is.
- * Time runs the way the language reads: morning on the right in Arabic, on the left in English.
+ * Time runs clockwise in both languages, as on the screensaver: sunrise on the left, sunset on the right.
  */
 final class Dial extends View {
     private final Paint ring = new Paint(Paint.ANTI_ALIAS_FLAG), arc = new Paint(Paint.ANTI_ALIAS_FLAG),
@@ -20,7 +20,6 @@ final class Dial extends View {
     private double[] times;   // fajr, sunrise, dhuhr, asr, maghrib, isha in minutes (Maghrib/Isha may be past 1440)
     private double now;
     private int next = -1;
-    private boolean rtl = true;
 
     Dial(Context c) {
         super(c);
@@ -31,14 +30,13 @@ final class Dial extends View {
     }
 
     void set(double[] times, double now, int next, boolean rtl) {
-        this.times = times; this.now = now; this.next = next; this.rtl = rtl;
+        this.times = times; this.now = now; this.next = next;   // rtl: the dial runs clockwise in both languages
         invalidate();
     }
 
-    /** Canvas degrees (0 = 3 o'clock, clockwise) for a minute of the day. */
+    /** Canvas degrees (0 = 3 o'clock, clockwise) for a minute of the day: noon at the top, time running clockwise. */
     private float deg(double min) {
-        double fromNoon = (min - 720) / 1440 * 360;
-        return (float) (rtl ? -90 - fromNoon : -90 + fromNoon);
+        return (float) (-90 + (min - 720) / 1440 * 360);
     }
 
     private float x(double min, float r) { return getWidth() / 2f + r * (float) Math.cos(Math.toRadians(deg(min))); }
@@ -47,7 +45,7 @@ final class Dial extends View {
     /** The sweep from t0 to t1, in the direction time runs. */
     private void sweep(Canvas c, double t0, double t1, Paint p) {
         float span = (float) ((t1 - t0) / 1440 * 360);
-        c.drawArc(box, deg(t0), rtl ? -span : span, false, p);
+        c.drawArc(box, deg(t0), span, false, p);
     }
 
     @Override
