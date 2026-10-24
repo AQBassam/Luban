@@ -103,6 +103,7 @@ public class SettingsActivity extends Activity {
         word.setAdjustViewBounds(true);
         TextView latin = label("LUBAN", 11, regular, LUBAN, 2);
         latin.setLetterSpacing(.4f);
+        latin.setPadding(dp(6), dp(2), dp(6), 0);   // the spacing after the last letter is not measured: the N was cut
         name.addView(latin);
         LinearLayout.LayoutParams nl = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         nl.setMarginStart(dp(18));
