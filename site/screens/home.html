@@ -1,115 +1,145 @@
 <!doctype html>
-<!-- A demo of Luban's home screen (the launcher is native Android, so it is redrawn here) for the site's screenshots:
-     neutral app tiles, a fixed time in Muscat, no data from any real TV. Open with ?lang=en for English.
-     Rendered by site/shots.mjs. -->
+<!-- Luban's home screen redrawn for the site's screenshots (the launcher is native Android), laid out exactly as
+     android/launcher/.../HomeActivity.java, PrayerCard.java and Ui.java do it: the 960x540 dp dock at 2 px per dp.
+     The root is right-to-left in both languages, as in the app: brand and time on the right, the pills on the left,
+     the photo's credit in the lower left corner. Neutral app tiles, a fixed time in Muscat, no data from any real TV.
+     Open with ?lang=en for English. Rendered by site/shots.mjs. -->
 <html lang="ar" dir="rtl"><head><meta charset="utf-8">
 <style>
 @font-face{font-family:M;font-weight:400;src:url(../../assets/fonts/el-messiri-arabic-400-normal.woff2)}
+@font-face{font-family:M;font-weight:500;src:url(../../assets/fonts/el-messiri-arabic-500-normal.woff2)}
 @font-face{font-family:M;font-weight:600;src:url(../../assets/fonts/el-messiri-arabic-600-normal.woff2)}
 @font-face{font-family:L;font-weight:400;src:url(../../assets/fonts/el-messiri-latin-400-normal.woff2)}
+@font-face{font-family:L;font-weight:500;src:url(../../assets/fonts/el-messiri-latin-500-normal.woff2)}
 @font-face{font-family:L;font-weight:600;src:url(../../assets/fonts/el-messiri-latin-600-normal.woff2)}
+/* Ui.java: INK F1EBDD, INK2 BD (74%), INK3 80 (50%), LUBAN E2A94F, LUBAN_SOFT F3D9A4, FOAM 8FE0D6, GLASS A606192A, LINE 38E2A94F */
+:root{--ink:#F1EBDD;--ink2:rgba(241,235,221,.74);--ink3:rgba(241,235,221,.5);--luban:#E2A94F;--soft:#F3D9A4;--foam:#8FE0D6;
+  --glass:rgba(6,25,42,.65);--line:rgba(226,169,79,.22)}
 *{margin:0;padding:0;box-sizing:border-box}
 html,body{width:1920px;height:1080px;overflow:hidden}
-body{font-family:M,L,sans-serif;color:#F1EBDD;position:relative;background:#06192A}
-[lang=en] body{font-family:L,M,sans-serif}
+body{font-family:L,M,sans-serif;color:var(--ink);position:relative;background:#06192A;line-height:1.6}
+/* El Messiri's own line height (about 1.6), as Android lays out its TextViews */
 .bg{position:absolute;inset:0;background:url(../../photos/c151778577.jpg) center/cover}
-.shade{position:absolute;inset:0;background:linear-gradient(90deg,rgba(6,25,42,.55) 0%,rgba(6,25,42,.25) 40%,rgba(6,25,42,.72) 100%),linear-gradient(0deg,rgba(6,25,42,.92) 0%,rgba(6,25,42,.2) 38%,rgba(6,25,42,.55) 100%)}
-[dir=ltr] .shade{background:linear-gradient(270deg,rgba(6,25,42,.55) 0%,rgba(6,25,42,.25) 40%,rgba(6,25,42,.72) 100%),linear-gradient(0deg,rgba(6,25,42,.92) 0%,rgba(6,25,42,.2) 38%,rgba(6,25,42,.55) 100%)}
-.top{position:absolute;top:80px;inset-inline:96px;display:flex;align-items:center}
-.brand{display:flex;align-items:center;gap:14px}
-.brand .sym{height:84px}
+/* the scrim over the photos (bottom to top F2, BF, 8C, BF) and the shade behind the clock's corner (93% 18%, 460 dp) */
+.scrim{position:absolute;inset:0;background:linear-gradient(0deg,rgba(6,25,42,.95) 0%,rgba(6,25,42,.75) 33%,rgba(6,25,42,.55) 67%,rgba(6,25,42,.75) 100%)}
+.glow{position:absolute;inset:0;background:radial-gradient(circle 920px at 93% 18%,rgba(6,25,42,.6),rgba(6,25,42,0))}
+.glass{background:var(--glass);border:2px solid var(--line)}
+
+/* brand: top 40 dp, start (right) 48 dp; the mark 32 dp, the wordmark 28 dp, LUBAN 8 sp under it */
+.brand{position:absolute;top:80px;right:96px;display:flex;align-items:center;gap:20px}
+.brand .sym{width:64px;height:64px}
 .brand .wm{display:flex;flex-direction:column;align-items:center}
-.brand .wm img{height:58px}
-.brand .wm span{font-family:L;letter-spacing:.18em;font-size:16px;color:#E2A94F;margin-top:6px}
-.caps{display:flex;gap:22px;margin-inline-start:auto}
-.cap{height:78px;padding:0 30px;border-radius:40px;background:rgba(6,25,42,.72);border:2px solid rgba(241,235,221,.12);display:flex;align-items:center;gap:16px;font-size:28px}
-[lang=en] .cap{font-size:26px}
-.cap svg{width:32px;height:32px;stroke:#F1EBDD;fill:none;stroke-width:1.8}
-.cap .n{width:38px;height:38px;border-radius:50%;background:#E2A94F;color:#1d1406;display:grid;place-items:center;font-family:L;font-size:22px}
-.right{position:absolute;inset-inline-end:96px;top:220px;text-align:end;width:880px}
-.greet{font-size:34px;color:#F3D9A4}
-.clock{display:flex;justify-content:flex-end;align-items:flex-end;gap:22px;margin-top:6px;flex-direction:row-reverse}
-[dir=ltr] .clock{justify-content:flex-start}
-.clock b{font-family:L;font-weight:400;font-size:122px;line-height:1}
-.clock i{font-style:normal;font-size:40px;color:#E2A94F;margin-bottom:14px}
-.date{font-size:24px;color:rgba(241,235,221,.85);margin-top:16px}
-.date em{font-style:normal;color:#E2A94F;margin:0 10px}
-.pr{position:absolute;inset-inline-end:82px;top:540px;width:878px;border-radius:30px;background:rgba(6,25,42,.66);border:2px solid rgba(226,169,79,.28);padding:16px 26px 22px}
-.row{display:flex;justify-content:space-between}
-.p{flex:1;text-align:center;padding:10px 0 14px;border-radius:18px;position:relative}
-.p+.p{border-inline-start:1px solid rgba(241,235,221,.12)}
-.p span{display:block;font-size:24px;color:rgba(241,235,221,.7)}
-.p b{font-family:L;font-weight:400;font-size:36px}
-.p small{font-size:18px;color:rgba(241,235,221,.6);margin-inline-start:6px}
-.p.on{background:rgba(226,169,79,.16)}
-.p.on span{color:#E2A94F}
-.p.on::after{content:"";position:absolute;bottom:4px;left:30%;right:30%;height:4px;border-radius:3px;background:#E2A94F}
-.next{border-top:2px solid rgba(241,235,221,.1);margin-top:14px;padding-top:20px;font-size:30px;display:flex;align-items:center;gap:14px}
-.next::before{content:"";width:14px;height:14px;border-radius:50%;background:#E2A94F}
-.next em{font-style:normal;color:#E2A94F}
-.fav{position:absolute;inset-inline:96px;top:812px}
-.fav h3{font-weight:400;font-size:26px;color:#F3D9A4;display:flex;align-items:center;gap:22px}
-.fav h3::after{content:"";flex:1;height:2px;background:rgba(226,169,79,.35)}
-.tiles{display:flex;gap:28px;margin-top:22px}
-.t{width:240px;height:136px;border-radius:20px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;font-size:26px}
+.brand .wm img{height:56px}
+.brand .wm span{direction:ltr;font-weight:500;font-size:16px;color:var(--luban);padding-top:4px}
+
+/* five pills: top 40 dp, end (left) 48 dp; 40 dp high, icon 18 dp, name 14 sp, 10 dp apart */
+.pills{position:absolute;top:80px;left:96px;display:flex;gap:20px}
+.pill{height:80px;border-radius:40px;padding-inline:28px 32px;display:flex;align-items:center;gap:16px;font-weight:500;font-size:28px}
+.pill svg{width:36px;height:36px;stroke:var(--ink);fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.badge{height:40px;min-width:40px;padding:0 10px;border-radius:20px;background:var(--luban);color:#06192A;font-weight:600;font-size:24px;display:grid;place-items:center}
+
+/* the time column: start (right) 48 dp, top 40 + 68 dp, under the brand */
+.time{position:absolute;top:216px;right:96px;display:flex;flex-direction:column;align-items:flex-start}
+.greet{font-weight:500;font-size:32px;color:var(--soft)}
+.clock{display:flex;align-items:flex-end}
+.clock b{font-weight:500;font-size:128px;direction:ltr}
+.clock i{line-height:1.3;font-style:normal;font-weight:500;font-size:36px;color:var(--luban);padding-inline-start:20px;padding-bottom:24px}
+[lang=en] .clock{direction:ltr}
+.date{width:920px;height:42px;line-height:42px;margin-top:12px;font-size:30px;color:var(--ink2);white-space:nowrap}
+.date em{font-style:normal;color:var(--luban);font-size:1.3em;margin:0 .35em}
+/* today's prayers: 440 dp wide, 10 dp under the date, its edge 8 dp past the column */
+.pr{line-height:1.35;width:880px;margin-top:20px;margin-inline-start:-16px;border-radius:36px;padding:16px 24px 20px}
+.row{display:flex;align-items:center}
+.rule{width:2px;height:52px;background:rgba(241,235,221,.14);flex:none}
+.rule.off{visibility:hidden}
+.p{flex:1;margin:0 4px;padding:8px 0;border-radius:24px;display:flex;flex-direction:column;align-items:center}
+.p span{font-weight:500;font-size:24px;color:var(--ink2)}
+.p b{height:52px;display:flex;align-items:center;font-weight:500;font-size:34px}
+.p b small{font-size:.62em;color:var(--ink2);margin-inline-start:.25em}
+.p u{width:44px;height:4px;margin-top:6px;visibility:hidden}
+.p.gone{opacity:.45}
+.p.on{background:rgba(143,224,214,.1)}
+.p.on span,.p.on b{color:var(--foam)}
+.p.on u{visibility:visible;background:var(--foam)}
+.hr{height:2px;background:var(--line);margin:16px 8px}
+.foot{display:flex;align-items:center;gap:18px;padding:0 12px;font-size:30px}
+.foot::before{content:"";width:14px;height:14px;border-radius:50%;background:var(--foam);flex:none}
+.foot strong{font-weight:600;color:var(--foam)}
+.foot small{font-size:.87em;color:var(--ink3)}
+
+/* the dock: bottom 28 dp, the favourites' name 13 sp and a resin rule fading out, tiles 120 x 68 dp, 14 dp apart */
+.dock{position:absolute;bottom:56px;left:80px;right:80px}
+.head{display:flex;align-items:center;gap:24px;padding:0 16px 4px}
+.head h3{font-weight:600;font-size:26px;color:var(--soft)}
+.head i{flex:1;height:2px;background:linear-gradient(270deg,rgba(226,169,79,.4),rgba(226,169,79,0))}
+.tiles{display:flex;gap:28px;padding:16px}
+.t{width:240px;height:136px;border-radius:24px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;font-weight:500;font-size:26px;flex:none}
 .t svg{width:52px;height:52px;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
-.t.focus{outline:6px solid #E2A94F;outline-offset:4px;transform:scale(1.06)}
-.t1{background:linear-gradient(135deg,#0C2E45,#06192A);border:2px solid rgba(226,169,79,.3)}
+.t.focus{box-shadow:0 0 0 6px var(--luban) inset;transform:scale(1.07)}
+.t1{background:linear-gradient(135deg,#0C2E45,#06192A)}
 .t1 .in{display:flex;align-items:center;gap:10px}
 .t1 .in>img{height:70px}
 .t1 .w{display:flex;flex-direction:column;align-items:center}
 .t1 .w img{height:50px}
-.t1 .w span{font-family:L;font-size:12px;letter-spacing:.14em;color:rgba(241,235,221,.75);margin-top:4px}
+.t1 .w span{font-size:12px;letter-spacing:.14em;color:rgba(241,235,221,.75);margin-top:4px;direction:ltr}
 .t2{background:linear-gradient(135deg,#7a2f2a,#3d1614)}.t2 svg{stroke:#F7D9C9}
 .t3{background:linear-gradient(135deg,#1f5a55,#0d2a28)}.t3 svg{stroke:#BDF0E8}
 .t4{background:linear-gradient(135deg,#3b3f78,#1a1c3b)}.t4 svg{stroke:#D8DBFF}
 .t5{background:linear-gradient(135deg,#7a5a20,#3a2a0c)}.t5 svg{stroke:#F7E3B5}
-.t6{background:rgba(6,25,42,.72);border:2px solid rgba(241,235,221,.2)}.t6 svg{stroke:#F1EBDD}
-.credit{position:absolute;inset-inline-start:96px;bottom:26px;font-size:20px;color:rgba(241,235,221,.6)}
-.credit bdi{font-family:L}
+.t6{color:var(--soft)}.t6 svg{stroke:var(--soft)}
+
+/* the photo's credit: 11 sp, INK3, bottom 9 dp, end (left) 48 dp */
+.credit{position:absolute;left:96px;bottom:18px;font-size:22px;color:var(--ink3)}
 </style></head><body>
-<div class="bg"></div><div class="shade"></div>
-<div class="top">
-  <div class="brand"><img class="sym" src="../../docs/brand/v4/luban_symbol_v4.svg"><div class="wm"><img src="../../docs/brand/v4/luban_wordmark_resin_v4.svg"><span>LUBAN</span></div></div>
-  <div class="caps">
-    <div class="cap"><svg viewBox="0 0 24 24"><path d="M10 6h10M10 12h10M10 18h10M4 6l1.5 1.5L8 5M4 12l1.5 1.5L8 11M4 18l1.5 1.5L8 17"/></svg><span data-en="Home tasks">مهام البيت</span><span class="n">2</span></div>
-    <div class="cap"><svg viewBox="0 0 24 24"><path d="M2 9a15 15 0 0 1 20 0M5 12.5a10 10 0 0 1 14 0M8.5 16a5 5 0 0 1 7 0"/><circle cx="12" cy="19" r="1"/></svg><span data-en="Wi-Fi">الواي فاي</span></div>
-    <div class="cap"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg><span data-en="Inputs">المداخل</span></div>
-    <div class="cap"><svg viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5z"/></svg><span data-en="Screensaver">شاشة التوقف</span></div>
-    <div class="cap"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg><span data-en="Settings">الإعدادات</span></div>
-  </div>
+<div class="bg"></div><div class="scrim"></div><div class="glow"></div>
+
+<div class="brand"><img class="sym" src="../../docs/brand/v4/luban_symbol_v4.svg" alt=""><div class="wm"><img src="../../docs/brand/v4/luban_wordmark_resin_v4.svg" alt=""><span>L&#8202;U&#8202;B&#8202;A&#8202;N</span></div></div>
+
+<div class="pills">
+  <div class="pill glass"><svg viewBox="0 0 24 24"><path d="M10 6h10M10 12h10M10 18h10M4 6l1.5 1.5L8 5M4 12l1.5 1.5L8 11M4 18l1.5 1.5L8 17"/></svg><span data-en="Tasks">مهام البيت</span><span class="badge">2</span></div>
+  <div class="pill glass"><svg viewBox="0 0 24 24"><path d="M2 9a15 15 0 0 1 20 0M5 12.5a10 10 0 0 1 14 0M8.5 16a5 5 0 0 1 7 0"/><circle cx="12" cy="19" r="1"/></svg><span data-en="Wi-Fi">واي فاي</span></div>
+  <div class="pill glass"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg><span data-en="Inputs">المداخل</span></div>
+  <div class="pill glass"><svg viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5z"/></svg><span data-en="Screensaver">شاشة التوقف</span></div>
+  <div class="pill glass"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg><span data-en="Settings">الإعدادات</span></div>
 </div>
-<div class="right">
+
+<div class="time">
   <div class="greet" data-en="Good morning">صباح الخير</div>
-  <div class="clock"><i data-en="AM">صباحًا</i><b>9:24</b></div>
-  <div class="date" data-en="Wednesday 21 October 2026<em>•</em>10 Jumada al-Ula 1448 AH">الأربعاء 10 جمادى الأولى 1448 هـ<em>•</em>21 أكتوبر 2026 م</div>
-</div>
-<div class="pr">
-  <div class="row">
-    <div class="p"><span data-en="Fajr">الفجر</span><b>4:51</b><small data-en="am">ص</small></div>
-    <div class="p"><span data-en="Sunrise">الشروق</span><b>6:06</b><small data-en="am">ص</small></div>
-    <div class="p on"><span data-en="Dhuhr">الظهر</span><b>11:56</b><small data-en="am">ص</small></div>
-    <div class="p"><span data-en="Asr">العصر</span><b>3:14</b><small data-en="pm">م</small></div>
-    <div class="p"><span data-en="Maghrib">المغرب</span><b>5:41</b><small data-en="pm">م</small></div>
-    <div class="p"><span data-en="Isha">العشاء</span><b>6:52</b><small data-en="pm">م</small></div>
+  <div class="clock"><b>9:24</b><i data-en="AM">صباحًا</i></div>
+  <div class="date" data-en="Wednesday 10 Jumada I 1448 AH<em>•</em>21 October 2026">الأربعاء 10 جمادى الأولى 1448 هـ<em>•</em>21 أكتوبر 2026 م</div>
+  <div class="pr glass">
+    <div class="row">
+      <div class="p gone"><span data-en="Fajr">الفجر</span><b>4:51<small data-en="AM">ص</small></b><u></u></div><i class="rule"></i>
+      <div class="p gone"><span data-en="Sunrise">الشروق</span><b>6:06<small data-en="AM">ص</small></b><u></u></div><i class="rule off"></i>
+      <div class="p on"><span data-en="Dhuhr">الظهر</span><b>11:56<small data-en="AM">ص</small></b><u></u></div><i class="rule off"></i>
+      <div class="p"><span data-en="Asr">العصر</span><b>3:14<small data-en="PM">م</small></b><u></u></div><i class="rule"></i>
+      <div class="p"><span data-en="Maghrib">المغرب</span><b>5:41<small data-en="PM">م</small></b><u></u></div><i class="rule"></i>
+      <div class="p"><span data-en="Isha">العشاء</span><b>6:52<small data-en="PM">م</small></b><u></u></div>
+    </div>
+    <div class="hr"></div>
+    <div class="foot"><span data-en="<strong>Dhuhr</strong> adhan in 2 h 32 min<small>&nbsp;&nbsp;·&nbsp;&nbsp;iqama 12:16 PM</small>">أذان <strong>الظهر</strong> بعد 2 س 32 د<small>&nbsp;&nbsp;·&nbsp;&nbsp;الإقامة 12:16 م</small></span></div>
   </div>
-  <div class="next" data-en="<span><em>Dhuhr</em> adhan in 2 h 32 min</span>"><span>أذان <em>الظهر</em> بعد ساعتين و32 دقيقة</span></div>
 </div>
-<div class="fav"><h3 data-en="Favourites">المفضّلة</h3>
+
+<div class="dock">
+  <div class="head"><h3 data-en="Favourites">المفضلة</h3><i></i></div>
   <div class="tiles">
-    <div class="t t1 focus"><div class="in"><img src="../../docs/brand/v4/luban_symbol_v4.svg"><div class="w"><img src="../../docs/brand/v4/luban_wordmark_resin_v4.svg"><span>SCREENSAVER</span></div></div></div>
+    <div class="t t1 focus"><div class="in"><img src="../../docs/brand/v4/luban_symbol_v4.svg" alt=""><div class="w"><img src="../../docs/brand/v4/luban_wordmark_resin_v4.svg" alt=""><span>SCREENSAVER</span></div></div></div>
     <div class="t t2"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M10 9l5 3-5 3z"/></svg><span data-en="Movies">أفلام</span></div>
     <div class="t t3"><svg viewBox="0 0 24 24"><path d="M9 18V6l11-2v12"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/></svg><span data-en="Audio">صوتيات</span></div>
     <div class="t t4"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg><span data-en="News">أخبار</span></div>
     <div class="t t5"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7l4 3-1.5 5h-5L8 10z"/></svg><span data-en="Sports">رياضة</span></div>
-    <div class="t t6"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="6" height="6" rx="1.5"/><rect x="14" y="4" width="6" height="6" rx="1.5"/><rect x="4" y="14" width="6" height="6" rx="1.5"/><rect x="14" y="14" width="6" height="6" rx="1.5"/></svg><span data-en="All apps">جميع التطبيقات</span></div>
+    <div class="t t6 glass"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="6" height="6" rx="1.5"/><rect x="14" y="4" width="6" height="6" rx="1.5"/><rect x="4" y="14" width="6" height="6" rx="1.5"/><rect x="14" y="14" width="6" height="6" rx="1.5"/></svg><span data-en="All apps">جميع التطبيقات</span></div>
   </div>
 </div>
-<div class="credit" data-en="Muscat · CC BY-SA 4.0 · Photo: Diego Delso">مسقط · CC BY-SA 4.0 · تصوير: <bdi>Diego Delso</bdi></div>
+
+<div class="credit" data-en="Muscat · <bdi>CC BY-SA 4.0</bdi> · Photo: <bdi>Diego Delso</bdi>">مسقط · <bdi>CC BY-SA 4.0</bdi> · تصوير: <bdi>Diego Delso</bdi></div>
 <script>
+// English: the words change, the layout does not (the app's root stays right-to-left in both languages)
 if (new URLSearchParams(location.search).get('lang') === 'en') {
-  document.documentElement.lang = 'en'; document.documentElement.dir = 'ltr';
+  document.documentElement.lang = 'en';
   document.querySelectorAll('[data-en]').forEach(e => { e.innerHTML = e.dataset.en; });
+  document.querySelectorAll('.greet,.date,.foot,.p span,.p b,.credit,.pill span').forEach(e => { e.dir = 'ltr'; });
 }
 </script>
 </body></html>
