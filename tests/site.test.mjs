@@ -53,7 +53,7 @@ const BASE = `http://127.0.0.1:${server.address().port}`;
 
 const browser = await chromium.launch();
 for (const [lang, url] of [['ar', '/'], ['en', '/en/']]) {
-  for (const [vw, vh] of [[1440, 900], [390, 844]]) {
+  for (const [vw, vh] of [[1440, 900], [820, 1180], [390, 844]]) {
     const ctx = await browser.newContext({ viewport: { width: vw, height: vh } });
     const page = await ctx.newPage();
     const problems = [], outside = [];
@@ -91,6 +91,28 @@ for (const [lang, url] of [['ar', '/'], ['en', '/en/']]) {
     if (lang === 'ar' && vw === 1440) {
       // the name is drawn as the wordmark everywhere except inside the request that gets copied as text
       check('ar: «لُبان» is the wordmark in running text (only the copied request spells it)', r.wordmarks >= 9 && r.plainName === 1, r);
+    }
+    if (vw === 820) {
+      // tablet: the feature cards in two columns, the dinner tag inside the page
+      const t = await page.evaluate(() => ({
+        cols: getComputedStyle(document.querySelector('.grid4')).gridTemplateColumns.split(' ').length,
+        tag: (b => Math.min(b.left, innerWidth - b.right))(document.querySelector('.tv .tag').getBoundingClientRect()),
+        menu: getComputedStyle(document.querySelector('nav .menu')).display,
+      }));
+      check(`${tag}: two-column cards, the dinner tag inside the page, no menu button`, t.cols === 2 && t.tag >= 16 && t.menu === 'none', t);
+    }
+    if (vw === 390) {
+      // phone: the menu button opens the section links, and a link closes them again
+      const menu = page.locator('nav button.menu');
+      const shut = await page.locator('nav .links').isVisible();
+      await menu.click();
+      const open = await page.locator('nav .links a[href="#install"]').isVisible() && await menu.getAttribute('aria-expanded') === 'true';
+      await page.keyboard.press('Escape');
+      const esc = await menu.getAttribute('aria-expanded') === 'false' && await page.evaluate(() => document.activeElement.matches('button.menu'));
+      await menu.click();
+      await page.locator('nav .links a[href="#install"]').click();
+      const closed = !(await page.locator('nav .links').isVisible()) && await menu.getAttribute('aria-expanded') === 'false';
+      check(`${tag}: the menu opens, Escape and a link close it`, !shut && open && esc && closed, { shut, open, esc, closed });
     }
     if (vw === 1440) {
       // the copy buttons put the exact text on the clipboard

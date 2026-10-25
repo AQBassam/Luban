@@ -41,6 +41,14 @@ nav .links{display:flex;gap:26px;margin-inline-start:auto;font-size:15.5px;color
 nav .links a:hover{color:var(--resin)}
 .lang{font-size:14px;color:var(--ink2);border:1px solid var(--line);border-radius:999px;padding:5px 14px}
 .lang:hover{color:var(--resin);border-color:var(--resin)}
+/* the phone menu button: shown only on phones, and only when site.js runs */
+.menu{display:none;place-items:center;flex:none;width:44px;height:44px;border-radius:12px;border:1px solid var(--line);background:none;color:var(--ink);cursor:pointer}
+.menu svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;overflow:visible}
+.menu path{transform-origin:12px 12px;transition:transform .2s,opacity .2s}
+nav.open .menu .l1{transform:translateY(5px) rotate(45deg)}
+nav.open .menu .l2{opacity:0}
+nav.open .menu .l3{transform:translateY(-5px) rotate(-45deg)}
+@media (prefers-reduced-motion:reduce){.menu path,.btn,summary .chev{transition:none}}
 
 /* hero */
 .hero{position:relative;overflow:hidden;background:radial-gradient(ellipse 75% 95% at 32% 40%,#0E3550 0%,var(--deep) 72%)}
@@ -310,13 +318,34 @@ footer .cols a{display:block;line-height:2.1}
 footer .cols a:hover{color:var(--resin)}
 footer .cred{max-width:1180px;margin:30px auto 0;padding:20px 32px 0;border-top:1px solid rgba(241,235,221,.06);font-size:13px}
 
+/* tablet: between the desktop layout (1180) and the phone (760) */
+@media (max-width:1080px){
+  .grid4,.ports{grid-template-columns:repeat(2,1fr)}
+  .port.sea{grid-column:1/-1}
+  .step{grid-template-columns:44px 1fr;gap:18px}
+  .step>:nth-child(3){grid-column:2;max-width:420px}
+  .hero .wrap{gap:40px}
+  .hero h1,[dir=ltr] .hero h1{font-size:44px}
+  /* the dinner tag sits on the TV's lower edge, inside the page, not past it */
+  .tv .tag{inset-inline-end:16px;bottom:-24px}
+}
+@media (max-width:900px){
+  .hero .wrap{grid-template-columns:1fr;padding-bottom:84px}
+  .hero .tv{width:100%;max-width:620px;justify-self:center}
+  .lead{max-width:620px}
+}
+
 /* phone */
 @media (max-width:760px){
   body{font-size:16px}
   .wrap{padding:0 16px}
-  nav .wrap{height:60px}
+  nav .wrap{height:60px;gap:10px}
   nav .links{display:none}
   .lang{margin-inline-start:auto}
+  .js .menu{display:grid}
+  nav.open .links{display:flex;flex-direction:column;position:absolute;top:60px;inset-inline:0;margin:0;gap:0;padding:6px 16px 14px;background:var(--deep);border-bottom:1px solid var(--line);box-shadow:0 24px 40px rgba(0,0,0,.45);font-size:17px;color:var(--ink)}
+  nav.open .links a{padding:12px 4px;border-bottom:1px solid rgba(241,235,221,.08)}
+  nav.open .links a:last-child{border-bottom:0}
   .brand .sym{height:30px;width:30px}.brand .wm{height:28px}
   .hero .wrap{grid-template-columns:1fr;gap:44px;padding-top:44px;padding-bottom:64px}
   .hero h1,[dir=ltr] .hero h1{font-size:36px;margin-top:20px}

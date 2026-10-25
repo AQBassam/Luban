@@ -1,6 +1,18 @@
-// LubanTV.bassamailab.xyz: the copy buttons, and nothing else. No tracking, no network requests.
+// LubanTV.bassamailab.xyz: the phone menu and the copy buttons, and nothing else. No tracking, no network requests.
 (function () {
   'use strict';
+  // the phone menu: the button opens and closes the links; a link, Escape or a tap outside closes them.
+  // Without this script the button stays hidden (CSS shows it only under .js) and the page works as before.
+  document.documentElement.classList.add('js');
+  const nav = document.querySelector('nav'), menu = nav && nav.querySelector('button.menu');
+  if (menu) {
+    const set = open => { nav.classList.toggle('open', open); menu.setAttribute('aria-expanded', String(open)); };
+    menu.addEventListener('click', () => set(!nav.classList.contains('open')));
+    nav.querySelector('.links').addEventListener('click', ev => { if (ev.target.closest('a')) set(false); });
+    document.addEventListener('keydown', ev => { if (ev.key === 'Escape' && nav.classList.contains('open')) { set(false); menu.focus(); } });
+    document.addEventListener('click', ev => { if (!nav.contains(ev.target)) set(false); });
+  }
+
   function fallback(text) {
     const t = document.createElement('textarea');
     t.value = text; t.setAttribute('readonly', '');
