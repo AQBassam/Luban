@@ -55,8 +55,8 @@ bash deploy/verify.sh
    bash deploy/verify.sh http://127.0.0.1 lubantv.bassamailab.xyz
    ```
 3. **الشهادة:** `certbot --nginx -d lubantv.bassamailab.xyz --redirect`، ثم `bash deploy/verify.sh`.
-4. **بعد يوم من عمل HTTPS:** احذف `#` من سطر `Strict-Transport-Security` في
-   `/etc/nginx/snippets/lubantv-security-headers.conf` وفي `site/deploy/nginx/` معًا، ثم `nginx -t && systemctl reload nginx`.
+4. **HSTS** (سنة، لهذا الاسم وحده) يصل مع ترويسات الأمان في كل إصدار منذ 25 أكتوبر 2026، و`verify.sh` يفحصه.
+   المتصفحات تتجاهله على HTTP، فلا يضر قبل الشهادة. على خادم جديد: لا تفتح الموقع بـ HTTPS قبل أن تعمل الشهادة.
 
 **بعد certbot لا يُنسخ ملف الموقع من جديد:** certbot كتب أسطر الشهادة في الملف الحي، والنسخ فوقه يمحوها.
 أي تعديل على ملف الموقع يُنقل إليه يدويًا.

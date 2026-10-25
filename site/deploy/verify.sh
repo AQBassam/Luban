@@ -44,6 +44,7 @@ else [ -n "$got" ] && ok "version.json: ${ver:-؟} ($got)" || bad "version.json"
 if [[ "$BASE" == https://* ]]; then
   r=$(curl -sS -o /dev/null -w '%{http_code} %{redirect_url}' --max-time 15 "http://${BASE#https://}/")
   [[ "$r" == 301\ https://* || "$r" == 308\ https://* ]] && ok "HTTP يحوّل إلى HTTPS" || bad "التحويل إلى HTTPS" "$r"
+  has "$h" 'strict-transport-security: max-age=31536000' && ! has "$h" 'includesubdomains' && ok "HSTS لسنة، لهذا الاسم وحده" || bad "HSTS" "$(grep -i strict-transport-security <<<"$h" || echo مفقود)"
   host="${BASE#https://}"; host="${host%%/*}"
   exp=$(echo | openssl s_client -servername "$host" -connect "$host:443" 2>/dev/null | openssl x509 -noout -enddate -issuer 2>/dev/null | tr '\n' ' ')
   [ -n "$exp" ] && ok "شهادة TLS: $exp" || bad "شهادة TLS" "تعذرت قراءتها"
