@@ -7,7 +7,8 @@
   const nav = document.querySelector('nav'), menu = nav && nav.querySelector('button.menu');
   if (menu) {
     const set = open => { nav.classList.toggle('open', open); menu.setAttribute('aria-expanded', String(open)); };
-    menu.addEventListener('click', () => set(!nav.classList.contains('open')));
+    // opening moves focus to the first link: the links come before the button, so Tab alone would skip them
+    menu.addEventListener('click', () => { const open = !nav.classList.contains('open'); set(open); if (open) nav.querySelector('.links a').focus(); });
     nav.querySelector('.links').addEventListener('click', ev => { if (ev.target.closest('a')) set(false); });
     document.addEventListener('keydown', ev => { if (ev.key === 'Escape' && nav.classList.contains('open')) { set(false); menu.focus(); } });
     document.addEventListener('click', ev => { if (!nav.contains(ev.target)) set(false); });
@@ -26,13 +27,35 @@
   async function copy(text) {
     try { await navigator.clipboard.writeText(text); return true; } catch (e) { return fallback(text); }
   }
+  // one polite live region tells screen readers whether a copy worked
+  const say = (() => {
+    const live = document.createElement('span');
+    live.className = 'sr'; live.setAttribute('role', 'status'); live.setAttribute('aria-live', 'polite');
+    document.body.appendChild(live);
+    return msg => { live.textContent = ''; setTimeout(() => { live.textContent = msg; }, 50); };
+  })();
+  const FAIL = document.documentElement.lang === 'ar' ? 'انسخه يدويًا' : 'Copy it by hand';
+  // when the browser refuses, select the visible text so the reader can copy it themselves
+  function selectText(b) {
+    const box = b.closest('.cmd, .prompt'), r = document.createRange();
+    const code = box && box.querySelector('code');
+    if (code) r.selectNodeContents(code);
+    else if (box) { const q = box.querySelectorAll('.q'); if (q.length < 2) return; r.setStartAfter(q[0]); r.setEndBefore(q[1]); }   // the request, without its quote marks
+    else return;
+    const s = getSelection(); s.removeAllRanges(); s.addRange(r);
+  }
   document.addEventListener('click', async (ev) => {
     const b = ev.target.closest('button.copy[data-copy]');
     if (!b) return;
-    const label = b.querySelector('span'), was = label.textContent;
-    if (!(await copy(b.dataset.copy))) return;
-    b.classList.add('done'); label.textContent = b.dataset.done || '✓';
+    const label = b.querySelector('span');
+    if (!b._was) b._was = label.textContent;
+    const ok = await copy(b.dataset.copy);
+    b.classList.remove('done', 'fail');
+    b.classList.add(ok ? 'done' : 'fail');
+    label.textContent = ok ? (b.dataset.done || '✓') : FAIL;
+    say(label.textContent);
+    if (!ok) selectText(b);
     clearTimeout(b._t);
-    b._t = setTimeout(() => { b.classList.remove('done'); label.textContent = was; }, 1800);
+    b._t = setTimeout(() => { b.classList.remove('done', 'fail'); label.textContent = b._was; }, ok ? 1800 : 5000);
   });
 })();

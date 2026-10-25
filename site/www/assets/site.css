@@ -176,6 +176,9 @@ h2{font-size:38px;font-weight:600;margin-top:8px;line-height:1.45}
 .prompt .q{color:var(--resin-soft)}
 .copy{display:inline-flex;align-items:center;gap:8px;margin-top:12px;background:var(--resin);color:#1d1406;font:inherit;font-weight:600;border:0;border-radius:10px;padding:4px 14px;font-size:14px;cursor:pointer}
 .copy svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2}
+/* the browser refused the clipboard: the text is selected instead, and the button says so */
+.copy.fail,.cmd .copy.fail{background:none;color:var(--resin-soft);box-shadow:inset 0 0 0 1px var(--resin-soft)}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
 .copy.done{background:var(--foam)}
 .dialog{background:#1B232B;color:#E9EDF1;border-radius:12px;padding:16px;font-size:13.5px;line-height:1.6;text-align:left}
 .dialog b{display:block;font-size:15px;font-weight:600;margin-bottom:4px}

@@ -107,6 +107,8 @@ for (const [lang, url] of [['ar', '/'], ['en', '/en/']]) {
       const shut = await page.locator('nav .links').isVisible();
       await menu.click();
       const open = await page.locator('nav .links a[href="#install"]').isVisible() && await menu.getAttribute('aria-expanded') === 'true';
+      // focus moves into the links, which come before the button in the page
+      check(`${tag}: opening the menu puts focus on its first link`, await page.evaluate(() => document.activeElement.matches('nav .links a:first-child')));
       await page.keyboard.press('Escape');
       const esc = await menu.getAttribute('aria-expanded') === 'false' && await page.evaluate(() => document.activeElement.matches('button.menu'));
       await menu.click();
@@ -127,6 +129,26 @@ for (const [lang, url] of [['ar', '/'], ['en', '/en/']]) {
       const cmd = page.locator('.cmd button.copy').last();
       await cmd.click();
       check(`${tag}: the terminal steps open and each command copies`, await page.evaluate(() => navigator.clipboard.readText()) === 'python tools/luban.py setup');
+      // the live region is filled 50 ms after the copy, so screen readers hear a repeat as new
+      const said = await page.waitForFunction(() => document.querySelector('.sr[role=status][aria-live=polite]').textContent, null, { timeout: 2000 }).then(h => h.jsonValue(), () => '');
+      check(`${tag}: the result of a copy is announced`, said === (lang === 'ar' ? 'نُسخ' : 'Copied'), said);
+      check(`${tag}: the hero image loads first`, await page.getAttribute('.tv img', 'fetchpriority') === 'high');
+      // a browser that refuses the clipboard: the button says so, and the text is selected for copying by hand
+      const ctx2 = await browser.newContext({ viewport: { width: vw, height: vh } });
+      const p2 = await ctx2.newPage();
+      await p2.addInitScript(() => {
+        Object.defineProperty(navigator, 'clipboard', { value: { writeText: () => Promise.reject(new Error('refused')) } });
+        document.execCommand = () => false;
+      });
+      await p2.goto(BASE + url, { waitUntil: 'networkidle' });
+      const pb = p2.locator('.prompt button.copy');
+      await pb.click();
+      await p2.waitForTimeout(150);
+      const refused = await p2.evaluate(() => ({ fail: document.querySelector('.prompt button.copy').classList.contains('fail'),
+        sel: String(getSelection()), want: document.querySelector('.prompt button.copy').dataset.copy, said: document.querySelector('.sr[role=status]').textContent }));
+      check(`${tag}: a refused copy selects the request and says to copy it by hand`, refused.fail && refused.said !== '' &&
+        refused.sel.length > 40 && !/[«»“”]/.test(refused.sel) && refused.want.includes('AQBassam/Luban') && refused.sel.includes('AQBassam/Luban'), refused);
+      await ctx2.close();
     }
     await ctx.close();
   }
